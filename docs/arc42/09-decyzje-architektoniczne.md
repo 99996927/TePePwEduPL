@@ -18,6 +18,11 @@
 | ADR-14 | Odpowiedź agenta w całości (bez strumieniowania) | Przyjęta |
 | ADR-15 | Zakres zmiany płacowej: stawka lub składnik pracownika z datą obowiązywania | Przyjęta |
 | ADR-16 | Kontrakt API: OpenAPI generowane z kontrolerów, klient TypeScript generowany dla Angulara | Przyjęta |
+| ADR-17 | Wpis czasu pracy: początek, koniec i przerwa, reszta wyliczana przez silnik | Przyjęta |
+| ADR-18 | Jeden standardowy rozkład czasu pracy dla wszystkich pracowników | Przyjęta |
+| ADR-19 | Dane demo: większy zestaw generowany z ustalonym ziarnem | Przyjęta |
+| ADR-20 | Każdy wygenerowany pracownik ma konto: login `imię.nazwisko`, hasło `imięnazwisko123` | Przyjęta |
+| ADR-21 | Skala danych demo: ok. 30 pracowników, 4–5 zespołów, 6 miesięcy ewidencji | Przyjęta |
 
 ## ADR-01 Trzy warstwy, dwa kontenery
 **Kontekst:** wymóg trójwarstwowości i uruchomienia na jednej maszynie.
@@ -100,3 +105,43 @@ Poza zakresem pozostają korekty zamkniętych okresów i parametry firmowe.
 Plik specyfikacji jest zapisywany w repozytorium, a zmiana kontraktu widoczna w różnicy (diff) przy przeglądzie.
 **Alternatywy:** API-first z ręcznie pisaną specyfikacją (podwójne utrzymanie), brak formalnej specyfikacji (ryzyko rozbieżności frontendu i backendu).
 **Konsekwencje:** dokumentacja nie rozjeżdża się z kodem, testy Playwright i Angular korzystają z typów klienta. Kontroler musi mieć jawne typy odpowiedzi i kody błędów.
+
+## ADR-17 Model wpisu czasu pracy
+**Decyzja:** wpis czasu pracy zawiera datę, godzinę rozpoczęcia, godzinę zakończenia i długość przerwy. Przepracowane godziny, nadgodziny,
+odpoczynek dobowy (11 h) i tygodniowy (35 h) są wyliczane przez silnik reguł, a nie zapisywane razem z wpisem.
+**Alternatywy:** sama liczba godzin w dniu (uniemożliwia UC-12 i UC-13), oba podejścia jednocześnie (ryzyko niespójności przy korekcie, UC-11).
+**Konsekwencje:** pełna możliwość wykrywania naruszeń z art. 132 i 133, jedno źródło prawdy, a korekta wpisu (UC-11) automatycznie zmienia wyniki.
+Wpis przechodzący przez północ (praca nocna) musi być obsłużony jako jeden wpis, który kończy się następnego dnia.
+
+## ADR-18 Jeden standardowy rozkład czasu pracy
+**Decyzja:** wszyscy pracownicy mają ten sam rozkład: pełny etat, poniedziałek–piątek, 8 godzin na dobę, 40 godzin tygodniowo,
+okres rozliczeniowy 4 miesiące (parametr silnika), z kalendarzem polskich dni wolnych od pracy.
+**Alternatywy:** rozkład przypisany do pracownika z wariantami (część etatu, praca zmianowa), pełny harmonogram dzienny planowany przez kierownika.
+**Konsekwencje:** prostszy silnik i mniej przypadków w testach. Poza zakresem: niepełny etat (art. 154 § 2), praca zmianowa, system równoważny, harmonogramy.
+Wymiar urlopu zależy tylko od stażu (20 lub 26 dni). Okres rozliczeniowy pozostaje parametrem, więc dodanie wariantów jest możliwe później.
+**Do weryfikacji przed implementacją:** lista dni wolnych od pracy (święta stałe i ruchome, ewentualne zmiany w ostatnich latach) pochodzi z przepisów
+spoza Kodeksu pracy i musi być sprawdzona w oficjalnym źródle (API Sejmu), a nie z pamięci.
+
+## ADR-19 Dane demo
+**Decyzja:** dane demo są generowane deterministycznie (ustalone ziarno generatora): kilkudziesięciu fikcyjnych pracowników w kilku zespołach
+i kilka miesięcy ewidencji, wniosków urlopowych i naliczeń. Konta logowania z sekcji 7.2 (6 osób) pozostają stałe.
+**Alternatywy:** mały, ręcznie przygotowany zestaw (czytelne testy, mniej realistyczny pokaz), oba warianty przełączane profilem.
+**Konsekwencje:** realistyczniejszy pokaz i większa baza do zapytań agenta. Aby testy UC-xx pozostały deterministyczne, generator dodaje
+niezależnie od losowej części stały zestaw scenariuszowy przypisany do kont demo (np. naruszenie odpoczynku dobowego u `anna.nowak`,
+nadgodziny ponad normę u `jan.kowalski`, wniosek urlopowy oczekujący, zmiana płacowa do zatwierdzenia). Ziarno jest zapisane w konfiguracji, a testy
+nie polegają na wartościach z części losowej.
+
+## ADR-20 Konta dla wszystkich wygenerowanych pracowników
+**Decyzja:** każdy wygenerowany pracownik ma konto logowania według tego samego wzoru co konta z sekcji 7.2: login `imię.nazwisko`,
+hasło `imięnazwisko123` (małe litery, bez znaków diakrytycznych i separatorów). Role: `Employee`, a w każdym zespole jeden `Manager`.
+Generator gwarantuje unikalność loginów (brak powtórzeń kombinacji imię i nazwisko).
+**Alternatywy:** tylko 6 kont stałych (mniej jawnych haseł), konta dla wybranej części pracowników (reguły wyboru do opisania).
+**Konsekwencje:** można zalogować się jako dowolny pracownik i sprawdzić separację danych na większym zbiorze. Rośnie liczba jawnych, przewidywalnych
+haseł (ryzyko R-03 większe, tylko środowisko demo). Lista wszystkich kont nie jest powielana w dokumentacji, bo jest wyznaczona regułą i ziarnem generatora.
+Sześć kont z sekcji 7.2 pozostaje stałych i nazwanych, bo na nich opierają się testy UC-xx.
+
+## ADR-21 Skala danych demo
+**Decyzja:** generator tworzy ok. 30 pracowników w 4–5 zespołach oraz 6 miesięcy ewidencji, wniosków urlopowych i naliczeń (w tym 6 stałych kont z sekcji 7.2).
+**Alternatywy:** ok. 100 pracowników i 12 miesięcy (realistyczniejsze, wolniejszy start), kilkaset pracowników (test wydajności, poza celem projektu).
+**Konsekwencje:** seed kończy się w kilka sekund, a 6 miesięcy pokrywa okres rozliczeniowy 4 miesięcy (ADR-18) z zapasem. Okres rozliczeniowy do 12 miesięcy
+(art. 129 § 2) nie jest pokryty danymi demo i wymaga testów jednostkowych silnika na danych syntetycznych poza seedem.

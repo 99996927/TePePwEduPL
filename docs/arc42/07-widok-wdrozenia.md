@@ -37,5 +37,8 @@ Konta tworzone seedem przy zakładaniu bazy. Hasło ma postać `imięnazwisko123
 | `piotr.zielinski` | `piotrzielinski123` | HR | Tworzy zmiany płacowe. |
 | `maria.kaminska` | `mariakaminska123` | HRApprover | Zatwierdza zmiany płacowe. |
 
+**Pozostałe konta (wygenerowani pracownicy, ADR-19 i ADR-20):** login `imię.nazwisko`, hasło `imięnazwisko123` (małe litery, bez znaków diakrytycznych).
+Rola `Employee`, a w każdym zespole jeden `Manager`. Lista jest wyznaczona regułą i ziarnem generatora, więc nie jest tu powielana.
+
 > **Ostrzeżenie:** hasła są jawne i przewidywalne, a polityka haseł jest świadomie poluzowana (decyzja ADR-06, ryzyko R-03).
 > Nie wolno używać tego zestawu poza środowiskiem demonstracyjnym.

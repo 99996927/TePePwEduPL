@@ -4,7 +4,7 @@
 |---|---|---|---|
 | R-01 | Model w odpowiedzi poda liczbę niepochodzącą z silnika | Błędne informacje dla pracownika | Narzędzia jako jedyne źródło liczb, test kontraktu, instrukcja systemowa, odpowiedzi z odwołaniem do reguły. |
 | R-02 | Uproszczone reguły płacowe odbiegają od aktualnego stanu prawnego | Wprowadzające w błąd naliczenia | Oznaczenie „wstępne”, odwołania do artykułów, ręczna weryfikacja przed kodowaniem reguły. |
-| R-03 | Jawne, przewidywalne hasła i poluzowana polityka | Przejęcie kont, jeśli środowisko wyjdzie poza demo | Tylko środowisko demo, dane syntetyczne, blokada konta, nie wystawiać do internetu. |
+| R-03 | Jawne, przewidywalne hasła (wszystkie konta, także wygenerowane: `imięnazwisko123`) i poluzowana polityka | Przejęcie kont, jeśli środowisko wyjdzie poza demo | Tylko środowisko demo, dane syntetyczne, blokada konta, nie wystawiać do internetu. |
 | R-04 | Zależność od Anthropic API (dostępność, koszt, klucz) | Brak funkcji agenta | Degradacja do działania bez agenta, limity, klucz w `.env`. |
 | R-05 | Wyciek klucza API lub hasła SA | Nadużycie | `.env` poza repozytorium, `.gitignore`, brak sekretów w obrazach. |
 | R-06 | Błędy ekstrakcji tekstu z PDF Kodeksu pracy | Błędne cytaty agenta | Czyszczenie przypisów i nagłówków, weryfikacja numerów artykułów, test próbny. |
