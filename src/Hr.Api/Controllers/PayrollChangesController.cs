@@ -10,11 +10,15 @@ namespace Hr.Api.Controllers;
 [Route("api/payroll-changes")]
 public sealed class PayrollChangesController(PayrollChangeService changes) : ControllerBase
 {
-    [HttpGet]
+    [HttpGet(Name = "PayrollChanges_List")]
     public async Task<ActionResult<IReadOnlyList<PayrollChangeDto>>> List([FromQuery] Guid? employeeId, CancellationToken ct) =>
         Ok((await changes.ListAsync(employeeId, ct)).Select(PayrollChangeDto.Of).ToList());
 
-    [HttpPost]
+    [HttpPost(Name = "PayrollChanges_Create")]
+    [ProducesResponseType<PayrollChangeDto>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
     public async Task<IActionResult> Create(CreatePayrollChangeRequest request, CancellationToken ct)
     {
         if (!Enum.TryParse<PayrollComponent>(request.Component, ignoreCase: true, out var component)
@@ -31,15 +35,28 @@ public sealed class PayrollChangesController(PayrollChangeService changes) : Con
             StatusCodes.Status201Created);
     }
 
-    [HttpPost("{id:guid}/submit")]
+    [HttpPost("{id:guid}/submit", Name = "PayrollChanges_Submit")]
+    [ProducesResponseType<PayrollChangeDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
     public async Task<IActionResult> Submit(Guid id, CancellationToken ct) =>
         this.ToActionResult(await changes.SubmitAsync(id, ct), PayrollChangeDto.Of);
 
-    [HttpPost("{id:guid}/approve")]
+    [HttpPost("{id:guid}/approve", Name = "PayrollChanges_Approve")]
+    [ProducesResponseType<PayrollChangeDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
     public async Task<IActionResult> Approve(Guid id, CancellationToken ct) =>
         this.ToActionResult(await changes.ApproveAsync(id, ct), PayrollChangeDto.Of);
 
-    [HttpPost("{id:guid}/reject")]
+    [HttpPost("{id:guid}/reject", Name = "PayrollChanges_Reject")]
+    [ProducesResponseType<PayrollChangeDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
     public async Task<IActionResult> Reject(Guid id, RejectRequest request, CancellationToken ct) =>
         this.ToActionResult(await changes.RejectAsync(id, request.Reason, ct), PayrollChangeDto.Of);
 }

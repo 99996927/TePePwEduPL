@@ -18,7 +18,8 @@ public sealed class AuthController(
 {
     /// <summary>Wystawia ciasteczka antyforgery; wymagane przed logowaniem.</summary>
     [AllowAnonymous]
-    [HttpGet("antiforgery")]
+    [HttpGet("antiforgery", Name = "Auth_Antiforgery")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public IActionResult GetAntiforgery()
     {
         AntiforgeryCookie.Issue(HttpContext, antiforgery);
@@ -27,7 +28,10 @@ public sealed class AuthController(
 
     /// <summary>Loguje lokalnym kontem; zły login i złe hasło dają tę samą odpowiedź 401, blokada konta 423.</summary>
     [AllowAnonymous]
-    [HttpPost("login")]
+    [HttpPost("login", Name = "Auth_Login")]
+    [ProducesResponseType<CurrentUserDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status423Locked, "application/problem+json")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
         var result = await signInManager.PasswordSignInAsync(
@@ -49,7 +53,8 @@ public sealed class AuthController(
         return Ok(ToDto(principal));
     }
 
-    [HttpPost("logout")]
+    [HttpPost("logout", Name = "Auth_Logout")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Logout()
     {
         await signInManager.SignOutAsync();
@@ -58,7 +63,8 @@ public sealed class AuthController(
         return NoContent();
     }
 
-    [HttpGet("me")]
+    [HttpGet("me", Name = "Auth_Me")]
+    [ProducesResponseType<CurrentUserDto>(StatusCodes.Status200OK)]
     public ActionResult<CurrentUserDto> Me() => Ok(ToDto(User));
 
     private static CurrentUserDto ToDto(ClaimsPrincipal principal)

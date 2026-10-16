@@ -7,6 +7,7 @@ namespace Hr.Api.IntegrationTests;
 
 /// <summary>Trasy pomocnicze tylko dla testów: chroniony endpoint, mapowanie błędów serwisów i wyjątek.</summary>
 [ApiController]
+[ApiExplorerSettings(IgnoreApi = true)]
 [Route("test")]
 public sealed class TestController : ControllerBase
 {

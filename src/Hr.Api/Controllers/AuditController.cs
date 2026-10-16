@@ -10,7 +10,10 @@ namespace Hr.Api.Controllers;
 public sealed class AuditController(AuditService audit) : ControllerBase
 {
     /// <summary>Dziennik audytu od najnowszych wpisów; tylko kadry. Czasy <c>from</c> i <c>to</c> w UTC (np. <c>2026-10-16T09:00:00Z</c>).</summary>
-    [HttpGet]
+    [HttpGet(Name = "Audit_Query")]
+    [ProducesResponseType<AuditPageDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
     public async Task<IActionResult> Query(
         [FromQuery] string? entityType, [FromQuery] string? entityId, [FromQuery] Guid? actorUserId,
         [FromQuery] DateTimeOffset? from, [FromQuery] DateTimeOffset? to,

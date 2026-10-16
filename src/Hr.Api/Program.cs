@@ -10,6 +10,7 @@ using Hr.Rules.Calendar;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -75,6 +76,47 @@ builder.Services.AddControllers(options =>
     })
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Info.Title = "Asystent kadrowo-płacowy API";
+        document.Info.Version = "v1";
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes["cookieAuth"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.ApiKey,
+            In = ParameterLocation.Cookie,
+            Name = "hr.session",
+            Description = "Cookie sesyjne po zalogowaniu (POST /api/auth/login). Metody zapisu wymagają też nagłówka X-XSRF-TOKEN z wartością ciasteczka XSRF-TOKEN.",
+        };
+        return Task.CompletedTask;
+    });
+    options.AddOperationTransformer((operation, context, _) =>
+    {
+        bool anonymous = context.Description.ActionDescriptor.EndpointMetadata.OfType<Microsoft.AspNetCore.Authorization.IAllowAnonymous>().Any();
+        if (!anonymous)
+        {
+            operation.Security.Add(new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "cookieAuth" } }] = new List<string>(),
+            });
+            operation.Responses.TryAdd("401", new OpenApiResponse { Description = "Brak sesji: zaloguj się (bez ciała odpowiedzi)." });
+        }
+
+        if (context.Description.HttpMethod is not ("GET" or "HEAD" or "OPTIONS"))
+        {
+            operation.Responses.TryAdd("400", new OpenApiResponse
+            {
+                Description = "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie.",
+                Content = { ["application/problem+json"] = new OpenApiMediaType { Schema = new OpenApiSchema { Reference = new OpenApiReference { Type = ReferenceType.Schema, Id = "ProblemDetails" } } } },
+            });
+        }
+
+        return Task.CompletedTask;
+    });
+});
+
 var app = builder.Build();
 
 await using (var scope = app.Services.CreateAsyncScope())
@@ -97,7 +139,12 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapFallbackToFile("/{**path:regex(^(?!api/|test/).*$)}", "index.html").AllowAnonymous();
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi().AllowAnonymous();
+}
+
+app.MapFallbackToFile("/{**path:regex(^(?!api/|test/|openapi/).*$)}", "index.html").AllowAnonymous();
 
 app.Run();
 

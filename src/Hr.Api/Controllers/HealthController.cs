@@ -8,6 +8,6 @@ namespace Hr.Api.Controllers;
 [Route("api/health")]
 public sealed class HealthController : ControllerBase
 {
-    [HttpGet]
+    [HttpGet(Name = "Health_Get")]
     public IActionResult Get() => Ok(new { status = "ok" });
 }
