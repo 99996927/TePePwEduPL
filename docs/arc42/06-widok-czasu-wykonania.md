@@ -23,6 +23,8 @@ sequenceDiagram
     end
 ```
 
+**Realizacja:** `LeaveService.SubmitAsync` (ADR-24). Kody błędów: brak powiązania z pracownikiem to `Forbidden`; odwrócone daty, przekroczenie roku, 0 dni roboczych i brak salda (z `KP-154-1`) to `Validation`; nakładanie na wniosek oczekujący lub zatwierdzony to `Conflict`.
+
 ## 6.2 UC-12/14 Wykrycie naruszeń czasu pracy
 Silnik analizuje wpisy czasu: odpoczynek dobowy (11 h, art. 132 § 1), tygodniowy (35 h, art. 133 § 1) i średnią tygodniową
 w okresie rozliczeniowym (48 h łącznie z nadgodzinami, art. 131 § 1). Wynik to lista naruszeń z identyfikatorem reguły,
