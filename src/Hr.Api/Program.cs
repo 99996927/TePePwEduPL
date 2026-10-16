@@ -26,6 +26,7 @@ builder.Services.AddDbContext<HrDbContext>((sp, options) => options
     .UseSqlServer(connectionString)
     .AddInterceptors(sp.GetRequiredService<AuditSaveChangesInterceptor>()));
 
+builder.Services.AddScoped<EmployeeDirectoryService>();
 builder.Services.AddScoped<LeaveService>();
 builder.Services.AddScoped<TimesheetService>();
 builder.Services.AddScoped<PayrollChangeService>();
