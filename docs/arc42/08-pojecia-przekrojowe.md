@@ -19,11 +19,14 @@
 ## 8.3 Reguły czasu pracy i wersjonowanie
 Reguły są parametryzowane datą obowiązywania. Kluczowe parametry:
 - norma: 8 h na dobę i przeciętnie 40 h tygodniowo w okresie rozliczeniowym do 4 miesięcy, do 12 miesięcy w uzasadnionych przypadkach ✔ art. 129,
+- wymiar czasu pracy w okresie: 40 h × pełne tygodnie + 8 h × pozostałe dni pon.–pt., minus 8 h za każde święto w dniu innym niż niedziela i minus usprawiedliwione nieobecności ✔ art. 130 § 1–3,
 - limit łącznie z nadgodzinami: przeciętnie 48 h tygodniowo ✔ art. 131 § 1,
 - odpoczynek: 11 h dobowo ✔ art. 132 § 1, 35 h tygodniowo ✔ art. 133 § 1,
 - nadgodziny: definicja ✔ art. 151 § 1, limit 150 h w roku kalendarzowym ✔ art. 151 § 3 (z możliwością innego ustalenia w § 4),
 - dodatki: 100% (noc, niedziele i święta niebędące dniami pracy, dni wolne za pracę w niedzielę lub święto) i 50% (inne dni) ✔ art. 151¹ § 1,
 - wymiar urlopu: 20 dni (do 10 lat) lub 26 dni (od 10 lat), proporcjonalnie przy niepełnym etacie ✔ art. 154 § 1–2.
+
+Dni wolne od pracy: 1.01, 6.01, Wielkanoc i poniedziałek, 1.05, 3.05, Zielone Świątki, Boże Ciało, 15.08, 1.11, 11.11, 24.12 (od 2025 r.), 25.12, 26.12 oraz niedziele ✔ ustawa o dniach wolnych od pracy, Dz.U. 2025 poz. 296, art. 1.
 
 Stawki podatkowo-składkowe w naliczeniu są uproszczone i oznaczone jako wstępne.
 
