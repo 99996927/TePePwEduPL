@@ -3,16 +3,25 @@ using Hr.Core.Domain;
 using Hr.Core.Persistence;
 using Hr.Core.Security;
 using Hr.Rules.Calendar;
+using Hr.Rules.Overtime;
+using Hr.Rules.Rest;
 using Hr.Rules.Time;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hr.Core.Services;
 
+public sealed record TimesheetAnalysis(
+    decimal NormHours,
+    decimal WorkedHours,
+    OvertimeResult Overtime,
+    IReadOnlyList<RestViolation> RestViolations,
+    AverageHoursResult WeeklyAverage,
+    decimal OvertimeYearToDate,
+    bool AnnualOvertimeLimitExceeded);
+
 /// <summary>Ewidencja czasu pracy (UC-10, UC-11) i jej analiza (UC-12 do UC-15). Liczby pochodzą z <c>Hr.Rules</c>.</summary>
 public sealed class TimesheetService(HrDbContext db, ICurrentUser user, IClock clock, WorkCalendar calendar)
 {
-    internal WorkCalendar Calendar => calendar;
-
     /// <summary>Dodaje wpis dla siebie. Wpis nie może się nakładać na inny ani kończyć w przyszłości.</summary>
     public async Task<ServiceResult<WorkEntryRecord>> AddEntryAsync(DateTime start, DateTime end, TimeSpan breakTime, CancellationToken ct = default)
     {
@@ -86,6 +95,54 @@ public sealed class TimesheetService(HrDbContext db, ICurrentUser user, IClock c
             .Where(w => w.Start >= rangeStart && w.Start < rangeEnd)
             .OrderBy(w => w.Start)
             .ToListAsync(ct);
+    }
+
+    /// <summary>Analiza okresu (UC-12 do UC-15): wymiar czasu, nadgodziny, naruszenia odpoczynków, średnia tygodniowa i limit roczny. Wszystko liczy silnik reguł.</summary>
+    public async Task<ServiceResult<TimesheetAnalysis>> AnalyzeAsync(Guid employeeId, DateOnly from, DateOnly toInclusive, CancellationToken ct = default)
+    {
+        if (toInclusive < from)
+        {
+            return ServiceResult<TimesheetAnalysis>.Fail(ServiceErrorCode.Validation, "Koniec okresu nie może być przed jego początkiem.");
+        }
+
+        if (!await db.VisibleEmployees(user).AnyAsync(e => e.Id == employeeId, ct))
+        {
+            return ServiceResult<TimesheetAnalysis>.Fail(ServiceErrorCode.NotFound, "Nie znaleziono pracownika.");
+        }
+
+        var yearStart = new DateOnly(toInclusive.Year, 1, 1);
+        var upperBound = toInclusive.AddDays(1).ToDateTime(TimeOnly.MinValue);
+        var records = await db.WorkEntries
+            .Where(w => w.EmployeeId == employeeId && w.Start >= yearStart.ToDateTime(TimeOnly.MinValue) && w.Start < upperBound)
+            .OrderBy(w => w.Start)
+            .ToListAsync(ct);
+        var rangeStart = from.ToDateTime(TimeOnly.MinValue);
+        var rangeEntries = records.Where(w => w.Start >= rangeStart).Select(w => w.ToRulesEntry()).ToList();
+        var yearEntries = records.Select(w => w.ToRulesEntry()).ToList();
+
+        var leaves = await db.LeaveRequests
+            .Where(l => l.EmployeeId == employeeId && l.Status == LeaveStatus.Approved && l.From <= toInclusive && l.To >= from)
+            .ToListAsync(ct);
+        decimal absenceHours = leaves.Sum(l =>
+            8m * calendar.CountWorkingDays(l.From < from ? from : l.From, l.To > toInclusive ? toInclusive : l.To));
+
+        try
+        {
+            var overtime = OvertimeCalculator.Calculate(rangeEntries, calendar, NightWindow.Default);
+            decimal yearToDate = OvertimeCalculator.Calculate(yearEntries, calendar, NightWindow.Default).Total;
+            return ServiceResult<TimesheetAnalysis>.Ok(new TimesheetAnalysis(
+                WorkingTimeNorm.HoursForPeriod(from, toInclusive, calendar, absenceHours),
+                rangeEntries.Sum(e => e.WorkedHours),
+                overtime,
+                RestRules.Check(rangeEntries),
+                WeeklyAverageRules.Check(rangeEntries, from, toInclusive),
+                yearToDate,
+                OvertimeLimit.Exceeded(yearToDate)));
+        }
+        catch (ArgumentException ex)
+        {
+            return ServiceResult<TimesheetAnalysis>.Fail(ServiceErrorCode.Validation, $"Nieprawidłowe dane ewidencji: {ex.Message}");
+        }
     }
 
     private string? Validate(DateTime start, DateTime end, TimeSpan breakTime)
