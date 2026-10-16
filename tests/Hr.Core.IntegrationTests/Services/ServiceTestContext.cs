@@ -1,6 +1,7 @@
 using Hr.Core.AgentTools;
 using Hr.Core.Abstractions;
 using Hr.Core.Auditing;
+using Hr.Core.Security;
 using Hr.Core.Persistence;
 using Hr.Core.Services;
 using Hr.Rules.Calendar;
@@ -57,6 +58,14 @@ public sealed class ServiceTestContext : IAsyncDisposable
 
     public AgentToolbox Toolbox(ICurrentUser user) => new(
         Db, user, Clock, Leave(user), Timesheet(user), Payroll(user), Drafts(user), new LabourCodeSearch(Db), new AuditWriter(Db, user, Clock));
+
+    public ConversationStore Store(ICurrentUser user) => Store(Db, user);
+
+    public ConversationStore Store(HrDbContext db, ICurrentUser user)
+    {
+        var writer = new AuditWriter(db, user, Clock);
+        return new ConversationStore(db, user, Clock, new ConversationReader(db, writer, user), writer);
+    }
 
     public PayrollService Payroll(ICurrentUser user) => new(Db, user, Clock, Calendar);
 

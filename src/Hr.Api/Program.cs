@@ -5,6 +5,7 @@ using Hr.Core.AgentTools;
 using Hr.Core.Auditing;
 using Hr.Core.Domain;
 using Hr.Core.Persistence;
+using Hr.Core.Security;
 using Hr.Core.Seeding;
 using Hr.Core.Services;
 using Hr.Rules.Calendar;
@@ -38,6 +39,8 @@ builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<IAuditWriter, AuditWriter>();
 builder.Services.AddScoped<LabourCodeSearch>();
 builder.Services.AddScoped<IAgentToolbox, AgentToolbox>();
+builder.Services.AddScoped<ConversationReader>();
+builder.Services.AddScoped<IConversationStore, ConversationStore>();
 
 builder.Services.AddIdentityCore<ApplicationUser>(HrIdentityOptions.Apply)
     .AddRoles<IdentityRole<Guid>>()
