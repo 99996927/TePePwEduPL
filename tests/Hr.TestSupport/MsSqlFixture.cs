@@ -1,3 +1,4 @@
+using Xunit;
 using Hr.Core.Abstractions;
 using Hr.Core.Auditing;
 using Hr.Core.Persistence;
@@ -5,7 +6,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.MsSql;
 
-namespace Hr.Core.IntegrationTests;
+namespace Hr.TestSupport;
 
 /// <summary>Jeden kontener SQL Server na kolekcję testów, osobna pusta baza na każde wywołanie.</summary>
 public sealed class MsSqlFixture : IAsyncLifetime
@@ -60,9 +61,4 @@ public sealed class MsSqlFixture : IAsyncLifetime
     /// <summary>Nowa, zmigrowana baza i kontekst do niej.</summary>
     public async Task<HrDbContext> NewContextAsync(ICurrentUser? actor = null, IClock? clock = null) =>
         await OpenContextAsync(await NewMigratedDatabaseAsync(), actor, clock);
-}
-
-[CollectionDefinition("mssql")]
-public sealed class MsSqlCollection : ICollectionFixture<MsSqlFixture>
-{
 }

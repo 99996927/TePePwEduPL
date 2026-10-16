@@ -1,3 +1,4 @@
+using Hr.TestSupport;
 using Microsoft.Data.SqlClient;
 
 namespace Hr.Core.IntegrationTests;

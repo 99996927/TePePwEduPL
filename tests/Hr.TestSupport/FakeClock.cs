@@ -1,6 +1,6 @@
 using Hr.Core.Abstractions;
 
-namespace Hr.Core.IntegrationTests;
+namespace Hr.TestSupport;
 
 public sealed class FakeClock : IClock
 {
