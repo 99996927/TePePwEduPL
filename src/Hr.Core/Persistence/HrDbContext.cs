@@ -28,6 +28,8 @@ public class HrDbContext(DbContextOptions<HrDbContext> options)
 
     public DbSet<CorrectionDraft> CorrectionDrafts => Set<CorrectionDraft>();
 
+    public DbSet<LabourCodeArticle> LabourCodeArticles => Set<LabourCodeArticle>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

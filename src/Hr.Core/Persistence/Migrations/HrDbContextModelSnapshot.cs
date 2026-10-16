@@ -257,6 +257,21 @@ namespace Hr.Core.Persistence.Migrations
                     b.ToTable("Employees");
                 });
 
+            modelBuilder.Entity("Hr.Core.Domain.LabourCodeArticle", b =>
+                {
+                    b.Property<string>("Number")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Number");
+
+                    b.ToTable("LabourCodeArticles", (string)null);
+                });
+
             modelBuilder.Entity("Hr.Core.Domain.LeaveRequest", b =>
                 {
                     b.Property<Guid>("Id")

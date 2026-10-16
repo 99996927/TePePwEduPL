@@ -127,6 +127,9 @@ await using (var scope = app.Services.CreateAsyncScope())
     await scope.ServiceProvider.GetRequiredService<HrDbContext>().Database.MigrateAsync();
 }
 
+// Kodeks pracy to dane publiczne, więc ładujemy go zawsze, niezależnie od danych demo.
+await LabourCodeSeeder.SeedAsync(app.Services);
+
 if (app.Configuration.GetValue<bool>("Hr:SeedDemoData"))
 {
     await DemoSeeder.SeedAsync(app.Services);
