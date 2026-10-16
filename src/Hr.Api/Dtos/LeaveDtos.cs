@@ -18,7 +18,7 @@ public sealed record LeaveRequestDto(
     Guid? DecidedByEmployeeId, string? DecisionReason, DateTime CreatedAtUtc)
 {
     public static LeaveRequestDto Of(LeaveRequest l) =>
-        new(l.Id, l.EmployeeId, l.From, l.To, l.Days, l.Status.ToString(), l.DecidedByEmployeeId, l.DecisionReason, l.CreatedAtUtc);
+        new(l.Id, l.EmployeeId, l.From, l.To, l.Days, l.Status.ToString(), l.DecidedByEmployeeId, l.DecisionReason, l.CreatedAtUtc.AsUtc());
 }
 
 public sealed record SubmitLeaveRequest(DateOnly From, DateOnly To);

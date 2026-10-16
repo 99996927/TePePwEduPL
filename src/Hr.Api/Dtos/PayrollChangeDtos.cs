@@ -8,7 +8,7 @@ public sealed record PayrollChangeDto(
 {
     public static PayrollChangeDto Of(PayrollChange c) => new(
         c.Id, c.EmployeeId, c.Component.ToString(), c.Value, c.EffectiveFrom, c.Reason, c.Status.ToString(),
-        c.CreatedByUserId, c.DecidedByUserId, c.DecisionReason, c.CreatedAtUtc);
+        c.CreatedByUserId, c.DecidedByUserId, c.DecisionReason, c.CreatedAtUtc.AsUtc());
 }
 
 /// <param name="Component"><c>BaseSalary</c> albo <c>FixedAllowance</c>.</param>

@@ -31,6 +31,7 @@ builder.Services.AddScoped<LeaveService>();
 builder.Services.AddScoped<TimesheetService>();
 builder.Services.AddScoped<PayrollChangeService>();
 builder.Services.AddScoped<PayrollService>();
+builder.Services.AddScoped<AuditService>();
 
 builder.Services.AddIdentityCore<ApplicationUser>(HrIdentityOptions.Apply)
     .AddRoles<IdentityRole<Guid>>()
