@@ -9,12 +9,12 @@
 | ADR-05 | Przepisy: ręcznie kodowane reguły + import tekstu Kodeksu pracy do bazy | Przyjęta |
 | ADR-06 | Lokalne konta (ASP.NET Core Identity) i poluzowana polityka haseł w demo | Przyjęta |
 | ADR-07 | Docker Compose v2 do uruchamiania | Przyjęta |
-| ADR-08 | Zasada czterech oczu dla zmian płacowych w logice i w bazie | Przyjęta |
+| ADR-08 | Zasada czterech oczu dla zmian płacowych w logice i w bazie | Przyjęta, część bazodanowa zrealizowana w planie 2 |
 | ADR-09 | Backend: cztery projekty `Api`, `Core`, `Rules`, `Agent` + test architektury | Przyjęta |
 | ADR-10 | Sesja: cookie (Identity) z antyforgery, bez JWT | Przyjęta |
 | ADR-11 | Pełna historia rozmów agenta w bazie, odczyt przez autora i kadry | Przyjęta |
-| ADR-12 | Rozmowy: tabele `Conversation` i `Message` | Przyjęta |
-| ADR-13 | Audyt: jedna tabela `AuditLog` tylko do dopisywania | Przyjęta |
+| ADR-12 | Rozmowy: tabele `Conversation` i `Message` | Przyjęta, zrealizowana w planie 2 |
+| ADR-13 | Audyt: jedna tabela `AuditLog` tylko do dopisywania | Przyjęta, zrealizowana w planie 2 (wyzwalacz) |
 | ADR-14 | Odpowiedź agenta w całości (bez strumieniowania) | Przyjęta |
 | ADR-15 | Zakres zmiany płacowej: stawka lub składnik pracownika z datą obowiązywania | Przyjęta |
 | ADR-16 | Kontrakt API: OpenAPI generowane z kontrolerów, klient TypeScript generowany dla Angulara | Przyjęta |
@@ -23,7 +23,8 @@
 | ADR-19 | Dane demo: większy zestaw generowany z ustalonym ziarnem | Przyjęta |
 | ADR-20 | Każdy wygenerowany pracownik ma konto: login `imię.nazwisko`, hasło `imięnazwisko123` | Przyjęta |
 | ADR-21 | Skala danych demo: ok. 30 pracowników, 4–5 zespołów, 6 miesięcy ewidencji | Przyjęta |
-| ADR-22 | Uproszczenia silnika reguł (plan 1) | Do przeglądu |
+| ADR-22 | Uproszczenia silnika reguł (plan 1) | Przyjęta |
+| ADR-23 | Testy integracyjne warstwy danych na prawdziwym SQL Server w kontenerze (Testcontainers) | Przyjęta |
 
 ## ADR-01 Trzy warstwy, dwa kontenery
 **Kontekst:** wymóg trójwarstwowości i uruchomienia na jednej maszynie.
@@ -82,7 +83,11 @@ Kierownik i inni pracownicy nie mają dostępu. Odczyt cudzej rozmowy przez kadr
 
 ## ADR-13 Audyt: `AuditLog` tylko do dopisywania
 **Decyzja:** jedna tabela (kto, kiedy, typ zdarzenia, encja, stan przed i po w JSON), zapis w tej samej transakcji co zmiana.
-Użytkownik bazy aplikacji ma uprawnienia INSERT i SELECT, bez UPDATE i DELETE.
+**Realizacja (plan 2):** zakaz modyfikacji wymusza wyzwalacz `TR_AuditLog_AppendOnly` (`INSTEAD OF UPDATE, DELETE` z błędem „AuditLog is append-only”),
+który blokuje operacje DML (UPDATE i DELETE) niezależnie od tego, jakim użytkownikiem łączy się aplikacja, i jest testowany surowym SQL.
+Wyzwalacz nie chroni przed `TRUNCATE TABLE`, `DISABLE TRIGGER` ani `DROP TRIGGER`: przed nimi chroni dopiero warstwa uprawnień użytkownika bazy dodawana przy wdrożeniu. Zmiana względem pierwotnego zapisu: uprawnienia INSERT i SELECT dla osobnego
+użytkownika aplikacji (bez UPDATE i DELETE) dojdą jako dodatkowa warstwa przy wdrożeniu (plan Docker), a nie jako jedyny mechanizm.
+Wpisy dla zmian encji dopisuje `AuditSaveChangesInterceptor` w tej samej transakcji co zapis (nieudany zapis nie zostawia wpisów), a zdarzenia bez zmiany danych (np. odczyt cudzej rozmowy) `AuditWriter`.
 **Alternatywy:** tabele czasowe SQL Server (nie obejmują zdarzeń bez zmiany danych, jak odczyt cudzej rozmowy, więc potrzebny byłby drugi mechanizm),
 tabele historii przy każdej encji (dużo tabel, brak wspólnego widoku).
 **Konsekwencje:** jeden widok audytu (UC-28), nowe zdarzenia bez zmiany schematu. Uprawnienia bazy wymagają osobnego użytkownika dla migracji.
@@ -158,4 +163,11 @@ Sześć kont z sekcji 7.2 pozostaje stałych i nazwanych, bo na nich opierają s
 - **Staż urlopowy** liczony od daty zatrudnienia, bez okresów nauki (art. 154¹).
 - **Poza zakresem:** dodatek za przekroczenie średniej normy okresu (art. 151¹ § 2), odpoczynek zastępczy i dzień wolny za pracę w dniu wolnym (art. 151³), niepełny etat.
 **Alternatywy:** ujęcie okresowe nadgodzin (nadgodziny to nadwyżka ponad wymiar z art. 130; dokładniejsze, ale wymaga reguł przypisania dodatków do godzin), pełne odwzorowanie art. 151¹ § 2.
-**Konsekwencje:** prostsze testy i przewidywalny wynik. Wyniki mogą się różnić od praktyki kadrowej w przypadkach granicznych (praca przez północ, praca w sobotę w tygodniu z nieobecnością). Do przeglądu przez właściciela projektu.
+**Konsekwencje:** prostsze testy i przewidywalny wynik. Wyniki mogą się różnić od praktyki kadrowej w przypadkach granicznych (praca przez północ, praca w sobotę w tygodniu z nieobecnością). Zaakceptowane przez właściciela projektu wraz ze zmergowaniem PR #1.
+
+## ADR-23 Testy integracyjne na prawdziwym SQL Server (Testcontainers)
+**Kontekst:** kluczowe gwarancje warstwy danych (ograniczenia CHECK, wyzwalacz audytu, filtrowanie zakresu danych tłumaczone na SQL, unikalne indeksy) zależą od zachowania SQL Server.
+**Decyzja:** testy integracyjne używają pakietu Testcontainers.MsSql i obrazu `mcr.microsoft.com/mssql/server:2022-latest`. Jeden kontener na kolekcję testów, osobna, zmigrowana baza na każdy test.
+**Alternatywy:** SQLite lub baza w pamięci EF (nie odwzorowują wyzwalaczy ani ograniczeń SQL Server, więc nie dowodzą wymagań), wspólna baza z Docker Compose (testy zależne od stanu).
+**Konsekwencje:** testy wymagają dostępu do Dockera i pobrania obrazu przy pierwszym uruchomieniu. Docker Engine 24.0.9 (API 1.43) nie współpracuje z Testcontainers 4.x bez ustawienia
+`DOCKER_API_VERSION=1.43`, co robi fixture testów; po aktualizacji Dockera ten wpis można usunąć.

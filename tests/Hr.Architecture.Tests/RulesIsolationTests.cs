@@ -14,4 +14,15 @@ public class RulesIsolationTests
 
         Assert.True(result.IsSuccessful);
     }
+
+    [Fact]
+    public void Rules_does_not_depend_on_Core()
+    {
+        var result = Types.InAssembly(typeof(Hr.Rules.AssemblyMarker).Assembly)
+            .ShouldNot()
+            .HaveDependencyOn("Hr.Core")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful);
+    }
 }

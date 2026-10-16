@@ -22,7 +22,7 @@
 | Poziom | Zakres | Narzędzie (wstępnie) |
 |---|---|---|
 | Jednostkowe | Silnik reguł, wartości graniczne (norma 8 h, 11 h, 35 h, średnia 48 h, limit 150 h, dodatki 50% i 100%, wymiar urlopu 20/26) | xUnit |
-| Integracyjne | EF Core + MSSQL, autoryzacja zakresu danych, zasada czterech oczu | xUnit, kontener MSSQL |
+| Integracyjne | EF Core + MSSQL w kontenerze: ograniczenia CHECK (czterech oczu), wyzwalacz audytu, zakres danych w SQL, seed kont (ADR-23) | xUnit, Testcontainers.MsSql |
 | Kontrakt agenta | Narzędzia agenta ze stubem modelu, ograniczenie liczb do wyników narzędzi | xUnit |
 | Architektura | Zależności między projektami (`Agent` tylko do interfejsu narzędzi, `Rules` bez zależności, `Core` nie zna `Agent`) | NetArchTest |
 | E2E | Przypadki użycia UC-xx w przeglądarce | Playwright |

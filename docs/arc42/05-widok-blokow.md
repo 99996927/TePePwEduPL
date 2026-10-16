@@ -76,39 +76,32 @@ i powiązana z użytkownikiem. Autor czyta swoje rozmowy. Kadry (`HR`, `HRApprov
 Kierownik i inni pracownicy nie mają dostępu do cudzych rozmów.
 Szczegóły przebiegu w [sekcji 6](06-widok-czasu-wykonania.md).
 
-## 5.5 Model danych — rozmowy i audyt (fragment)
+## 5.5 Model danych (zrealizowany w planie 2)
 ```mermaid
 erDiagram
-    USER ||--o{ CONVERSATION : "jest autorem"
+    TEAM ||--o{ EMPLOYEE : "ma członków"
+    EMPLOYEE |o--o{ TEAM : "kieruje (ManagerEmployeeId)"
+    EMPLOYEE |o--o| APPLICATION_USER : "konto (EmployeeId)"
+    EMPLOYEE ||--o{ LEAVE_REQUEST : składa
+    EMPLOYEE ||--o{ WORK_ENTRY : rejestruje
+    EMPLOYEE ||--o{ PAYROLL_CHANGE : dotyczy
+    APPLICATION_USER ||--o{ CONVERSATION : "jest autorem (UserId)"
     CONVERSATION ||--|{ MESSAGE : zawiera
-    USER ||--o{ AUDIT_LOG : "wykonuje"
-    CONVERSATION {
-        guid Id
-        guid UserId
-        datetime StartedAt
-    }
-    MESSAGE {
-        guid Id
-        guid ConversationId
-        int Seq
-        string Role "user, assistant, tool_call, tool_result"
-        string Content
-        string ToolName
-        json ToolParams
-        datetime CreatedAt
-    }
-    AUDIT_LOG {
-        bigint Id
-        guid ActorId
-        datetime At
-        string EventType
-        string EntityType
-        string EntityId
-        json Before
-        json After
-    }
+    APPLICATION_USER ||--o{ AUDIT_LOG : "wykonuje (ActorUserId)"
+    TEAM { guid Id string Name guid ManagerEmployeeId }
+    EMPLOYEE { guid Id string FirstName string LastName date HireDate guid TeamId decimal MonthlySalary }
+    APPLICATION_USER { guid Id string UserName guid EmployeeId }
+    LEAVE_REQUEST { guid Id guid EmployeeId date From date To int Days string Status }
+    WORK_ENTRY { guid Id guid EmployeeId datetime Start datetime End time Break }
+    PAYROLL_CHANGE { guid Id guid EmployeeId string Component decimal Value date EffectiveFrom string Status guid CreatedByUserId guid DecidedByUserId }
+    CONVERSATION { guid Id guid UserId datetime StartedAtUtc }
+    MESSAGE { guid Id guid ConversationId int Seq string Role string Content string ToolName json ToolParamsJson }
+    AUDIT_LOG { long Id guid ActorUserId datetime AtUtc string EventType string EntityType string EntityId json BeforeJson json AfterJson }
 ```
-- **`Conversation` / `Message`:** wiadomość ma rolę (`user`, `assistant`, `tool_call`, `tool_result`), treść, a dla narzędzi nazwę i parametry JSON.
-  Format odwzorowuje wiadomości Anthropic API, więc kontekst kolejnych pytań odtwarza się wprost z historii (ADR-12).
-- **`AuditLog`:** jedna tabela tylko do dopisywania, zapisywana w tej samej transakcji co zmiana. Użytkownik bazy używany przez aplikację
-  ma uprawnienia INSERT i SELECT bez UPDATE i DELETE (ADR-13). Obejmuje zmiany danych, zatwierdzenia i odczyty cudzych rozmów przez kadry.
+- **Ograniczenia w bazie:** `CK_LeaveRequest_Period`, `CK_LeaveRequest_Days`, `CK_WorkEntry_Period`, `CK_WorkEntry_Break`, `CK_PayrollChange_Value`
+  `CK_PayrollChange_FourEyes` (`DecidedByUserId` różne od `CreatedByUserId`, ADR-08) oraz `CK_PayrollChange_Decision` (zatwierdzona lub odrzucona zmiana musi mieć osobę decydującą, niezdecydowana jej nie ma). Unikalny indeks `(ConversationId, Seq)` na `Message`.
+- **`AuditLog`:** tylko do dopisywania, wyzwalacz `TR_AuditLog_AppendOnly` (ADR-13). Wpisy dla encji `IAuditable` (`Team`, `Employee`, `LeaveRequest`, `WorkEntryRecord`, `PayrollChange`)
+  dopisuje interceptor w tej samej transakcji.
+- **Zakres danych:** `DataScope` (pracownicy i dane z `IEmployeeOwned`) oraz `ConversationAccess` budują filtry jako zapytania SQL. Brak powiązanego pracownika lub nierozpoznana rola daje pusty wynik (fail closed).
+- **Klucze obce użytkownika:** `Conversation.UserId` i `PayrollChange.CreatedByUserId`/`DecidedByUserId` to na razie zwykłe `Guid` bez klucza obcego do tabeli kont. Walidację dodają serwisy aplikacyjne (plan 3).
+- **Jeszcze niezrealizowane:** wyniki naliczeń (`PayrollRun`), artykuły Kodeksu pracy (import) i dane generowane (ADR-19 do ADR-21).
