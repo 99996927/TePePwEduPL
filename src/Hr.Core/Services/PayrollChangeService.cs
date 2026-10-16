@@ -89,6 +89,12 @@ public sealed class PayrollChangeService(HrDbContext db, ICurrentUser user, IClo
     public async Task<IReadOnlyList<PayrollChange>> ListAsync(Guid? employeeId = null, CancellationToken ct = default)
     {
         var query = db.PayrollChanges.Visible(db, user);
+        if (!user.IsInRole(Roles.HR) && !user.IsInRole(Roles.HRApprover))
+        {
+            // Szkice i oczekujące zmiany to stan roboczy kadr; pracownik i kierownik widzą tylko zatwierdzone (ADR-24).
+            query = query.Where(c => c.Status == PayrollChangeStatus.Approved);
+        }
+
         if (employeeId is { } id)
         {
             query = query.Where(c => c.EmployeeId == id);

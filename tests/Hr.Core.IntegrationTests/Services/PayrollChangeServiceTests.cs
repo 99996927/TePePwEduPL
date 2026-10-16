@@ -181,6 +181,23 @@ public class PayrollChangeServiceTests(MsSqlFixture fixture)
     }
 
     [Fact]
+    public async Task UC03_Employee_and_manager_see_only_approved_changes_in_their_scope()
+    {
+        await using var c = await ServiceTestContext.CreateAsync(fixture);
+        var approved = await ApprovedAsync(c, c.Org.Anna, PayrollComponent.BaseSalary, 8500m, Nov1);
+        await NewDraftAsync(c, c.Org.Anna, PayrollComponent.FixedAllowance, 300m);
+        await NewDraftAsync(c, c.Org.Tomasz);
+
+        var asAnna = await c.PayrollChanges(c.As(c.Org.Anna, Roles.Employee)).ListAsync();
+        var asEwa = await c.PayrollChanges(c.As(c.Org.Ewa, Roles.Manager)).ListAsync();
+        var asTomasz = await c.PayrollChanges(c.As(c.Org.Tomasz, Roles.Employee)).ListAsync();
+
+        Assert.Equal(new[] { approved.Id }, asAnna.Select(x => x.Id));
+        Assert.Equal(new[] { approved.Id }, asEwa.Select(x => x.Id));
+        Assert.Empty(asTomasz);
+    }
+
+    [Fact]
     public async Task UC03_List_scope()
     {
         await using var c = await ServiceTestContext.CreateAsync(fixture);
@@ -193,11 +210,13 @@ public class PayrollChangeServiceTests(MsSqlFixture fixture)
         var asHr = await c.PayrollChanges(c.As(c.Org.Piotr, Roles.HR)).ListAsync();
         var asApprover = await c.PayrollChanges(c.As(c.Org.Maria, Roles.HRApprover)).ListAsync();
 
-        Assert.Equal(new[] { anna.Id }, asAnna.Select(x => x.Id));
-        Assert.Equal(new HashSet<Guid> { anna.Id, jan.Id }, asEwa.Select(x => x.Id).ToHashSet());
+        Assert.Empty(asAnna);
+        Assert.Empty(asEwa);
         Assert.Equal(3, asHr.Count);
         Assert.Equal(3, asApprover.Count);
-        Assert.DoesNotContain(tomasz.Id, asEwa.Select(x => x.Id));
+        Assert.Contains(tomasz.Id, asHr.Select(x => x.Id));
+        Assert.Contains(jan.Id, asApprover.Select(x => x.Id));
+        Assert.Contains(anna.Id, asHr.Select(x => x.Id));
         Assert.Single(await c.PayrollChanges(c.As(c.Org.Piotr, Roles.HR)).ListAsync(c.Org.Anna));
     }
 }

@@ -48,6 +48,7 @@ public sealed class LeaveService(HrDbContext db, ICurrentUser user, IClock clock
             return ServiceResult<LeaveRequest>.Fail(ServiceErrorCode.Validation, "Wniosek musi mieścić się w jednym roku kalendarzowym.");
         }
 
+        await using var transaction = await EmployeeLock.BeginAsync(db, "leave", employeeId, ct);
         bool overlaps = await db.LeaveRequests.AnyAsync(
             l => l.EmployeeId == employeeId && (l.Status == LeaveStatus.Pending || l.Status == LeaveStatus.Approved)
                  && l.From <= to && l.To >= from, ct);
@@ -83,6 +84,7 @@ public sealed class LeaveService(HrDbContext db, ICurrentUser user, IClock clock
         };
         db.LeaveRequests.Add(request);
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         return ServiceResult<LeaveRequest>.Ok(request);
     }
 
@@ -158,7 +160,7 @@ public sealed class LeaveService(HrDbContext db, ICurrentUser user, IClock clock
     public async Task<IReadOnlyList<LeaveRequest>> ListAsync(CancellationToken ct = default) =>
         await db.LeaveRequests.Visible(db, user).OrderByDescending(l => l.From).ToListAsync(ct);
 
-    private DateOnly Today => DateOnly.FromDateTime(clock.UtcNow);
+    private DateOnly Today => DateOnly.FromDateTime(clock.LocalNow);
 
     private async Task<LeaveBalance> BalanceOfAsync(Employee employee, int year, CancellationToken ct)
     {

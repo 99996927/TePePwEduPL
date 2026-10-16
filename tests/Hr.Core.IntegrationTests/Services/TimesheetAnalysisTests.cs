@@ -115,6 +115,21 @@ public class TimesheetAnalysisTests(MsSqlFixture fixture)
     }
 
     [Fact]
+    public async Task UC14_Analysis_across_year_boundary_includes_december_entries()
+    {
+        await using var c = await ServiceTestContext.CreateAsync(fixture);
+        await AddAsync(c,
+            Entry(c.Org.Anna, new DateTime(2025, 12, 15, 8, 0, 0), new DateTime(2025, 12, 15, 18, 0, 0)),
+            Entry(c.Org.Anna, new DateTime(2026, 1, 5, 8, 0, 0), new DateTime(2026, 1, 5, 16, 0, 0)));
+
+        var analysis = await AnalyzeAsync(c, c.Org.Anna, new(2025, 12, 15), new(2026, 1, 15));
+
+        Assert.Equal(18m, analysis.WorkedHours);
+        Assert.Equal(2m, analysis.Overtime.Hours50);
+        Assert.Equal(0m, analysis.OvertimeYearToDate);
+    }
+
+    [Fact]
     public async Task UC15_Manager_analyzes_team_member_but_not_other_team()
     {
         await using var c = await ServiceTestContext.CreateAsync(fixture);

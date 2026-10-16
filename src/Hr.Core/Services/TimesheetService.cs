@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Hr.Core.Abstractions;
+using Hr.Core.Auditing;
 using Hr.Core.Domain;
 using Hr.Core.Persistence;
 using Hr.Core.Security;
@@ -36,6 +38,7 @@ public sealed class TimesheetService(HrDbContext db, ICurrentUser user, IClock c
             return ServiceResult<WorkEntryRecord>.Fail(ServiceErrorCode.Validation, invalid);
         }
 
+        await using var transaction = await EmployeeLock.BeginAsync(db, "timesheet", employeeId, ct);
         if (await OverlapsAsync(employeeId, start, end, null, ct))
         {
             return ServiceResult<WorkEntryRecord>.Fail(ServiceErrorCode.Conflict, "Wpis nakłada się na inny wpis czasu pracy.");
@@ -44,6 +47,7 @@ public sealed class TimesheetService(HrDbContext db, ICurrentUser user, IClock c
         var entry = new WorkEntryRecord { Id = Guid.NewGuid(), EmployeeId = employeeId, Start = start, End = end, Break = breakTime };
         db.WorkEntries.Add(entry);
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         return ServiceResult<WorkEntryRecord>.Ok(entry);
     }
 
@@ -74,6 +78,7 @@ public sealed class TimesheetService(HrDbContext db, ICurrentUser user, IClock c
             return ServiceResult<WorkEntryRecord>.Fail(ServiceErrorCode.Validation, invalid);
         }
 
+        await using var transaction = await EmployeeLock.BeginAsync(db, "timesheet", entry.EmployeeId, ct);
         if (await OverlapsAsync(entry.EmployeeId, start, end, entry.Id, ct))
         {
             return ServiceResult<WorkEntryRecord>.Fail(ServiceErrorCode.Conflict, "Wpis nakłada się na inny wpis czasu pracy.");
@@ -82,7 +87,11 @@ public sealed class TimesheetService(HrDbContext db, ICurrentUser user, IClock c
         entry.Start = start;
         entry.End = end;
         entry.Break = breakTime;
+        // Uzasadnienie korekty trafia do audytu w tej samej transakcji (UC-11).
+        new AuditWriter(db, user, clock).Record(
+            "WorkEntryCorrected", nameof(WorkEntryRecord), entry.Id.ToString(), JsonSerializer.Serialize(new { Reason = reason.Trim() }));
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         return ServiceResult<WorkEntryRecord>.Ok(entry);
     }
 
@@ -110,15 +119,16 @@ public sealed class TimesheetService(HrDbContext db, ICurrentUser user, IClock c
             return ServiceResult<TimesheetAnalysis>.Fail(ServiceErrorCode.NotFound, "Nie znaleziono pracownika.");
         }
 
-        var yearStart = new DateOnly(toInclusive.Year, 1, 1);
+        var yearStart = new DateOnly(toInclusive.Year, 1, 1).ToDateTime(TimeOnly.MinValue);
+        var rangeStart = from.ToDateTime(TimeOnly.MinValue);
         var upperBound = toInclusive.AddDays(1).ToDateTime(TimeOnly.MinValue);
+        var loadFrom = rangeStart < yearStart ? rangeStart : yearStart;
         var records = await db.WorkEntries
-            .Where(w => w.EmployeeId == employeeId && w.Start >= yearStart.ToDateTime(TimeOnly.MinValue) && w.Start < upperBound)
+            .Where(w => w.EmployeeId == employeeId && w.Start >= loadFrom && w.Start < upperBound)
             .OrderBy(w => w.Start)
             .ToListAsync(ct);
-        var rangeStart = from.ToDateTime(TimeOnly.MinValue);
         var rangeEntries = records.Where(w => w.Start >= rangeStart).Select(w => w.ToRulesEntry()).ToList();
-        var yearEntries = records.Select(w => w.ToRulesEntry()).ToList();
+        var yearEntries = records.Where(w => w.Start >= yearStart).Select(w => w.ToRulesEntry()).ToList();
 
         var leaves = await db.LeaveRequests
             .Where(l => l.EmployeeId == employeeId && l.Status == LeaveStatus.Approved && l.From <= toInclusive && l.To >= from)
@@ -156,7 +166,7 @@ public sealed class TimesheetService(HrDbContext db, ICurrentUser user, IClock c
             return ex.Message;
         }
 
-        return end > clock.UtcNow ? "Wpis nie może kończyć się w przyszłości." : null;
+        return end > clock.LocalNow ? "Wpis nie może kończyć się w przyszłości." : null;
     }
 
     private Task<bool> OverlapsAsync(Guid employeeId, DateTime start, DateTime end, Guid? excludeId, CancellationToken ct) =>

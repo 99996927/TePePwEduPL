@@ -120,6 +120,30 @@ public class LeaveSubmitTests(MsSqlFixture fixture)
     }
 
     [Fact]
+    public async Task UC06_Concurrent_double_submit_creates_single_request()
+    {
+        await using var c = await ServiceTestContext.CreateAsync(fixture);
+        var connectionString = c.Db.Database.GetConnectionString()!;
+        var anna = c.As(c.Org.Anna, Roles.Employee);
+
+        foreach (int week in new[] { 12, 19, 26, 2 })
+        {
+            var from = week >= 12 ? new DateOnly(2026, 1, week) : new DateOnly(2026, 2, week);
+            var to = from.AddDays(4);
+            await using var first = await fixture.OpenContextAsync(connectionString, anna, c.Clock);
+            await using var second = await fixture.OpenContextAsync(connectionString, anna, c.Clock);
+            var results = await Task.WhenAll(
+                new LeaveService(first, anna, c.Clock, c.Calendar).SubmitAsync(from, to),
+                new LeaveService(second, anna, c.Clock, c.Calendar).SubmitAsync(from, to));
+
+            Assert.Equal(1, results.Count(r => r.IsSuccess));
+            Assert.Equal(ServiceErrorCode.Conflict, results.Single(r => !r.IsSuccess).Error!.Code);
+        }
+
+        Assert.Equal(4, await c.Db.LeaveRequests.CountAsync());
+    }
+
+    [Fact]
     public async Task UC06_Other_employees_request_does_not_block()
     {
         await using var c = await ServiceTestContext.CreateAsync(fixture);

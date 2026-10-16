@@ -58,6 +58,47 @@ public class TimesheetEntryTests(MsSqlFixture fixture)
     }
 
     [Fact]
+    public async Task UC10_Entry_that_ended_earlier_today_in_local_time_is_accepted()
+    {
+        // Zegar: 12:00 UTC = 14:00 czasu polskiego (CEST); wpis 11:00-13:00 czasu lokalnego już się zakończył.
+        await using var c = await ServiceTestContext.CreateAsync(fixture);
+        var result = await c.Timesheet(c.As(c.Org.Anna, Roles.Employee)).AddEntryAsync(T(16, 11), T(16, 13), TimeSpan.Zero);
+
+        Assert.True(result.IsSuccess, result.Error?.Message);
+    }
+
+    [Fact]
+    public async Task UC10_Entry_ending_after_local_now_is_validation_error()
+    {
+        await using var c = await ServiceTestContext.CreateAsync(fixture);
+        var result = await c.Timesheet(c.As(c.Org.Anna, Roles.Employee)).AddEntryAsync(T(16, 13), T(16, 15), TimeSpan.Zero);
+
+        Assert.Equal(ServiceErrorCode.Validation, result.Error!.Code);
+    }
+
+    [Fact]
+    public async Task UC10_Concurrent_overlapping_adds_create_a_single_entry()
+    {
+        await using var c = await ServiceTestContext.CreateAsync(fixture);
+        var connectionString = c.Db.Database.GetConnectionString()!;
+        var anna = c.As(c.Org.Anna, Roles.Employee);
+
+        foreach (int day in new[] { 5, 6, 7, 8 })
+        {
+            await using var first = await fixture.OpenContextAsync(connectionString, anna, c.Clock);
+            await using var second = await fixture.OpenContextAsync(connectionString, anna, c.Clock);
+            var results = await Task.WhenAll(
+                new TimesheetService(first, anna, c.Clock, c.Calendar).AddEntryAsync(T(day, 8), T(day, 16), TimeSpan.Zero),
+                new TimesheetService(second, anna, c.Clock, c.Calendar).AddEntryAsync(T(day, 8), T(day, 16), TimeSpan.Zero));
+
+            Assert.Equal(1, results.Count(r => r.IsSuccess));
+            Assert.Equal(ServiceErrorCode.Conflict, results.Single(r => !r.IsSuccess).Error!.Code);
+        }
+
+        Assert.Equal(4, await c.Db.WorkEntries.CountAsync());
+    }
+
+    [Fact]
     public async Task UC10_Overlapping_entry_is_conflict_but_adjacent_and_foreign_are_fine()
     {
         await using var c = await ServiceTestContext.CreateAsync(fixture);
@@ -96,6 +137,9 @@ public class TimesheetEntryTests(MsSqlFixture fixture)
         Assert.True(result.IsSuccess);
         Assert.Equal(T(12, 17), (await c.Db.WorkEntries.AsNoTracking().SingleAsync()).End);
         Assert.True(await c.Db.AuditLogs.AnyAsync(a => a.EventType == "Modified" && a.EntityType == "WorkEntryRecord"));
+        var corrected = await c.Db.AuditLogs.AsNoTracking().SingleAsync(a => a.EventType == "WorkEntryCorrected");
+        Assert.Equal(entry.Id.ToString(), corrected.EntityId);
+        Assert.Equal("Zapomniałam dopisać godzinę", System.Text.Json.JsonDocument.Parse(corrected.AfterJson!).RootElement.GetProperty("Reason").GetString());
     }
 
     [Fact]
