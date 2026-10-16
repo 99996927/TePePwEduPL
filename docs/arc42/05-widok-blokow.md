@@ -62,7 +62,7 @@ Referencja projektu nie ogranicza widoczności typów publicznych, więc granica
 
 ## 5.3 Silnik reguł płacowych (czarna skrzynka)
 - **Wejście:** niemutowalne dane (wpisy czasu, rozkład, parametry zatrudnienia, data, parametry reguł).
-- **Wyjście:** wynik z identyfikatorem reguły i odwołaniem do artykułu (np. `KP-129-1`, `KP-131-1`, `KP-132-1`, `KP-133-1`, `KP-151-1`, `KP-151-1-1`, `KP-154-1`).
+- **Wyjście:** wynik z identyfikatorem reguły i odwołaniem do artykułu (np. `KP-129-1`, `KP-130-1`, `KP-131-1`, `KP-132-1`, `KP-133-1`, `KP-151-1`, `KP-151-1-1`, `KP-154-1`).
 - **Własności:** czysty (brak efektów ubocznych), deterministyczny, wersjonowany po dacie obowiązywania, pokryty testami.
 - **Okresy rozliczeniowe:** parametr (do 4 miesięcy, w uzasadnionych przypadkach do 12 miesięcy ✔ art. 129 § 1–2).
 

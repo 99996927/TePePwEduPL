@@ -23,6 +23,7 @@
 | ADR-19 | Dane demo: większy zestaw generowany z ustalonym ziarnem | Przyjęta |
 | ADR-20 | Każdy wygenerowany pracownik ma konto: login `imię.nazwisko`, hasło `imięnazwisko123` | Przyjęta |
 | ADR-21 | Skala danych demo: ok. 30 pracowników, 4–5 zespołów, 6 miesięcy ewidencji | Przyjęta |
+| ADR-22 | Uproszczenia silnika reguł (plan 1) | Do przeglądu |
 
 ## ADR-01 Trzy warstwy, dwa kontenery
 **Kontekst:** wymóg trójwarstwowości i uruchomienia na jednej maszynie.
@@ -145,3 +146,16 @@ Sześć kont z sekcji 7.2 pozostaje stałych i nazwanych, bo na nich opierają s
 **Alternatywy:** ok. 100 pracowników i 12 miesięcy (realistyczniejsze, wolniejszy start), kilkaset pracowników (test wydajności, poza celem projektu).
 **Konsekwencje:** seed kończy się w kilka sekund, a 6 miesięcy pokrywa okres rozliczeniowy 4 miesięcy (ADR-18) z zapasem. Okres rozliczeniowy do 12 miesięcy
 (art. 129 § 2) nie jest pokryty danymi demo i wymaga testów jednostkowych silnika na danych syntetycznych poza seedem.
+
+## ADR-22 Uproszczenia silnika reguł (plan 1)
+**Kontekst:** Kodeks pracy nie wyznacza jednoznacznie algorytmu, który silnik musi stosować w kilku miejscach. Potrzebne są jawne, testowalne uproszczenia.
+**Decyzja:**
+- **Nadgodziny w ujęciu dobowym.** Dzień to data rozpoczęcia wpisu. W dzień roboczy nadgodzinami są godziny powyżej 8 h w dobie, traktowane jako ostatnie godziny dnia. W dni nieroboczne (sobota, niedziela, święto) cała praca jest nadgodzinami.
+- **Dodatki.** 100% za nadgodziny w porze nocnej oraz w niedziele i święta, 50% w pozostałych przypadkach (art. 151¹ § 1). Pora nocna to parametr `NightWindow`, domyślnie 21:00–05:00 (8 godzin w ustawowym oknie 21:00–07:00, art. 151⁷).
+- **Odpoczynek dobowy** sprawdzany tylko między wpisami o różnych datach rozpoczęcia. **Odpoczynek tygodniowy** liczony w tygodniu pon.–niedz., z lukami obciętymi do granic tygodnia.
+- **Naliczenie** to wyłącznie brutto: wynagrodzenie zasadnicze + normalne wynagrodzenie za godziny nadliczbowe (art. 151¹ § 1: dodatek przysługuje „oprócz normalnego wynagrodzenia”) + dodatki 50% i 100%. Podstawą stawki godzinowej jest wynagrodzenie zasadnicze (uproszczenie art. 151¹ § 3), bez podatków i składek. Odbiór czasu wolnego zamiast wynagrodzenia (art. 151²) poza zakresem.
+- **Walidacja wpisów:** nakładające się wpisy czasu pracy są odrzucane (`ArgumentException`) we wszystkich regułach, które je przyjmują.
+- **Staż urlopowy** liczony od daty zatrudnienia, bez okresów nauki (art. 154¹).
+- **Poza zakresem:** dodatek za przekroczenie średniej normy okresu (art. 151¹ § 2), odpoczynek zastępczy i dzień wolny za pracę w dniu wolnym (art. 151³), niepełny etat.
+**Alternatywy:** ujęcie okresowe nadgodzin (nadgodziny to nadwyżka ponad wymiar z art. 130; dokładniejsze, ale wymaga reguł przypisania dodatków do godzin), pełne odwzorowanie art. 151¹ § 2.
+**Konsekwencje:** prostsze testy i przewidywalny wynik. Wyniki mogą się różnić od praktyki kadrowej w przypadkach granicznych (praca przez północ, praca w sobotę w tygodniu z nieobecnością). Do przeglądu przez właściciela projektu.
