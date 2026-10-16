@@ -161,6 +161,70 @@ namespace Hr.Core.Persistence.Migrations
                     b.ToTable("Conversations");
                 });
 
+            modelBuilder.Entity("Hr.Core.Domain.CorrectionDraft", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DecidedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DecidedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DecisionNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<TimeSpan>("ProposedBreak")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime>("ProposedEnd")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ProposedStart")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("WorkEntryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("WorkEntryId");
+
+                    b.HasIndex("Status", "CreatedAtUtc");
+
+                    b.ToTable("CorrectionDrafts", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CorrectionDraft_Period", "[ProposedEnd] > [ProposedStart]");
+                        });
+                });
+
             modelBuilder.Entity("Hr.Core.Domain.Employee", b =>
                 {
                     b.Property<Guid>("Id")
@@ -588,6 +652,21 @@ namespace Hr.Core.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("EmployeeId")
                         .OnDelete(DeleteBehavior.NoAction);
+                });
+
+            modelBuilder.Entity("Hr.Core.Domain.CorrectionDraft", b =>
+                {
+                    b.HasOne("Hr.Core.Domain.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Hr.Core.Domain.WorkEntryRecord", null)
+                        .WithMany()
+                        .HasForeignKey("WorkEntryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Hr.Core.Domain.Employee", b =>
