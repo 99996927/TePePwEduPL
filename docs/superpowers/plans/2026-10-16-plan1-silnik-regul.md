@@ -328,15 +328,15 @@ static IEnumerable<WorkEntry> Weeks(DateTime monday,int weeks,TimeSpan len)=>Enu
 - Consumes: wyniki `OvertimeResult` i `WorkingTimeNorm` (jako liczby, bez referencji między plikami).
 - Produces:
   - `public sealed record PayrollInput(decimal MonthlyBaseSalary, decimal NormHours, decimal Overtime50Hours, decimal Overtime100Hours);`
-  - `public sealed record PayrollResult(decimal BaseSalary, decimal HourlyRate, decimal Allowance50, decimal Allowance100, decimal Gross, IReadOnlyList<string> RuleIds);`
+  - `public sealed record PayrollResult(decimal BaseSalary, decimal HourlyRate, decimal NormalOvertimePay, decimal Allowance50, decimal Allowance100, decimal Gross, IReadOnlyList<string> RuleIds);`
   - `public static class PayrollCalculator { public static PayrollResult Calculate(PayrollInput input); }`
-  - Stawka godzinowa = wynagrodzenie podstawowe ÷ `NormHours` (podstawa dodatku uproszczona do wynagrodzenia zasadniczego, art. 151¹ § 3). Dodatek = `Round(godziny × stawka × procent, 2)`, z zaokrągleniem `AwayFromZero`; `Gross = BaseSalary + Allowance50 + Allowance100`. `HourlyRate` w wyniku zaokrąglone do 2 miejsc, ale obliczenia dodatków na wartości niezaokrąglonej. Brak podatków i składek (poza zakresem tego planu). `ArgumentOutOfRangeException` gdy `NormHours <= 0` lub którykolwiek parametr ujemny.
+  - Stawka godzinowa = wynagrodzenie podstawowe ÷ `NormHours` (podstawa dodatku uproszczona do wynagrodzenia zasadniczego, art. 151¹ § 3). Dodatek = `Round(godziny × stawka × procent, 2)`, z zaokrągleniem `AwayFromZero`; `NormalOvertimePay = Round((Overtime50Hours + Overtime100Hours) × rate)`, `Gross = BaseSalary + NormalOvertimePay + Allowance50 + Allowance100` (poprawka po przeglądzie: dodatek przysługuje „oprócz normalnego wynagrodzenia”, art. 151¹ § 1). `HourlyRate` w wyniku zaokrąglone do 2 miejsc, ale obliczenia dodatków na wartości niezaokrąglonej. Brak podatków i składek (poza zakresem tego planu). `ArgumentOutOfRangeException` gdy `NormHours <= 0` lub którykolwiek parametr ujemny.
 
 - [ ] **Step 1: Napisz testy, które mają się nie udać**
 
 ```csharp
 [Fact] void No_overtime_gross_equals_base() { var r=PayrollCalculator.Calculate(new(8000m,176m,0m,0m)); Assert.Equal(8000m,r.Gross); Assert.Equal(0m,r.Allowance50); }
-[Fact] void Overtime_allowances_are_computed_from_unrounded_rate() { var r=PayrollCalculator.Calculate(new(8000m,176m,2m,1m)); Assert.Equal(45.45m,r.HourlyRate); Assert.Equal(45.45m,r.Allowance50); Assert.Equal(45.45m,r.Allowance100); Assert.Equal(8090.90m,r.Gross); }
+[Fact] void Overtime_allowances_are_computed_from_unrounded_rate() { var r=PayrollCalculator.Calculate(new(8000m,176m,2m,1m)); Assert.Equal(45.45m,r.HourlyRate); Assert.Equal(45.45m,r.Allowance50); Assert.Equal(45.45m,r.Allowance100); Assert.Equal(8227.26m,r.Gross); }
 [Fact] void RuleIds_reference_overtime_premiums() { var r=PayrollCalculator.Calculate(new(8000m,176m,2m,1m)); Assert.Contains("KP-151-1-1", r.RuleIds); }
 [Theory][InlineData(0)][InlineData(-1)] void Norm_hours_must_be_positive(decimal n)=>Assert.Throws<ArgumentOutOfRangeException>(() => PayrollCalculator.Calculate(new(8000m,n,0m,0m)));
 [Fact] void Negative_overtime_throws() => Assert.Throws<ArgumentOutOfRangeException>(() => PayrollCalculator.Calculate(new(8000m,176m,-1m,0m)));

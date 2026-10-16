@@ -38,6 +38,17 @@ public class WeeklyAverageRulesTests
     }
 
     [Fact]
+    public void UC14_Overlapping_entries_throw()
+    {
+        var entries = new List<WorkEntry>
+        {
+            new(new(2026, 10, 12, 8, 0, 0), new(2026, 10, 12, 16, 0, 0), TimeSpan.Zero),
+            new(new(2026, 10, 12, 12, 0, 0), new(2026, 10, 12, 20, 0, 0), TimeSpan.Zero),
+        };
+        Assert.Throws<ArgumentException>(() => WeeklyAverageRules.Check(entries, new(2026, 10, 5), new(2026, 11, 1)));
+    }
+
+    [Fact]
     public void UC14_Throws_when_period_reversed() =>
         Assert.Throws<ArgumentException>(() => WeeklyAverageRules.Check(Array.Empty<WorkEntry>(), new(2026, 11, 1), new(2026, 10, 5)));
 }

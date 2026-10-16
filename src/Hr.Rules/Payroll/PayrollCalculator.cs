@@ -5,6 +5,7 @@ public sealed record PayrollInput(decimal MonthlyBaseSalary, decimal NormHours, 
 public sealed record PayrollResult(
     decimal BaseSalary,
     decimal HourlyRate,
+    decimal NormalOvertimePay,
     decimal Allowance50,
     decimal Allowance100,
     decimal Gross,
@@ -14,17 +15,20 @@ public sealed record PayrollResult(
         other is not null
         && BaseSalary == other.BaseSalary
         && HourlyRate == other.HourlyRate
+        && NormalOvertimePay == other.NormalOvertimePay
         && Allowance50 == other.Allowance50
         && Allowance100 == other.Allowance100
         && Gross == other.Gross
         && RuleIds.SequenceEqual(other.RuleIds);
 
-    public override int GetHashCode() => HashCode.Combine(BaseSalary, HourlyRate, Allowance50, Allowance100, Gross);
+    public override int GetHashCode() => HashCode.Combine(BaseSalary, HourlyRate, NormalOvertimePay, Allowance50, Allowance100, Gross);
 }
 
 /// <summary>
-/// Wstępne naliczenie brutto (ADR-22): podstawą dodatku jest wynagrodzenie zasadnicze (uproszczenie art. 151¹ § 3),
-/// bez podatków i składek. Kwoty zaokrąglane do 2 miejsc (AwayFromZero).
+/// Wstępne naliczenie brutto (ADR-22): wynagrodzenie zasadnicze, normalne wynagrodzenie za godziny nadliczbowe
+/// (art. 151¹ § 1: dodatek przysługuje "oprócz normalnego wynagrodzenia") oraz dodatki 50% i 100%.
+/// Podstawą stawki jest wynagrodzenie zasadnicze (uproszczenie art. 151¹ § 3), bez podatków i składek.
+/// Kwoty zaokrąglane do 2 miejsc (AwayFromZero).
 /// </summary>
 public static class PayrollCalculator
 {
@@ -46,14 +50,15 @@ public static class PayrollCalculator
         }
 
         decimal rate = input.MonthlyBaseSalary / input.NormHours;
+        decimal normalOvertimePay = Round((input.Overtime50Hours + input.Overtime100Hours) * rate);
         decimal allowance50 = Round(input.Overtime50Hours * rate * 0.5m);
         decimal allowance100 = Round(input.Overtime100Hours * rate);
-        decimal gross = input.MonthlyBaseSalary + allowance50 + allowance100;
+        decimal gross = input.MonthlyBaseSalary + normalOvertimePay + allowance50 + allowance100;
         var ruleIds = input.Overtime50Hours + input.Overtime100Hours > 0m
             ? new[] { "KP-151-1-1" }
             : Array.Empty<string>();
 
-        return new PayrollResult(input.MonthlyBaseSalary, Round(rate), allowance50, allowance100, gross, ruleIds);
+        return new PayrollResult(input.MonthlyBaseSalary, Round(rate), normalOvertimePay, allowance50, allowance100, gross, ruleIds);
     }
 
     private static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);

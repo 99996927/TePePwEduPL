@@ -46,6 +46,17 @@ public class RestRulesTests
     }
 
     [Fact]
+    public void UC13_Entry_across_Sunday_Monday_boundary_gives_only_daily_violation()
+    {
+        var entries = new List<WorkEntry> { W(11, 22, 12, 6) };
+        entries.AddRange(Enumerable.Range(12, 5).Select(d => W(d, 8, d, 16)));
+        var v = RestRules.Check(entries);
+        var daily = Assert.Single(v);
+        Assert.Equal("KP-132-1", daily.RuleId);
+        Assert.Equal(2m, daily.RestHours);
+    }
+
+    [Fact]
     public void Unsorted_input_is_sorted() =>
         Assert.Empty(RestRules.Check(new[] { W(14, 8, 14, 16), W(12, 8, 12, 16), W(13, 8, 13, 16) }));
 

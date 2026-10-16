@@ -24,6 +24,7 @@ public static class OvertimeCalculator
 
     public static OvertimeResult Calculate(IReadOnlyList<WorkEntry> entries, WorkCalendar calendar, NightWindow night)
     {
+        entries = WorkEntries.SortedNonOverlapping(entries);
         int minutes50 = 0;
         int minutes100 = 0;
 

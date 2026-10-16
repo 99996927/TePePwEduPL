@@ -16,15 +16,7 @@ public static class RestRules
 
     public static IReadOnlyList<RestViolation> Check(IReadOnlyList<WorkEntry> entries)
     {
-        var sorted = entries.OrderBy(e => e.Start).ThenBy(e => e.End).ToList();
-        for (int i = 1; i < sorted.Count; i++)
-        {
-            if (sorted[i].Start < sorted[i - 1].End)
-            {
-                throw new ArgumentException("Wpisy czasu pracy nie mogą się nakładać.", nameof(entries));
-            }
-        }
-
+        var sorted = WorkEntries.SortedNonOverlapping(entries);
         var violations = new List<RestViolation>();
         CheckDaily(sorted, violations);
         CheckWeekly(sorted, violations);

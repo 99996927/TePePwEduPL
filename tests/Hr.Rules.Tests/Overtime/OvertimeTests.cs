@@ -57,6 +57,26 @@ public class OvertimeTests
         Assert.Equal(3m, Calc(E(12, 6, 0, 12, 12, 0), E(12, 14, 0, 12, 19, 0)).Hours50);
 
     [Fact]
+    public void UC10_Night_hours_after_midnight_are_100()
+    {
+        var r = Calc(E(12, 18, 0, 13, 4, 0));
+        Assert.Equal(0m, r.Hours50);
+        Assert.Equal(2m, r.Hours100);
+    }
+
+    [Fact]
+    public void UC10_Saturday_holiday_work_is_100()
+    {
+        var entry = new WorkEntry(new(2026, 12, 26, 8, 0, 0), new(2026, 12, 26, 12, 0, 0), TimeSpan.Zero);
+        var r = OvertimeCalculator.Calculate(new[] { entry }, new WorkCalendar(), NightWindow.Default);
+        Assert.Equal(4m, r.Hours100);
+    }
+
+    [Fact]
+    public void UC10_Overlapping_entries_throw() =>
+        Assert.Throws<ArgumentException>(() => Calc(E(12, 8, 0, 12, 16, 0), E(12, 12, 0, 12, 20, 0)));
+
+    [Fact]
     public void UC16_Result_lists_rule_ids()
     {
         var r = Calc(E(12, 8, 0, 12, 18, 0));

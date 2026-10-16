@@ -153,7 +153,8 @@ Sześć kont z sekcji 7.2 pozostaje stałych i nazwanych, bo na nich opierają s
 - **Nadgodziny w ujęciu dobowym.** Dzień to data rozpoczęcia wpisu. W dzień roboczy nadgodzinami są godziny powyżej 8 h w dobie, traktowane jako ostatnie godziny dnia. W dni nieroboczne (sobota, niedziela, święto) cała praca jest nadgodzinami.
 - **Dodatki.** 100% za nadgodziny w porze nocnej oraz w niedziele i święta, 50% w pozostałych przypadkach (art. 151¹ § 1). Pora nocna to parametr `NightWindow`, domyślnie 21:00–05:00 (8 godzin w ustawowym oknie 21:00–07:00, art. 151⁷).
 - **Odpoczynek dobowy** sprawdzany tylko między wpisami o różnych datach rozpoczęcia. **Odpoczynek tygodniowy** liczony w tygodniu pon.–niedz., z lukami obciętymi do granic tygodnia.
-- **Naliczenie** to wyłącznie brutto: podstawą dodatku jest wynagrodzenie zasadnicze (uproszczenie art. 151¹ § 3), bez podatków i składek.
+- **Naliczenie** to wyłącznie brutto: wynagrodzenie zasadnicze + normalne wynagrodzenie za godziny nadliczbowe (art. 151¹ § 1: dodatek przysługuje „oprócz normalnego wynagrodzenia”) + dodatki 50% i 100%. Podstawą stawki godzinowej jest wynagrodzenie zasadnicze (uproszczenie art. 151¹ § 3), bez podatków i składek. Odbiór czasu wolnego zamiast wynagrodzenia (art. 151²) poza zakresem.
+- **Walidacja wpisów:** nakładające się wpisy czasu pracy są odrzucane (`ArgumentException`) we wszystkich regułach, które je przyjmują.
 - **Staż urlopowy** liczony od daty zatrudnienia, bez okresów nauki (art. 154¹).
 - **Poza zakresem:** dodatek za przekroczenie średniej normy okresu (art. 151¹ § 2), odpoczynek zastępczy i dzień wolny za pracę w dniu wolnym (art. 151³), niepełny etat.
 **Alternatywy:** ujęcie okresowe nadgodzin (nadgodziny to nadwyżka ponad wymiar z art. 130; dokładniejsze, ale wymaga reguł przypisania dodatków do godzin), pełne odwzorowanie art. 151¹ § 2.

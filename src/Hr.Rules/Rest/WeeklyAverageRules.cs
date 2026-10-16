@@ -16,7 +16,7 @@ public static class WeeklyAverageRules
             throw new ArgumentException("Koniec okresu nie może być przed jego początkiem.", nameof(endInclusive));
         }
 
-        decimal total = entries
+        decimal total = WorkEntries.SortedNonOverlapping(entries)
             .Where(e =>
             {
                 var date = DateOnly.FromDateTime(e.Start);

@@ -17,9 +17,10 @@ public class PayrollCalculatorTests
     {
         var r = PayrollCalculator.Calculate(new PayrollInput(8000m, 176m, 2m, 1m));
         Assert.Equal(45.45m, r.HourlyRate);
+        Assert.Equal(136.36m, r.NormalOvertimePay);   // art. 151¹ § 1: dodatek "oprócz normalnego wynagrodzenia"
         Assert.Equal(45.45m, r.Allowance50);
         Assert.Equal(45.45m, r.Allowance100);
-        Assert.Equal(8090.90m, r.Gross);
+        Assert.Equal(8227.26m, r.Gross);
     }
 
     [Fact]
