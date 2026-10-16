@@ -1,4 +1,7 @@
+using Hr.Core.Abstractions;
+using Hr.Core.Persistence;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Testcontainers.MsSql;
 
 namespace Hr.Core.IntegrationTests;
@@ -33,6 +36,26 @@ public sealed class MsSqlFixture : IAsyncLifetime
 
         return new SqlConnectionStringBuilder(_container.GetConnectionString()) { InitialCatalog = name }.ConnectionString;
     }
+
+    /// <summary>Nowa baza z zastosowanymi migracjami; zwraca connection string.</summary>
+    public async Task<string> NewMigratedDatabaseAsync()
+    {
+        var connectionString = await NewDatabaseAsync();
+        await using var db = await OpenContextAsync(connectionString);
+        await db.Database.MigrateAsync();
+        return connectionString;
+    }
+
+    /// <summary>Otwiera kontekst na istniejącej bazie, bez migrowania.</summary>
+    public Task<HrDbContext> OpenContextAsync(string connectionString, ICurrentUser? actor = null)
+    {
+        var options = new DbContextOptionsBuilder<HrDbContext>().UseSqlServer(connectionString).Options;
+        return Task.FromResult(new HrDbContext(options));
+    }
+
+    /// <summary>Nowa, zmigrowana baza i kontekst do niej.</summary>
+    public async Task<HrDbContext> NewContextAsync(ICurrentUser? actor = null) =>
+        await OpenContextAsync(await NewMigratedDatabaseAsync(), actor);
 }
 
 [CollectionDefinition("mssql")]
