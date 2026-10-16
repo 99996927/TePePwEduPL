@@ -1,5 +1,7 @@
 using Hr.Core.Security;
 
+using Hr.Core.Auditing;
+
 namespace Hr.Core.Domain;
 
 public enum LeaveStatus
@@ -10,7 +12,7 @@ public enum LeaveStatus
     Cancelled,
 }
 
-public class LeaveRequest : IEmployeeOwned
+public class LeaveRequest : IEmployeeOwned, IAuditable
 {
     public Guid Id { get; set; }
 

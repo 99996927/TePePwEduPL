@@ -22,6 +22,8 @@ public class HrDbContext(DbContextOptions<HrDbContext> options)
 
     public DbSet<Message> Messages => Set<Message>();
 
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

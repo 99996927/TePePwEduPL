@@ -1,4 +1,5 @@
 using Hr.Core.Abstractions;
+using Hr.Core.Auditing;
 using Hr.Core.Persistence;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -47,15 +48,18 @@ public sealed class MsSqlFixture : IAsyncLifetime
     }
 
     /// <summary>Otwiera kontekst na istniejącej bazie, bez migrowania.</summary>
-    public Task<HrDbContext> OpenContextAsync(string connectionString, ICurrentUser? actor = null)
+    public Task<HrDbContext> OpenContextAsync(string connectionString, ICurrentUser? actor = null, IClock? clock = null)
     {
-        var options = new DbContextOptionsBuilder<HrDbContext>().UseSqlServer(connectionString).Options;
+        var options = new DbContextOptionsBuilder<HrDbContext>()
+            .UseSqlServer(connectionString)
+            .AddInterceptors(new AuditSaveChangesInterceptor(actor ?? new TestUser(null, null), clock ?? new FakeClock()))
+            .Options;
         return Task.FromResult(new HrDbContext(options));
     }
 
     /// <summary>Nowa, zmigrowana baza i kontekst do niej.</summary>
-    public async Task<HrDbContext> NewContextAsync(ICurrentUser? actor = null) =>
-        await OpenContextAsync(await NewMigratedDatabaseAsync(), actor);
+    public async Task<HrDbContext> NewContextAsync(ICurrentUser? actor = null, IClock? clock = null) =>
+        await OpenContextAsync(await NewMigratedDatabaseAsync(), actor, clock);
 }
 
 [CollectionDefinition("mssql")]

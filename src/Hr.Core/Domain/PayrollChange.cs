@@ -1,5 +1,7 @@
 using Hr.Core.Security;
 
+using Hr.Core.Auditing;
+
 namespace Hr.Core.Domain;
 
 public enum PayrollComponent
@@ -17,7 +19,7 @@ public enum PayrollChangeStatus
 }
 
 /// <summary>Zmiana stawki lub składnika wynagrodzenia pracownika (ADR-15), zatwierdzana przez drugą osobę (ADR-08).</summary>
-public class PayrollChange : IEmployeeOwned
+public class PayrollChange : IEmployeeOwned, IAuditable
 {
     public Guid Id { get; set; }
 

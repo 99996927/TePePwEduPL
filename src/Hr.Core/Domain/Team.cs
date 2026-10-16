@@ -1,6 +1,8 @@
+using Hr.Core.Auditing;
+
 namespace Hr.Core.Domain;
 
-public class Team
+public class Team : IAuditable
 {
     public Guid Id { get; set; }
 
