@@ -12,6 +12,10 @@ public class HrDbContext(DbContextOptions<HrDbContext> options)
 
     public DbSet<Employee> Employees => Set<Employee>();
 
+    public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
+
+    public DbSet<WorkEntryRecord> WorkEntries => Set<WorkEntryRecord>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

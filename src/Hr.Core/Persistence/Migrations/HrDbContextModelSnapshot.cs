@@ -125,6 +125,53 @@ namespace Hr.Core.Persistence.Migrations
                     b.ToTable("Employees");
                 });
 
+            modelBuilder.Entity("Hr.Core.Domain.LeaveRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Days")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("DecidedByEmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DecisionReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("From")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateOnly>("To")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DecidedByEmployeeId");
+
+                    b.HasIndex("EmployeeId", "From");
+
+                    b.ToTable("LeaveRequests", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_LeaveRequest_Days", "[Days] > 0");
+
+                            t.HasCheckConstraint("CK_LeaveRequest_Period", "[To] >= [From]");
+                        });
+                });
+
             modelBuilder.Entity("Hr.Core.Domain.Team", b =>
                 {
                     b.Property<Guid>("Id")
@@ -144,6 +191,36 @@ namespace Hr.Core.Persistence.Migrations
                     b.HasIndex("ManagerEmployeeId");
 
                     b.ToTable("Teams");
+                });
+
+            modelBuilder.Entity("Hr.Core.Domain.WorkEntryRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<TimeSpan>("Break")
+                        .HasColumnType("time");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("End")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("Start")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId", "Start");
+
+                    b.ToTable("WorkEntries", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_WorkEntry_Break", "[Break] >= '00:00:00'");
+
+                            t.HasCheckConstraint("CK_WorkEntry_Period", "[End] > [Start]");
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
@@ -294,12 +371,35 @@ namespace Hr.Core.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Hr.Core.Domain.LeaveRequest", b =>
+                {
+                    b.HasOne("Hr.Core.Domain.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("DecidedByEmployeeId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Hr.Core.Domain.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Hr.Core.Domain.Team", b =>
                 {
                     b.HasOne("Hr.Core.Domain.Employee", null)
                         .WithMany()
                         .HasForeignKey("ManagerEmployeeId")
                         .OnDelete(DeleteBehavior.NoAction);
+                });
+
+            modelBuilder.Entity("Hr.Core.Domain.WorkEntryRecord", b =>
+                {
+                    b.HasOne("Hr.Core.Domain.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
