@@ -30,6 +30,7 @@ builder.Services.AddDbContext<HrDbContext>((sp, options) => options
 builder.Services.AddScoped<EmployeeDirectoryService>();
 builder.Services.AddScoped<LeaveService>();
 builder.Services.AddScoped<TimesheetService>();
+builder.Services.AddScoped<CorrectionDraftService>();
 builder.Services.AddScoped<PayrollChangeService>();
 builder.Services.AddScoped<PayrollService>();
 builder.Services.AddScoped<AuditService>();
