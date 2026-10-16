@@ -336,6 +336,70 @@ namespace Hr.Core.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Hr.Core.Domain.PayrollResultRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Allowance100")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Allowance50")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BaseSalary")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CalculatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CalculatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("FixedAllowance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Gross")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("NormHours")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("NormalOvertimePay")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Overtime100Hours")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Overtime50Hours")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("RuleIds")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId", "Year", "Month")
+                        .IsUnique();
+
+                    b.ToTable("PayrollResults", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PayrollResult_Month", "[Month] BETWEEN 1 AND 12");
+                        });
+                });
+
             modelBuilder.Entity("Hr.Core.Domain.Team", b =>
                 {
                     b.Property<Guid>("Id")
@@ -559,6 +623,15 @@ namespace Hr.Core.Persistence.Migrations
                 });
 
             modelBuilder.Entity("Hr.Core.Domain.PayrollChange", b =>
+                {
+                    b.HasOne("Hr.Core.Domain.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Hr.Core.Domain.PayrollResultRecord", b =>
                 {
                     b.HasOne("Hr.Core.Domain.Employee", null)
                         .WithMany()

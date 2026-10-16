@@ -25,6 +25,7 @@
 | ADR-21 | Skala danych demo: ok. 30 pracowników, 4–5 zespołów, 6 miesięcy ewidencji | Przyjęta |
 | ADR-22 | Uproszczenia silnika reguł (plan 1) | Przyjęta |
 | ADR-23 | Testy integracyjne warstwy danych na prawdziwym SQL Server w kontenerze (Testcontainers) | Przyjęta |
+| ADR-24 | Serwisy aplikacyjne i reguły ich działania | Do przeglądu |
 
 ## ADR-01 Trzy warstwy, dwa kontenery
 **Kontekst:** wymóg trójwarstwowości i uruchomienia na jednej maszynie.
@@ -171,3 +172,19 @@ Sześć kont z sekcji 7.2 pozostaje stałych i nazwanych, bo na nich opierają s
 **Alternatywy:** SQLite lub baza w pamięci EF (nie odwzorowują wyzwalaczy ani ograniczeń SQL Server, więc nie dowodzą wymagań), wspólna baza z Docker Compose (testy zależne od stanu).
 **Konsekwencje:** testy wymagają dostępu do Dockera i pobrania obrazu przy pierwszym uruchomieniu. Docker Engine 24.0.9 (API 1.43) nie współpracuje z Testcontainers 4.x bez ustawienia
 `DOCKER_API_VERSION=1.43`, co robi fixture testów; po aktualizacji Dockera ten wpis można usunąć.
+
+## ADR-24 Serwisy aplikacyjne i reguły ich działania
+**Kontekst:** UC-05 do UC-20 wymagają logiki, która łączy zakres danych, role, silnik reguł i zapis. Specyfikacja nie rozstrzyga kilku szczegółów, a API (plan 4) i agent (plan 5) będą się na nich opierać.
+**Decyzja:**
+- **Kody błędów (`ServiceResult`):** `NotFound` dla obiektów poza zakresem użytkownika i nieistniejących (bez ujawniania istnienia cudzych danych), `Forbidden` gdy obiekt jest widoczny, ale rola nie pozwala na operację, `Validation` dla naruszeń reguł (z `RuleId`, gdy pochodzi z silnika), `Conflict` dla niezgodnego stanu lub nakładania. Plan 4 mapuje je na 404, 403, 422 i 409.
+- **Role w przepływach:** wniosek urlopowy zatwierdza kierownik zespołu lub kadry, nigdy autor; zmianę płacową tworzy i wysyła `HR`, zatwierdza lub odrzuca tylko `HRApprover` i nigdy autor (kontrola w serwisie przed ograniczeniem w bazie); naliczenia uruchamia `HR` lub `HRApprover`; wpis czasu koryguje autor albo kadry (kierownik nie), zawsze z uzasadnieniem.
+- **Urlopy:** wniosek mieści się w jednym roku kalendarzowym i ma co najmniej 1 dzień roboczy; do salda liczą się dni zatwierdzone i oczekujące; wnioski nakładające się na oczekujące lub zatwierdzone są odrzucane; saldo liczone dla roku wniosku (staż na dziś dla bieżącego roku, na 1 stycznia dla pozostałych); zatwierdzenie ponownie sprawdza saldo.
+- **Ewidencja:** wpis nie może kończyć się w przyszłości względem zegara ani nakładać się na inny wpis pracownika; analiza okresu zwraca wymiar czasu (pomniejszony o zatwierdzone urlopy), nadgodziny, naruszenia odpoczynków, średnią tygodniową i stan rocznego limitu 150 h.
+- **Czas lokalny:** wpisy czasu pracy są w czasie lokalnym (Europe/Warsaw), więc sprawdzenie „wpis nie może kończyć się w przyszłości” i „dziś” używają `IClock.LocalNow`, a nie UTC.
+- **Współbieżność:** operacje „sprawdź i zapisz” (złożenie wniosku, dodanie i korekta wpisu czasu) są serializowane per pracownik transakcją z blokadą aplikacyjną SQL Server (`sp_getapplock`), co zapobiega podwójnemu wnioskowi przy dwukliku. Zatwierdzanie i naliczenia nie mają blokad (zatwierdzenie przelicza saldo, a ponowne naliczenie jest idempotentne).
+- **Audyt korekty:** uzasadnienie korekty wpisu czasu trafia do `AuditLog` jako zdarzenie `WorkEntryCorrected` w tej samej transakcji co zmiana (UC-11).
+- **Zmiany płacowe:** szkice i oczekujące zmiany są stanem roboczym kadr; pracownik i kierownik widzą (w swoim zakresie) wyłącznie zmiany zatwierdzone. Pełną listę widzą `HR` i `HRApprover`.
+- **Analiza czasu pracy** obejmuje okresy przechodzące przez granicę roku (wpisy ładowane od początku zakresu), a limit roczny nadgodzin liczy tylko od 1 stycznia roku końca zakresu.
+- **Naliczenia:** stały dodatek (`FixedAllowance`) dochodzi do brutto, ale nie wchodzi do podstawy stawki godzinowej; stawka godzinowa liczona z nominalnego wymiaru miesiąca, bez odejmowania urlopów; stawki z zatwierdzonych zmian od daty obowiązywania włącznie; ponowne uruchomienie za ten sam miesiąc aktualizuje wiersz (unikalny `(EmployeeId, Year, Month)`), a błąd w ewidencji któregokolwiek pracownika przerywa całe uruchomienie bez zapisu częściowego.
+**Alternatywy:** `Forbidden` także dla obiektów poza zakresem (ujawnia istnienie cudzych danych); wnioski przez granicę roku z podziałem na lata (więcej reguł, poza zakresem planu 3).
+**Konsekwencje:** API i agent dostają jednolite kody błędów i gotowe reguły. Poza zakresem pozostają wnioski przez granicę roku, anulowanie zatwierdzonych wniosków i korekty zamkniętych naliczeń.

@@ -51,7 +51,7 @@ flowchart LR
 | Projekt | Zależności | Zawartość |
 |---|---|---|
 | `Hr.Api` | Core, Agent | Kontrolery REST, ASP.NET Core Identity (cookie sesyjne), serwowanie statycznego Angulara, `Program.cs`, kompozycja zależności. Przekazuje agentowi tożsamość użytkownika. |
-| `Hr.Core` | Rules | Domena (pracownik, wniosek, wpis czasu, naliczenie, zmiana płacowa, rozmowa), serwisy aplikacyjne, autoryzacja zakresu danych, EF Core, migracje, seed, import Kodeksu pracy, audyt. Wystawia interfejs narzędzi dla agenta. Nie zna projektu `Agent`. |
+| `Hr.Core` | Rules | Domena (pracownik, wniosek, wpis czasu, naliczenie, zmiana płacowa, rozmowa), serwisy aplikacyjne (`LeaveService`, `TimesheetService`, `PayrollChangeService`, `PayrollService` zwracające `ServiceResult<T>`, ADR-24), autoryzacja zakresu danych, EF Core, migracje, seed, import Kodeksu pracy, audyt. Wystawia interfejs narzędzi dla agenta. Nie zna projektu `Agent`. |
 | `Hr.Rules` | brak | Silnik reguł płacowych: czyste funkcje, `decimal`, parametry wg daty. Bez I/O. |
 | `Hr.Agent` | Core (tylko interfejs narzędzi) | Klient Anthropic API, pętla tool use, instrukcja systemowa, zapis rozmowy przez interfejs z `Core`. Nie ma dostępu do bazy ani do silnika reguł. |
 | `Hr.Tests.*` | — | Testy jednostkowe reguł, integracyjne, autoryzacji, kontraktu agenta i architektury. |
@@ -76,7 +76,7 @@ i powiązana z użytkownikiem. Autor czyta swoje rozmowy. Kadry (`HR`, `HRApprov
 Kierownik i inni pracownicy nie mają dostępu do cudzych rozmów.
 Szczegóły przebiegu w [sekcji 6](06-widok-czasu-wykonania.md).
 
-## 5.5 Model danych (zrealizowany w planie 2)
+## 5.5 Model danych (plany 2 i 3)
 ```mermaid
 erDiagram
     TEAM ||--o{ EMPLOYEE : "ma członków"
@@ -85,6 +85,7 @@ erDiagram
     EMPLOYEE ||--o{ LEAVE_REQUEST : składa
     EMPLOYEE ||--o{ WORK_ENTRY : rejestruje
     EMPLOYEE ||--o{ PAYROLL_CHANGE : dotyczy
+    EMPLOYEE ||--o{ PAYROLL_RESULT : "ma naliczenia"
     APPLICATION_USER ||--o{ CONVERSATION : "jest autorem (UserId)"
     CONVERSATION ||--|{ MESSAGE : zawiera
     APPLICATION_USER ||--o{ AUDIT_LOG : "wykonuje (ActorUserId)"
@@ -94,6 +95,7 @@ erDiagram
     LEAVE_REQUEST { guid Id guid EmployeeId date From date To int Days string Status }
     WORK_ENTRY { guid Id guid EmployeeId datetime Start datetime End time Break }
     PAYROLL_CHANGE { guid Id guid EmployeeId string Component decimal Value date EffectiveFrom string Status guid CreatedByUserId guid DecidedByUserId }
+    PAYROLL_RESULT { guid Id guid EmployeeId int Year int Month decimal BaseSalary decimal FixedAllowance decimal NormHours decimal Gross string RuleIds }
     CONVERSATION { guid Id guid UserId datetime StartedAtUtc }
     MESSAGE { guid Id guid ConversationId int Seq string Role string Content string ToolName json ToolParamsJson }
     AUDIT_LOG { long Id guid ActorUserId datetime AtUtc string EventType string EntityType string EntityId json BeforeJson json AfterJson }
@@ -104,4 +106,5 @@ erDiagram
   dopisuje interceptor w tej samej transakcji.
 - **Zakres danych:** `DataScope` (pracownicy i dane z `IEmployeeOwned`) oraz `ConversationAccess` budują filtry jako zapytania SQL. Brak powiązanego pracownika lub nierozpoznana rola daje pusty wynik (fail closed).
 - **Klucze obce użytkownika:** `Conversation.UserId` i `PayrollChange.CreatedByUserId`/`DecidedByUserId` to na razie zwykłe `Guid` bez klucza obcego do tabeli kont. Walidację dodają serwisy aplikacyjne (plan 3).
-- **Jeszcze niezrealizowane:** wyniki naliczeń (`PayrollRun`), artykuły Kodeksu pracy (import) i dane generowane (ADR-19 do ADR-21).
+- **`PayrollResultRecord`:** wynik miesięcznego naliczenia, unikalny `(EmployeeId, Year, Month)`, `CK_PayrollResult_Month`, `IAuditable`; powstaje wyłącznie z `PayrollService` na podstawie silnika reguł.
+- **Jeszcze niezrealizowane:** artykuły Kodeksu pracy (import) i dane generowane (ADR-19 do ADR-21).
