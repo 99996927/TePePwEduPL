@@ -103,6 +103,28 @@ public class AuditTests(MsSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Retry_after_failed_save_writes_audit_once()
+    {
+        await using var db = await fixture.NewContextAsync(new TestUser(Actor, null, "HR"));
+        var employee = await SeedEmployee(db);
+
+        employee.MonthlySalary = 9000m;
+        var invalid = new LeaveRequest
+        {
+            Id = Guid.NewGuid(), EmployeeId = employee.Id, From = new(2026, 10, 16), To = new(2026, 10, 12), Days = 5,
+            Status = LeaveStatus.Pending, CreatedAtUtc = new DateTime(2026, 10, 1, 8, 0, 0, DateTimeKind.Utc),
+        };
+        db.LeaveRequests.Add(invalid);
+        await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+
+        db.Entry(invalid).State = EntityState.Detached;
+        await db.SaveChangesAsync();
+
+        Assert.Equal(1, await db.AuditLogs.CountAsync(a => a.EventType == "Modified" && a.EntityType == "Employee"));
+        Assert.Equal(0, await db.AuditLogs.CountAsync(a => a.EntityType == "LeaveRequest"));
+    }
+
+    [Fact]
     public async Task AuditWriter_records_custom_event()
     {
         var clock = new FakeClock();

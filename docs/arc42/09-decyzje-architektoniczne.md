@@ -84,7 +84,8 @@ Kierownik i inni pracownicy nie mają dostępu. Odczyt cudzej rozmowy przez kadr
 ## ADR-13 Audyt: `AuditLog` tylko do dopisywania
 **Decyzja:** jedna tabela (kto, kiedy, typ zdarzenia, encja, stan przed i po w JSON), zapis w tej samej transakcji co zmiana.
 **Realizacja (plan 2):** zakaz modyfikacji wymusza wyzwalacz `TR_AuditLog_AppendOnly` (`INSTEAD OF UPDATE, DELETE` z błędem „AuditLog is append-only”),
-który działa niezależnie od tego, jakim użytkownikiem łączy się aplikacja, i jest testowany surowym SQL. Zmiana względem pierwotnego zapisu: uprawnienia INSERT i SELECT dla osobnego
+który blokuje operacje DML (UPDATE i DELETE) niezależnie od tego, jakim użytkownikiem łączy się aplikacja, i jest testowany surowym SQL.
+Wyzwalacz nie chroni przed `TRUNCATE TABLE`, `DISABLE TRIGGER` ani `DROP TRIGGER`: przed nimi chroni dopiero warstwa uprawnień użytkownika bazy dodawana przy wdrożeniu. Zmiana względem pierwotnego zapisu: uprawnienia INSERT i SELECT dla osobnego
 użytkownika aplikacji (bez UPDATE i DELETE) dojdą jako dodatkowa warstwa przy wdrożeniu (plan Docker), a nie jako jedyny mechanizm.
 Wpisy dla zmian encji dopisuje `AuditSaveChangesInterceptor` w tej samej transakcji co zapis (nieudany zapis nie zostawia wpisów), a zdarzenia bez zmiany danych (np. odczyt cudzej rozmowy) `AuditWriter`.
 **Alternatywy:** tabele czasowe SQL Server (nie obejmują zdarzeń bez zmiany danych, jak odczyt cudzej rozmowy, więc potrzebny byłby drugi mechanizm),
@@ -162,7 +163,7 @@ Sześć kont z sekcji 7.2 pozostaje stałych i nazwanych, bo na nich opierają s
 - **Staż urlopowy** liczony od daty zatrudnienia, bez okresów nauki (art. 154¹).
 - **Poza zakresem:** dodatek za przekroczenie średniej normy okresu (art. 151¹ § 2), odpoczynek zastępczy i dzień wolny za pracę w dniu wolnym (art. 151³), niepełny etat.
 **Alternatywy:** ujęcie okresowe nadgodzin (nadgodziny to nadwyżka ponad wymiar z art. 130; dokładniejsze, ale wymaga reguł przypisania dodatków do godzin), pełne odwzorowanie art. 151¹ § 2.
-**Konsekwencje:** prostsze testy i przewidywalny wynik. Wyniki mogą się różnić od praktyki kadrowej w przypadkach granicznych (praca przez północ, praca w sobotę w tygodniu z nieobecnością). Do przeglądu przez właściciela projektu.
+**Konsekwencje:** prostsze testy i przewidywalny wynik. Wyniki mogą się różnić od praktyki kadrowej w przypadkach granicznych (praca przez północ, praca w sobotę w tygodniu z nieobecnością). Zaakceptowane przez właściciela projektu wraz ze zmergowaniem PR #1.
 
 ## ADR-23 Testy integracyjne na prawdziwym SQL Server (Testcontainers)
 **Kontekst:** kluczowe gwarancje warstwy danych (ograniczenia CHECK, wyzwalacz audytu, filtrowanie zakresu danych tłumaczone na SQL, unikalne indeksy) zależą od zachowania SQL Server.

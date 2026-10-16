@@ -99,7 +99,7 @@ erDiagram
     AUDIT_LOG { long Id guid ActorUserId datetime AtUtc string EventType string EntityType string EntityId json BeforeJson json AfterJson }
 ```
 - **Ograniczenia w bazie:** `CK_LeaveRequest_Period`, `CK_LeaveRequest_Days`, `CK_WorkEntry_Period`, `CK_WorkEntry_Break`, `CK_PayrollChange_Value`
-  oraz `CK_PayrollChange_FourEyes` (`DecidedByUserId` różne od `CreatedByUserId`, ADR-08). Unikalny indeks `(ConversationId, Seq)` na `Message`.
+  `CK_PayrollChange_FourEyes` (`DecidedByUserId` różne od `CreatedByUserId`, ADR-08) oraz `CK_PayrollChange_Decision` (zatwierdzona lub odrzucona zmiana musi mieć osobę decydującą, niezdecydowana jej nie ma). Unikalny indeks `(ConversationId, Seq)` na `Message`.
 - **`AuditLog`:** tylko do dopisywania, wyzwalacz `TR_AuditLog_AppendOnly` (ADR-13). Wpisy dla encji `IAuditable` (`Team`, `Employee`, `LeaveRequest`, `WorkEntryRecord`, `PayrollChange`)
   dopisuje interceptor w tej samej transakcji.
 - **Zakres danych:** `DataScope` (pracownicy i dane z `IEmployeeOwned`) oraz `ConversationAccess` budują filtry jako zapytania SQL. Brak powiązanego pracownika lub nierozpoznana rola daje pusty wynik (fail closed).

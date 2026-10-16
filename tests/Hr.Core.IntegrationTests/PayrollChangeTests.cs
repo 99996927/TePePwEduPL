@@ -57,6 +57,38 @@ public class PayrollChangeTests(MsSqlFixture fixture)
     }
 
     [Fact]
+    public async Task UC19_Database_rejects_approval_without_decider()
+    {
+        await using var db = await fixture.NewContextAsync();
+        var employee = await SeedEmployee(db);
+        db.PayrollChanges.Add(Change(employee.Id, Guid.NewGuid(), null, PayrollChangeStatus.Approved));
+
+        var ex = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        Assert.Contains("CK_PayrollChange_Decision", ex.InnerException!.Message);
+    }
+
+    [Fact]
+    public async Task UC19_Database_rejects_decider_on_undecided_change()
+    {
+        await using var db = await fixture.NewContextAsync();
+        var employee = await SeedEmployee(db);
+        db.PayrollChanges.Add(Change(employee.Id, Guid.NewGuid(), Guid.NewGuid(), PayrollChangeStatus.Pending));
+
+        var ex = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        Assert.Contains("CK_PayrollChange_Decision", ex.InnerException!.Message);
+    }
+
+    [Fact]
+    public async Task UC19_Rejected_with_decider_is_stored()
+    {
+        await using var db = await fixture.NewContextAsync();
+        var employee = await SeedEmployee(db);
+        db.PayrollChanges.Add(Change(employee.Id, Guid.NewGuid(), Guid.NewGuid(), PayrollChangeStatus.Rejected));
+        await db.SaveChangesAsync();
+        Assert.Equal(1, await db.PayrollChanges.CountAsync(c => c.Status == PayrollChangeStatus.Rejected));
+    }
+
+    [Fact]
     public async Task UC19_Pending_without_decider_is_allowed()
     {
         await using var db = await fixture.NewContextAsync();

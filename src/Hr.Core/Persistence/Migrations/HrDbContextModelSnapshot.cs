@@ -328,6 +328,8 @@ namespace Hr.Core.Persistence.Migrations
 
                     b.ToTable("PayrollChanges", null, t =>
                         {
+                            t.HasCheckConstraint("CK_PayrollChange_Decision", "([Status] IN ('Draft','Pending') AND [DecidedByUserId] IS NULL) OR ([Status] IN ('Approved','Rejected') AND [DecidedByUserId] IS NOT NULL)");
+
                             t.HasCheckConstraint("CK_PayrollChange_FourEyes", "[DecidedByUserId] IS NULL OR [DecidedByUserId] <> [CreatedByUserId]");
 
                             t.HasCheckConstraint("CK_PayrollChange_Value", "[Value] >= 0");
