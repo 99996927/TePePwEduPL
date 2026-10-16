@@ -18,7 +18,7 @@ public interface IConversationStore
     Task<IReadOnlyList<ConversationSummary>> ListAsync(CancellationToken ct);
 
     /// <summary>Pełna rozmowa widoczna dla użytkownika; odczyt cudzej zapisuje <c>ConversationRead</c> w audycie.</summary>
-    Task<StoreResult<IReadOnlyList<StoredMessage>>> OpenAsync(Guid conversationId, CancellationToken ct);
+    Task<StoreResult<OpenedConversation>> OpenAsync(Guid conversationId, CancellationToken ct);
 
     Task RecordWarningAsync(Guid conversationId, string eventType, string detailsJson, CancellationToken ct);
 }

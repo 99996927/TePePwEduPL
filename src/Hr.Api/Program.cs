@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Hr.Agent;
 using Hr.Api.Security;
 using Hr.Core.Abstractions;
 using Hr.Core.AgentTools;
@@ -10,6 +11,8 @@ using Hr.Core.Seeding;
 using Hr.Core.Services;
 using Hr.Rules.Calendar;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
@@ -41,6 +44,15 @@ builder.Services.AddScoped<LabourCodeSearch>();
 builder.Services.AddScoped<IAgentToolbox, AgentToolbox>();
 builder.Services.AddScoped<ConversationReader>();
 builder.Services.AddScoped<IConversationStore, ConversationStore>();
+
+// Agent (ADR-26): surowy klient modelu (SDK Anthropic) pod kluczem, pętla narzędzi i osłona dobudowywane w AgentRunner.
+// Klucz: Anthropic:ApiKey albo zmienna ANTHROPIC_API_KEY; bez klucza agent zwraca 503, reszta systemu działa.
+builder.Services.Configure<AnthropicOptions>(builder.Configuration.GetSection("Anthropic"));
+builder.Services.AddKeyedSingleton<IChatClient>(AgentModel.ServiceKey, (sp, _) => AgentPipeline.CreateAnthropic(sp.GetRequiredService<IOptions<AnthropicOptions>>().Value));
+builder.Services.AddScoped(sp => new AgentRunner(
+    AgentPipeline.Build(sp.GetRequiredKeyedService<IChatClient>(AgentModel.ServiceKey)),
+    sp.GetRequiredService<IAgentToolbox>(),
+    sp.GetRequiredService<IConversationStore>()));
 
 builder.Services.AddIdentityCore<ApplicationUser>(HrIdentityOptions.Apply)
     .AddRoles<IdentityRole<Guid>>()

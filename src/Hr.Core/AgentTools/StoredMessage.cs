@@ -12,3 +12,5 @@ public enum StoredRole
 public sealed record StoredMessage(Guid Id, int Seq, StoredRole Role, string Content, string? ToolName, string? ToolParamsJson, DateTime CreatedAtUtc);
 
 public sealed record ConversationSummary(Guid Id, Guid UserId, DateTime StartedAtUtc, string? Preview, int MessageCount);
+
+public sealed record OpenedConversation(Guid Id, Guid UserId, DateTime StartedAtUtc, IReadOnlyList<StoredMessage> Messages);

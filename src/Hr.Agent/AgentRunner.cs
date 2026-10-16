@@ -70,7 +70,7 @@ public sealed class AgentRunner(IChatClient chat, IAgentToolbox toolbox, IConver
 
         if (!await AppendAsync(StoredRole.User, question))
         {
-            return AgentResult.Fail(Map(appendFailure!.Value));
+            return AgentResult.Fail(Map(appendFailure!.Value), id);
         }
 
         var toolResults = new List<string>();
@@ -109,17 +109,17 @@ public sealed class AgentRunner(IChatClient chat, IAgentToolbox toolbox, IConver
         }
         catch (ModelUnavailableException)
         {
-            return AgentResult.Fail(appendFailure is { } failure ? Map(failure) : AgentFailure.Unavailable);
+            return AgentResult.Fail(appendFailure is { } failure ? Map(failure) : AgentFailure.Unavailable, id);
         }
 
         if (appendFailure is { } toolFailure)
         {
-            return AgentResult.Fail(Map(toolFailure));
+            return AgentResult.Fail(Map(toolFailure), id);
         }
 
         if (!await AppendAsync(StoredRole.Assistant, text))
         {
-            return AgentResult.Fail(Map(appendFailure!.Value));
+            return AgentResult.Fail(Map(appendFailure!.Value), id);
         }
 
         if (ungrounded.Count > 0)

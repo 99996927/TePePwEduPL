@@ -99,12 +99,14 @@ public sealed class ConversationStore(HrDbContext db, ICurrentUser user, IClock 
             .ToList();
     }
 
-    public async Task<StoreResult<IReadOnlyList<StoredMessage>>> OpenAsync(Guid conversationId, CancellationToken ct)
+    public async Task<StoreResult<OpenedConversation>> OpenAsync(Guid conversationId, CancellationToken ct)
     {
         var conversation = await reader.OpenAsync(conversationId, ct);
         return conversation is null
-            ? StoreResult<IReadOnlyList<StoredMessage>>.Fail(StoreFailure.NotFound)
-            : StoreResult<IReadOnlyList<StoredMessage>>.Ok(conversation.Messages.Select(Map).ToList());
+            ? StoreResult<OpenedConversation>.Fail(StoreFailure.NotFound)
+            : StoreResult<OpenedConversation>.Ok(new OpenedConversation(
+                conversation.Id, conversation.UserId, DateTime.SpecifyKind(conversation.StartedAtUtc, DateTimeKind.Utc),
+                conversation.Messages.Select(Map).ToList()));
     }
 
     public async Task RecordWarningAsync(Guid conversationId, string eventType, string detailsJson, CancellationToken ct)

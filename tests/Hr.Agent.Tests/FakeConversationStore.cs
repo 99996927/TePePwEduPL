@@ -43,8 +43,13 @@ public sealed class FakeConversationStore : IConversationStore
     public Task<IReadOnlyList<ConversationSummary>> ListAsync(CancellationToken ct) =>
         Task.FromResult<IReadOnlyList<ConversationSummary>>([]);
 
-    public Task<StoreResult<IReadOnlyList<StoredMessage>>> OpenAsync(Guid conversationId, CancellationToken ct) =>
-        LoadAsync(conversationId, int.MaxValue, ct);
+    public async Task<StoreResult<OpenedConversation>> OpenAsync(Guid conversationId, CancellationToken ct)
+    {
+        var loaded = await LoadAsync(conversationId, int.MaxValue, ct);
+        return loaded.IsSuccess
+            ? StoreResult<OpenedConversation>.Ok(new OpenedConversation(conversationId, Guid.Empty, DateTime.UtcNow, loaded.Value!))
+            : StoreResult<OpenedConversation>.Fail(StoreFailure.NotFound);
+    }
 
     public Task RecordWarningAsync(Guid conversationId, string eventType, string detailsJson, CancellationToken ct)
     {

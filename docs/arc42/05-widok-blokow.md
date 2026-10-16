@@ -66,14 +66,17 @@ Referencja projektu nie ogranicza widoczności typów publicznych, więc granica
 - **Własności:** czysty (brak efektów ubocznych), deterministyczny, wersjonowany po dacie obowiązywania, pokryty testami.
 - **Okresy rozliczeniowe:** parametr (do 4 miesięcy, w uzasadnionych przypadkach do 12 miesięcy ✔ art. 129 § 1–2).
 
-## 5.4 Moduł agenta (`Hr.Agent`) i interfejs narzędzi (`Hr.Core`)
-Narzędzia (wstępna lista): `get_leave_balance`, `calculate_overtime`, `check_work_time_violations`,
-`search_labour_code`, `propose_correction`. Każde wywołuje serwis aplikacyjny w kontekście zalogowanego użytkownika
-(tożsamość z sesji, nie od modelu). `propose_correction` tworzy tylko szkic.
+## 5.4 Moduł agenta (`Hr.Agent`) i interfejs narzędzi (`Hr.Core.AgentTools`)
+`Hr.Agent` jest zbudowany na oficjalnym SDK Anthropic dla C# i `Microsoft.Extensions.AI` (ADR-26): narzędzia to `AIFunction`, a pętlę narzędzi prowadzi SDK.
+Narzędzia: `get_leave_balance`, `calculate_overtime`, `check_work_time_violations`, `get_payroll_result` (tylko odczyt zapisanego naliczenia),
+`search_labour_code`, `propose_correction` (tylko kadry). Każde wywołuje serwis aplikacyjny w kontekście zalogowanego użytkownika
+(tożsamość z sesji, nie od modelu; `employee_id` honorowany tylko dla `HR` i `HRApprover`). `propose_correction` tworzy tylko szkic.
 
 **Historia rozmów:** każda rozmowa (pytania, odpowiedzi, wywołania narzędzi z parametrami i wynikiem) jest zapisywana w bazie
-i powiązana z użytkownikiem. Autor czyta swoje rozmowy. Kadry (`HR`, `HRApprover`) mogą czytać pełną treść każdej rozmowy (ADR-11).
+i powiązana z użytkownikiem. Autor czyta swoje rozmowy. Kadry (`HR`, `HRApprover`) mogą czytać pełną treść każdej rozmowy (ADR-11), ale nie dopisują do cudzych.
 Kierownik i inni pracownicy nie mają dostępu do cudzych rozmów.
+**Konwencja zapisu `Message`:** `User`/`Assistant` — `Content` to tekst; `ToolCall` — `Content` to identyfikator wywołania, `ToolName`, `ToolParamsJson` to parametry;
+`ToolResult` — `Content` to JSON wyniku. Wywołanie i wynik są zapisywane parami, po wykonaniu narzędzia.
 Szczegóły przebiegu w [sekcji 6](06-widok-czasu-wykonania.md).
 
 ## 5.5 Model danych (plany 2 i 3)
@@ -88,6 +91,7 @@ erDiagram
     EMPLOYEE ||--o{ PAYROLL_RESULT : "ma naliczenia"
     APPLICATION_USER ||--o{ CONVERSATION : "jest autorem (UserId)"
     CONVERSATION ||--|{ MESSAGE : zawiera
+    EMPLOYEE ||--o{ CORRECTION_DRAFT : dotyczy
     APPLICATION_USER ||--o{ AUDIT_LOG : "wykonuje (ActorUserId)"
     TEAM { guid Id string Name guid ManagerEmployeeId }
     EMPLOYEE { guid Id string FirstName string LastName date HireDate guid TeamId decimal MonthlySalary }
@@ -98,6 +102,8 @@ erDiagram
     PAYROLL_RESULT { guid Id guid EmployeeId int Year int Month decimal BaseSalary decimal FixedAllowance decimal NormHours decimal Gross string RuleIds }
     CONVERSATION { guid Id guid UserId datetime StartedAtUtc }
     MESSAGE { guid Id guid ConversationId int Seq string Role string Content string ToolName json ToolParamsJson }
+    CORRECTION_DRAFT { guid Id guid EmployeeId guid WorkEntryId datetime ProposedStart datetime ProposedEnd time ProposedBreak string Status guid CreatedByUserId guid ConversationId }
+    LABOUR_CODE_ARTICLE { string Number string Text }
     AUDIT_LOG { long Id guid ActorUserId datetime AtUtc string EventType string EntityType string EntityId json BeforeJson json AfterJson }
 ```
 - **Ograniczenia w bazie:** `CK_LeaveRequest_Period`, `CK_LeaveRequest_Days`, `CK_WorkEntry_Period`, `CK_WorkEntry_Break`, `CK_PayrollChange_Value`
@@ -107,4 +113,6 @@ erDiagram
 - **Zakres danych:** `DataScope` (pracownicy i dane z `IEmployeeOwned`) oraz `ConversationAccess` budują filtry jako zapytania SQL. Brak powiązanego pracownika lub nierozpoznana rola daje pusty wynik (fail closed).
 - **Klucze obce użytkownika:** `Conversation.UserId` i `PayrollChange.CreatedByUserId`/`DecidedByUserId` to na razie zwykłe `Guid` bez klucza obcego do tabeli kont. Walidację dodają serwisy aplikacyjne (plan 3).
 - **`PayrollResultRecord`:** wynik miesięcznego naliczenia, unikalny `(EmployeeId, Year, Month)`, `CK_PayrollResult_Month`, `IAuditable`; powstaje wyłącznie z `PayrollService` na podstawie silnika reguł.
-- **Jeszcze niezrealizowane:** artykuły Kodeksu pracy (import) i dane generowane (ADR-19 do ADR-21).
+- **`CorrectionDraft`:** szkic korekty wpisu czasu pracy (`Pending`/`Approved`/`Rejected`), `CK_CorrectionDraft_Period`, `IAuditable`; zatwierdzenie woła `TimesheetService.CorrectEntryAsync`.
+- **`LabourCodeArticle`:** artykuł Kodeksu pracy (klucz: numer w zapisie źródła, np. `151[1]`), ładowany z zasobu osadzonego przy starcie.
+- **Jeszcze niezrealizowane:** dane generowane (ADR-19 do ADR-21).

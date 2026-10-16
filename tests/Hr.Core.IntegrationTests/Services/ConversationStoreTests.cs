@@ -84,7 +84,8 @@ public class ConversationStoreTests(MsSqlFixture fixture)
         var opened = await hr.OpenAsync(id, CancellationToken.None);
 
         Assert.Contains(all, x => x.Id == id);
-        Assert.Single(opened.Value!);
+        Assert.Single(opened.Value!.Messages);
+        Assert.Equal(c.UserIdOf(c.Org.Anna), opened.Value.UserId);
         var audit = await c.Db.AuditLogs.AsNoTracking().SingleAsync(a => a.EventType == "ConversationRead");
         Assert.Equal(id.ToString(), audit.EntityId);
         Assert.Equal(c.UserIdOf(c.Org.Piotr), audit.ActorUserId);

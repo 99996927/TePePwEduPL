@@ -55,7 +55,7 @@ sequenceDiagram
 
 **Historia:** pytanie, wywołania narzędzi i odpowiedź są zapisywane w rozmowie użytkownika (ADR-11), a kolejne pytania dostają kontekst z historii.
 
-**Zasada:** odpowiedź może zawierać liczby wyłącznie z wyników narzędzi. Przy błędzie narzędzia agent informuje o błędzie (UC-25).
+**Zasada:** odpowiedź może zawierać liczby wyłącznie z wyników narzędzi. `NumberGuard` sprawdza to po każdej odpowiedzi; przy odstępstwie model dostaje jedną rundę korekty, a jeśli liczba zostaje, API zwraca `ungroundedNumbers` (ADR-26). Przy błędzie narzędzia agent informuje o błędzie (UC-25).
 Parametr identyfikujący pracownika nie pochodzi od modelu, tylko z sesji użytkownika (UC-24).
 
 ## 6.4 UC-18/19 Zmiana płacowa z dwuosobowym zatwierdzeniem
@@ -74,8 +74,24 @@ stateDiagram-v2
 Kontrola „autor ≠ zatwierdzający” jest realizowana w serwisie i dodatkowo ograniczeniem w bazie. Obie operacje trafiają do audytu.
 
 ## 6.5 UC-26 Szkic korekty przygotowany przez agenta
-Agent wywołuje `check_work_time_violations`, a następnie `propose_correction`. Narzędzie zapisuje szkic korekty **wpisu czasu pracy**
-ze statusem „do przeglądu”. Dane źródłowe (ewidencja, naliczenia) nie są zmieniane. Korektę przegląda i zatwierdza człowiek z kadr (UC-11).
+```mermaid
+sequenceDiagram
+    actor H as Kadry (HR)
+    participant AG as Agent
+    participant APP as Serwisy
+    participant API as API
+    H->>AG: "Sprawdź Annę za październik i przygotuj korektę"
+    AG->>APP: check_work_time_violations
+    APP-->>AG: naruszenia z identyfikatorem reguły
+    AG->>APP: propose_correction (wpis, nowe czasy, uzasadnienie)
+    APP-->>AG: draftId, status Pending
+    H->>API: POST /api/correction-drafts/{id}/decision (approve)
+    API->>APP: CorrectionDraftService.DecideAsync
+    APP->>APP: TimesheetService.CorrectEntryAsync (audyt WorkEntryCorrected)
+```
+Agent wywołuje `check_work_time_violations`, a następnie `propose_correction` (tylko `HR` i `HRApprover`). Narzędzie zapisuje szkic korekty **wpisu czasu pracy**
+ze statusem „oczekuje” (`Pending`). Dane źródłowe (ewidencja, naliczenia) nie są zmieniane. Korektę przegląda i zatwierdza człowiek z kadr (UC-11):
+zatwierdzenie woła `TimesheetService.CorrectEntryAsync`, a błąd walidacji zostawia szkic w stanie `Pending`.
 Po zatwierdzeniu zmienia się wpis czasu, a naliczenie można uruchomić ponownie na poprawionych danych (UC-16).
 Zmiany stawek i składników wynagrodzenia przechodzą osobny przepływ dwuosobowy według 6.4 i nie są tworzone przez agenta.
 
