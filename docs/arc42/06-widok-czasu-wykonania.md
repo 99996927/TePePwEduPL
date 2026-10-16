@@ -49,12 +49,17 @@ sequenceDiagram
     C-->>AG: odpowiedź tekstowa
     AG-->>P: odpowiedź oparta na wyniku silnika
 ```
+**Odpowiedź w całości:** UI wysyła zwykłe żądanie POST i pokazuje wskaźnik „agent pisze…”. Odpowiedź wraca po zakończeniu pętli narzędzi (ADR-14).
+
 **Historia:** pytanie, wywołania narzędzi i odpowiedź są zapisywane w rozmowie użytkownika (ADR-11), a kolejne pytania dostają kontekst z historii.
 
 **Zasada:** odpowiedź może zawierać liczby wyłącznie z wyników narzędzi. Przy błędzie narzędzia agent informuje o błędzie (UC-25).
 Parametr identyfikujący pracownika nie pochodzi od modelu, tylko z sesji użytkownika (UC-24).
 
 ## 6.4 UC-18/19 Zmiana płacowa z dwuosobowym zatwierdzeniem
+Zmiana dotyczy stawki lub składnika wynagrodzenia konkretnego pracownika. Ma datę obowiązywania i uzasadnienie (ADR-15).
+Silnik reguł używa nowej wartości od tej daty, tylko dla zmian w stanie „Zatwierdzona”.
+
 ```mermaid
 stateDiagram-v2
     [*] --> Szkic: HR tworzy zmianę
@@ -67,6 +72,7 @@ stateDiagram-v2
 Kontrola „autor ≠ zatwierdzający” jest realizowana w serwisie i dodatkowo ograniczeniem w bazie. Obie operacje trafiają do audytu.
 
 ## 6.5 UC-26 Szkic korekty przygotowany przez agenta
-Agent wywołuje `check_work_time_violations`, a następnie `propose_correction`. Narzędzie zapisuje szkic ze statusem
-„do przeglądu”. Dane źródłowe (ewidencja, naliczenia) nie są zmieniane. Zmianę wprowadza i zatwierdza człowiek z kadr
-(przy zmianach płacowych według 6.4).
+Agent wywołuje `check_work_time_violations`, a następnie `propose_correction`. Narzędzie zapisuje szkic korekty **wpisu czasu pracy**
+ze statusem „do przeglądu”. Dane źródłowe (ewidencja, naliczenia) nie są zmieniane. Korektę przegląda i zatwierdza człowiek z kadr (UC-11).
+Po zatwierdzeniu zmienia się wpis czasu, a naliczenie można uruchomić ponownie na poprawionych danych (UC-16).
+Zmiany stawek i składników wynagrodzenia przechodzą osobny przepływ dwuosobowy według 6.4 i nie są tworzone przez agenta.

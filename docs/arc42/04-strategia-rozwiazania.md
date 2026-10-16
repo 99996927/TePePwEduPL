@@ -15,7 +15,8 @@
 2. **Jeden kontener aplikacji** serwuje API i statyczny Angular (brak CORS, brak osobnego serwera www).
 3. **Agent jako klient narzędzi:** Claude wybiera narzędzie, serwis aplikacyjny je wykonuje przez silnik. Liczby w odpowiedzi pochodzą wyłącznie z wyników narzędzi.
 4. **Przepisy w bazie:** artykuły Kodeksu pracy importowane jednorazowo z API Sejmu, agent cytuje je narzędziem `search_labour_code`. Reguły silnika są kodowane ręcznie z odwołaniem do artykułu.
-5. **Lokalne konta** (ASP.NET Core Identity) z rolami i seedem kont demo.
+5. **Kontrakt API:** OpenAPI generowane z kontrolerów, klient TypeScript dla Angulara generowany ze specyfikacji (ADR-16).
+6. **Lokalne konta** (ASP.NET Core Identity) z rolami i seedem kont demo.
 
 Uzasadnienia i alternatywy: [sekcja 9](09-decyzje-architektoniczne.md).
 

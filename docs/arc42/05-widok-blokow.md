@@ -75,3 +75,40 @@ Narzędzia (wstępna lista): `get_leave_balance`, `calculate_overtime`, `check_w
 i powiązana z użytkownikiem. Autor czyta swoje rozmowy. Kadry (`HR`, `HRApprover`) mogą czytać pełną treść każdej rozmowy (ADR-11).
 Kierownik i inni pracownicy nie mają dostępu do cudzych rozmów.
 Szczegóły przebiegu w [sekcji 6](06-widok-czasu-wykonania.md).
+
+## 5.5 Model danych — rozmowy i audyt (fragment)
+```mermaid
+erDiagram
+    USER ||--o{ CONVERSATION : "jest autorem"
+    CONVERSATION ||--|{ MESSAGE : zawiera
+    USER ||--o{ AUDIT_LOG : "wykonuje"
+    CONVERSATION {
+        guid Id
+        guid UserId
+        datetime StartedAt
+    }
+    MESSAGE {
+        guid Id
+        guid ConversationId
+        int Seq
+        string Role "user, assistant, tool_call, tool_result"
+        string Content
+        string ToolName
+        json ToolParams
+        datetime CreatedAt
+    }
+    AUDIT_LOG {
+        bigint Id
+        guid ActorId
+        datetime At
+        string EventType
+        string EntityType
+        string EntityId
+        json Before
+        json After
+    }
+```
+- **`Conversation` / `Message`:** wiadomość ma rolę (`user`, `assistant`, `tool_call`, `tool_result`), treść, a dla narzędzi nazwę i parametry JSON.
+  Format odwzorowuje wiadomości Anthropic API, więc kontekst kolejnych pytań odtwarza się wprost z historii (ADR-12).
+- **`AuditLog`:** jedna tabela tylko do dopisywania, zapisywana w tej samej transakcji co zmiana. Użytkownik bazy używany przez aplikację
+  ma uprawnienia INSERT i SELECT bez UPDATE i DELETE (ADR-13). Obejmuje zmiany danych, zatwierdzenia i odczyty cudzych rozmów przez kadry.

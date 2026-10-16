@@ -77,7 +77,7 @@ Pozostałe zapisy wymagają weryfikacji przed implementacją reguły.
 |---|---|---|---|
 | UC-16 | Wstępne naliczenie miesiąca | HR | Wyliczenie składników wraz z dodatkami za nadgodziny ✔ art. 151¹, wynik powtarzalny dla tych samych danych. |
 | UC-17 | Podgląd naliczenia przez pracownika | Employee | Tylko własne naliczenie. |
-| UC-18 | Zmiana płacowa (dwa kroki) | HR, HRApprover | `piotr.zielinski` tworzy zmianę, `maria.kaminska` ją zatwierdza. Zmiana działa dopiero po zatwierdzeniu. |
+| UC-18 | Zmiana płacowa (dwa kroki) | HR, HRApprover | `piotr.zielinski` tworzy zmianę stawki lub składnika wynagrodzenia pracownika (z datą obowiązywania i uzasadnieniem), `maria.kaminska` ją zatwierdza. Zmiana działa od daty obowiązywania, ale dopiero po zatwierdzeniu. |
 | UC-19 | Zakaz samozatwierdzenia | HR, HRApprover | Ta sama osoba nie może zatwierdzić własnej zmiany. Błąd także przy bezpośrednim wywołaniu API. |
 | UC-20 | Odrzucenie zmiany płacowej | HRApprover | Odrzucenie z uzasadnieniem, zmiana nie wchodzi w życie. |
 
@@ -89,7 +89,7 @@ Pozostałe zapisy wymagają weryfikacji przed implementacją reguły.
 | UC-23 | Pytanie o przepisy | Employee | Agent cytuje przepis z numerem artykułu (np. art. 129, 131) i źródłem. |
 | UC-24 | Separacja w agencie | Employee | Pytanie o dane innej osoby kończy się odmową, narzędzia działają w kontekście uprawnień użytkownika. |
 | UC-25 | Awaria silnika | Employee | Agent nie zgaduje liczby, informuje o błędzie. |
-| UC-26 | Szkic korekty dla kadr | HR | Po wykryciu naruszenia agent tworzy szkic, który nie zmienia danych do czasu zatwierdzenia przez kadry. |
+| UC-26 | Szkic korekty dla kadr | HR | Po wykryciu naruszenia agent tworzy szkic korekty **ewidencji czasu pracy** (nie wynagrodzenia). Dane nie zmieniają się do czasu zatwierdzenia przez kadry. |
 | UC-27 | Pytanie poza zakresem | każdy | Agent odmawia grzecznie i wskazuje dział kadr. |
 | UC-30 | Historia własnych rozmów | Employee, Manager | Użytkownik widzi pełną historię swoich rozmów z agentem i może do niej wrócić (ciągłość dopytań). Nie widzi rozmów innych osób (UI i API: 403/404). |
 | UC-31 | Odczyt rozmów przez kadry | HR, HRApprover | Kadry mogą otworzyć pełną treść rozmowy dowolnego pracownika (pytania, odpowiedzi, wywołania narzędzi). Kierownik tego dostępu nie ma. Każdy odczyt jest zapisywany w audycie. |

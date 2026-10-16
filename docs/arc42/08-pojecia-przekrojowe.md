@@ -34,7 +34,7 @@ Każdy odczyt cudzej rozmowy przez kadry trafia do audytu (UC-31). Użytkownik j
 czytać rozmowy (ADR-11, ryzyko R-10).
 
 ## 8.4 Audyt
-Zapis: kto, kiedy, co, stan przed i po. Dotyczy zmian ewidencji, wniosków, zmian płacowych, zatwierdzeń i każdego wywołania
+Jedna tabela `AuditLog` tylko do dopisywania (zapis w tej samej transakcji co zmiana, użytkownik bazy bez UPDATE i DELETE, ADR-13). Zapis: kto, kiedy, co, stan przed i po. Dotyczy zmian ewidencji, wniosków, zmian płacowych, zatwierdzeń i każdego wywołania
 narzędzia przez agenta (narzędzie, parametry, wynik, użytkownik).
 
 ## 8.5 Obsługa błędów
