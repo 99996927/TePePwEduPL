@@ -34,6 +34,38 @@ public class TimesheetApiTests(MsSqlFixture fixture)
         Assert.Equal(await EmployeeIdOf(anna), entry.GetProperty("employeeId").GetGuid());
     }
 
+    [Theory]
+    [InlineData("2026-10-12T08:00:00+02:00", "2026-10-12T16:00:00+02:00")]
+    [InlineData("2026-10-12T08:00:00Z", "2026-10-12T16:00:00Z")]
+    public async Task UC10_Entry_time_with_zone_is_422_instead_of_being_silently_shifted(string start, string end)
+    {
+        await using var factory = await HrApiFactory.CreateAsync(fixture);
+        var anna = await ApiSession.LoginAsAsync(factory, "anna.nowak");
+
+        var response = await Add(anna, start, end);
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        Assert.Equal("Validation", (await JsonOf(response)).GetProperty("code").GetString());
+        Assert.Empty((await JsonOf(await anna.GetAsync("/api/timesheet/entries?from=2026-10-01&to=2026-10-31"))).EnumerateArray());
+    }
+
+    [Fact]
+    public async Task UC11_Correction_with_zone_is_422_and_local_time_keeps_its_value()
+    {
+        await using var factory = await HrApiFactory.CreateAsync(fixture);
+        var anna = await ApiSession.LoginAsAsync(factory, "anna.nowak");
+        var created = await Add(anna, "2026-10-12T08:00:00", "2026-10-12T16:00:00");
+        var id = (await JsonOf(created)).GetProperty("id").GetGuid();
+
+        var zoned = await anna.PutAsync($"/api/timesheet/entries/{id}",
+            new { start = "2026-10-12T08:00:00Z", end = "2026-10-12T17:00:00Z", breakMinutes = 0, reason = "Korekta" });
+        var list = await JsonOf(await anna.GetAsync("/api/timesheet/entries?from=2026-10-12&to=2026-10-12"));
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, zoned.StatusCode);
+        Assert.Equal("2026-10-12T08:00:00", list.EnumerateArray().Single().GetProperty("start").GetString());
+        Assert.Equal("2026-10-12T16:00:00", list.EnumerateArray().Single().GetProperty("end").GetString());
+    }
+
     [Fact]
     public async Task UC10_End_before_start_is_422_and_overlap_is_409()
     {

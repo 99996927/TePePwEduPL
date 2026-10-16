@@ -59,6 +59,8 @@ builder.Services.ConfigureApplicationCookie(options =>
         return Task.CompletedTask;
     };
 });
+// Stempel bezpieczeństwa sprawdzany przy każdym żądaniu, aby wylogowanie działało natychmiast (ADR-10, ADR-25).
+builder.Services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.Zero);
 builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 

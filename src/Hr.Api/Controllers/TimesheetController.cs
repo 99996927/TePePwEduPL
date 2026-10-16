@@ -1,6 +1,7 @@
 using Hr.Api.Dtos;
 using Hr.Api.Http;
 using Hr.Core.Abstractions;
+using Hr.Core.Domain;
 using Hr.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,7 +21,8 @@ public sealed class TimesheetController(TimesheetService timesheet, ICurrentUser
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
     public async Task<IActionResult> Add(AddEntryRequest request, CancellationToken ct) =>
-        this.ToActionResult(
+        RejectZonedTime(request.Start, request.End)
+        ?? this.ToActionResult(
             await timesheet.AddEntryAsync(request.Start, request.End, TimeSpan.FromMinutes(request.BreakMinutes), ct),
             WorkEntryDto.Of,
             StatusCodes.Status201Created);
@@ -32,9 +34,19 @@ public sealed class TimesheetController(TimesheetService timesheet, ICurrentUser
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
     public async Task<IActionResult> Correct(Guid id, CorrectEntryRequest request, CancellationToken ct) =>
-        this.ToActionResult(
+        RejectZonedTime(request.Start, request.End)
+        ?? this.ToActionResult(
             await timesheet.CorrectEntryAsync(id, request.Start, request.End, TimeSpan.FromMinutes(request.BreakMinutes), request.Reason, ct),
             WorkEntryDto.Of);
+
+    /// <summary>Czas wpisu to czas lokalny bez strefy (ADR-17); wartość ze strefą (np. Z albo +02:00) byłaby po cichu przesunięta, więc jest odrzucana.</summary>
+    private IActionResult? RejectZonedTime(params DateTime[] values) =>
+        values.Any(v => v.Kind != DateTimeKind.Unspecified)
+            ? this.ToActionResult(
+                ServiceResult<WorkEntryRecord>.Fail(
+                    ServiceErrorCode.Validation, "Czas wpisu podaj jako czas lokalny bez strefy, np. 2026-10-12T08:00:00."),
+                WorkEntryDto.Of)
+            : null;
 
     [HttpGet("analysis", Name = "Timesheet_Analyze")]
     [ProducesResponseType<TimesheetAnalysisDto>(StatusCodes.Status200OK)]

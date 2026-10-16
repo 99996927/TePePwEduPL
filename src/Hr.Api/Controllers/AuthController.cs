@@ -57,6 +57,13 @@ public sealed class AuthController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Logout()
     {
+        // Zmiana stempla bezpieczeństwa unieważnia też skopiowane ciasteczko sesji (samo SignOut usuwa je tylko u klienta).
+        // Skutek uboczny: wylogowanie kończy sesje tego użytkownika na wszystkich urządzeniach (ADR-25).
+        if (await userManager.GetUserAsync(User) is { } user)
+        {
+            await userManager.UpdateSecurityStampAsync(user);
+        }
+
         await signInManager.SignOutAsync();
         HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity());
         AntiforgeryCookie.Issue(HttpContext, antiforgery);

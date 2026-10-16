@@ -64,6 +64,27 @@ public class AuthTests(MsSqlFixture fixture)
     }
 
     [Fact]
+    public async Task UC01_Logout_invalidates_a_replayed_session_cookie()
+    {
+        await using var factory = await HrApiFactory.CreateAsync(fixture);
+        var session = await ApiSession.StartAsync(factory);
+        var login = await session.PostAsync("/api/auth/login", new { userName = "anna.nowak", password = "annanowak123" });
+        var cookie = login.Headers.GetValues("Set-Cookie").Single(c => c.StartsWith("hr.session=", StringComparison.Ordinal)).Split(';')[0];
+
+        async Task<HttpStatusCode> MeWithCapturedCookieAsync()
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
+            request.Headers.Add("Cookie", cookie);
+            return (await factory.CreateApiClient().SendAsync(request)).StatusCode;
+        }
+
+        Assert.Equal(HttpStatusCode.OK, await MeWithCapturedCookieAsync());
+        Assert.Equal(HttpStatusCode.NoContent, (await session.PostAsync("/api/auth/logout")).StatusCode);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, await MeWithCapturedCookieAsync());
+    }
+
+    [Fact]
     public async Task UC02_Wrong_password_and_unknown_user_return_identical_401()
     {
         await using var factory = await HrApiFactory.CreateAsync(fixture);
