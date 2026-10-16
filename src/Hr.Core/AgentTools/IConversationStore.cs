@@ -1,5 +1,3 @@
-using Hr.Core.Domain;
-
 namespace Hr.Core.AgentTools;
 
 /// <summary>
@@ -15,7 +13,7 @@ public interface IConversationStore
 
     /// <summary>Dopisuje wiadomość z kolejnym numerem; równoległy zapis tego samego numeru daje <see cref="StoreFailure.Conflict"/>.</summary>
     Task<StoreResult<StoredMessage>> AppendAsync(
-        Guid conversationId, MessageRole role, string content, string? toolName, string? toolParamsJson, CancellationToken ct);
+        Guid conversationId, StoredRole role, string content, string? toolName, string? toolParamsJson, CancellationToken ct);
 
     Task<IReadOnlyList<ConversationSummary>> ListAsync(CancellationToken ct);
 

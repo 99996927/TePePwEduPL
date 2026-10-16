@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Hr.Core\Hr.Core.csproj" />
+    <ProjectReference Include="..\Hr.Agent\Hr.Agent.csproj" />
   </ItemGroup>
 
   <ItemGroup>

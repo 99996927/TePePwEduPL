@@ -15,7 +15,7 @@ public class ConversationStoreTests(MsSqlFixture fixture)
         return started.Value;
     }
 
-    private static Task<StoreResult<StoredMessage>> Say(ConversationStore store, Guid id, MessageRole role, string content, string? tool = null, string? json = null) =>
+    private static Task<StoreResult<StoredMessage>> Say(ConversationStore store, Guid id, StoredRole role, string content, string? tool = null, string? json = null) =>
         store.AppendAsync(id, role, content, tool, json, CancellationToken.None);
 
     [Fact]
@@ -36,10 +36,10 @@ public class ConversationStoreTests(MsSqlFixture fixture)
         var store = c.Store(c.As(c.Org.Anna, Roles.Employee));
         var id = await StartAs(store);
 
-        var first = await Say(store, id, MessageRole.User, "Ile mam nadgodzin?");
-        var second = await Say(store, id, MessageRole.ToolCall, "toolu_1", "calculate_overtime", "{\"from\":\"2026-10-01\"}");
-        var third = await Say(store, id, MessageRole.ToolResult, "{\"overtimeTotal\":4}", "calculate_overtime");
-        var fourth = await Say(store, id, MessageRole.Assistant, "Masz 4 godziny.");
+        var first = await Say(store, id, StoredRole.User, "Ile mam nadgodzin?");
+        var second = await Say(store, id, StoredRole.ToolCall, "toolu_1", "calculate_overtime", "{\"from\":\"2026-10-01\"}");
+        var third = await Say(store, id, StoredRole.ToolResult, "{\"overtimeTotal\":4}", "calculate_overtime");
+        var fourth = await Say(store, id, StoredRole.Assistant, "Masz 4 godziny.");
 
         Assert.Equal(new[] { 1, 2, 3, 4 }, new[] { first, second, third, fourth }.Select(r => r.Value!.Seq));
         var loaded = (await store.LoadAsync(id, 40, CancellationToken.None)).Value!;
@@ -55,10 +55,10 @@ public class ConversationStoreTests(MsSqlFixture fixture)
         var anna = c.Store(c.As(c.Org.Anna, Roles.Employee));
         var ewa = c.Store(c.As(c.Org.Ewa, Roles.Manager));
         var annaId = await StartAs(anna);
-        await Say(anna, annaId, MessageRole.User, new string('x', 200));
-        await Say(anna, annaId, MessageRole.Assistant, "odpowiedź");
+        await Say(anna, annaId, StoredRole.User, new string('x', 200));
+        await Say(anna, annaId, StoredRole.Assistant, "odpowiedź");
         var ewaId = await StartAs(ewa);
-        await Say(ewa, ewaId, MessageRole.User, "Pytanie kierownika");
+        await Say(ewa, ewaId, StoredRole.User, "Pytanie kierownika");
 
         var annaList = await anna.ListAsync(CancellationToken.None);
         var ewaList = await ewa.ListAsync(CancellationToken.None);
@@ -77,7 +77,7 @@ public class ConversationStoreTests(MsSqlFixture fixture)
         await using var c = await ServiceTestContext.CreateAsync(fixture);
         var anna = c.Store(c.As(c.Org.Anna, Roles.Employee));
         var id = await StartAs(anna);
-        await Say(anna, id, MessageRole.User, "Pytanie");
+        await Say(anna, id, StoredRole.User, "Pytanie");
         var hr = c.Store(c.As(c.Org.Piotr, Roles.HR));
 
         var all = await hr.ListAsync(CancellationToken.None);
@@ -101,7 +101,7 @@ public class ConversationStoreTests(MsSqlFixture fixture)
         foreach (var other in new[] { c.Store(c.As(c.Org.Jan, Roles.Employee)), c.Store(c.As(c.Org.Ewa, Roles.Manager)) })
         {
             Assert.Equal(StoreFailure.NotFound, (await other.OpenAsync(id, CancellationToken.None)).Failure);
-            Assert.Equal(StoreFailure.NotFound, (await Say(other, id, MessageRole.User, "wtargnięcie")).Failure);
+            Assert.Equal(StoreFailure.NotFound, (await Say(other, id, StoredRole.User, "wtargnięcie")).Failure);
             Assert.Equal(StoreFailure.NotFound, (await other.LoadAsync(id, 40, CancellationToken.None)).Failure);
         }
 
@@ -114,7 +114,7 @@ public class ConversationStoreTests(MsSqlFixture fixture)
         await using var c = await ServiceTestContext.CreateAsync(fixture);
         var id = await StartAs(c.Store(c.As(c.Org.Anna, Roles.Employee)));
 
-        var result = await Say(c.Store(c.As(c.Org.Piotr, Roles.HR)), id, MessageRole.User, "nie moja rozmowa");
+        var result = await Say(c.Store(c.As(c.Org.Piotr, Roles.HR)), id, StoredRole.User, "nie moja rozmowa");
 
         Assert.Equal(StoreFailure.NotFound, result.Failure);
         Assert.Equal(0, await c.Db.Messages.CountAsync());
@@ -126,12 +126,12 @@ public class ConversationStoreTests(MsSqlFixture fixture)
         await using var c = await ServiceTestContext.CreateAsync(fixture);
         var store = c.Store(c.As(c.Org.Anna, Roles.Employee));
         var id = await StartAs(store);
-        await Say(store, id, MessageRole.User, "q1");
-        await Say(store, id, MessageRole.ToolCall, "t1", "get_leave_balance", "{}");
-        await Say(store, id, MessageRole.ToolResult, "{}", "get_leave_balance");
-        await Say(store, id, MessageRole.Assistant, "a1");
-        await Say(store, id, MessageRole.User, "q2");
-        await Say(store, id, MessageRole.Assistant, "a2");
+        await Say(store, id, StoredRole.User, "q1");
+        await Say(store, id, StoredRole.ToolCall, "t1", "get_leave_balance", "{}");
+        await Say(store, id, StoredRole.ToolResult, "{}", "get_leave_balance");
+        await Say(store, id, StoredRole.Assistant, "a1");
+        await Say(store, id, StoredRole.User, "q2");
+        await Say(store, id, StoredRole.Assistant, "a2");
 
         var last2 = (await store.LoadAsync(id, 2, CancellationToken.None)).Value!;
         var last3 = (await store.LoadAsync(id, 3, CancellationToken.None)).Value!;
@@ -158,7 +158,7 @@ public class ConversationStoreTests(MsSqlFixture fixture)
                 contexts.Add(await fixture.OpenContextAsync(connection, user, c.Clock));
             }
 
-            var results = await Task.WhenAll(contexts.Select((db, i) => Task.Run(() => c.Store(db, user).AppendAsync(id, MessageRole.User, $"m{i}", null, null, CancellationToken.None))));
+            var results = await Task.WhenAll(contexts.Select((db, i) => Task.Run(() => c.Store(db, user).AppendAsync(id, StoredRole.User, $"m{i}", null, null, CancellationToken.None))));
 
             var succeeded = results.Where(r => r.IsSuccess).Select(r => r.Value!.Seq).OrderBy(x => x).ToList();
             Assert.NotEmpty(succeeded);
@@ -183,14 +183,14 @@ public class ConversationStoreTests(MsSqlFixture fixture)
         var user = c.As(c.Org.Anna, Roles.Employee);
         var store = c.Store(user);
         var id = await StartAs(store);
-        await Say(store, id, MessageRole.User, "q1");
+        await Say(store, id, StoredRole.User, "q1");
         // Wiadomość dopisana poza tym kontekstem (np. równoległe żądanie) zajmuje kolejny numer.
         await using (var other = await fixture.OpenContextAsync(c.Db.Database.GetConnectionString()!, user, c.Clock))
         {
-            Assert.True((await Say(c.Store(other, user), id, MessageRole.Assistant, "a1")).IsSuccess);
+            Assert.True((await Say(c.Store(other, user), id, StoredRole.Assistant, "a1")).IsSuccess);
         }
 
-        var next = await Say(store, id, MessageRole.User, "q2");
+        var next = await Say(store, id, StoredRole.User, "q2");
 
         Assert.True(next.IsSuccess);
         Assert.Equal(3, next.Value!.Seq);
@@ -209,5 +209,16 @@ public class ConversationStoreTests(MsSqlFixture fixture)
         Assert.Equal("Conversation", row.EntityType);
         Assert.Equal(id.ToString(), row.EntityId);
         Assert.Equal("{\"numbers\":[\"5000\"]}", row.AfterJson);
+    }
+}
+
+public class StoredRoleTests
+{
+    [Fact]
+    public void StoredRole_matches_domain_MessageRole_names_and_values()
+    {
+        Assert.Equal(
+            Enum.GetValues<Hr.Core.Domain.MessageRole>().Select(r => (r.ToString(), (int)r)),
+            Enum.GetValues<StoredRole>().Select(r => (r.ToString(), (int)r)));
     }
 }

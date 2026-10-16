@@ -1,7 +1,14 @@
-using Hr.Core.Domain;
-
 namespace Hr.Core.AgentTools;
 
-public sealed record StoredMessage(Guid Id, int Seq, MessageRole Role, string Content, string? ToolName, string? ToolParamsJson, DateTime CreatedAtUtc);
+/// <summary>Rola wiadomości w rozmowie; odpowiada <c>Hr.Core.Domain.MessageRole</c> (te same nazwy), ale agent nie widzi typów domeny.</summary>
+public enum StoredRole
+{
+    User,
+    Assistant,
+    ToolCall,
+    ToolResult,
+}
+
+public sealed record StoredMessage(Guid Id, int Seq, StoredRole Role, string Content, string? ToolName, string? ToolParamsJson, DateTime CreatedAtUtc);
 
 public sealed record ConversationSummary(Guid Id, Guid UserId, DateTime StartedAtUtc, string? Preview, int MessageCount);

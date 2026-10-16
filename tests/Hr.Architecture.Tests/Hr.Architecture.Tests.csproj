@@ -21,6 +21,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Hr.Rules\Hr.Rules.csproj" />
+    <ProjectReference Include="..\..\src\Hr.Core\Hr.Core.csproj" />
+    <ProjectReference Include="..\..\src\Hr.Agent\Hr.Agent.csproj" />
   </ItemGroup>
 
 </Project>

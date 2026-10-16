@@ -44,7 +44,7 @@ public sealed class ConversationStore(HrDbContext db, ICurrentUser user, IClock 
     }
 
     public async Task<StoreResult<StoredMessage>> AppendAsync(
-        Guid conversationId, MessageRole role, string content, string? toolName, string? toolParamsJson, CancellationToken ct)
+        Guid conversationId, StoredRole role, string content, string? toolName, string? toolParamsJson, CancellationToken ct)
     {
         if (!await OwnsAsync(conversationId, ct))
         {
@@ -57,7 +57,7 @@ public sealed class ConversationStore(HrDbContext db, ICurrentUser user, IClock 
             Id = Guid.NewGuid(),
             ConversationId = conversationId,
             Seq = last + 1,
-            Role = role,
+            Role = (MessageRole)(int)role,
             Content = content,
             ToolName = toolName,
             ToolParamsJson = toolParamsJson,
@@ -117,5 +117,5 @@ public sealed class ConversationStore(HrDbContext db, ICurrentUser user, IClock 
         user.UserId is { } userId && await db.Conversations.AnyAsync(c => c.Id == conversationId && c.UserId == userId, ct);
 
     private static StoredMessage Map(Message m) =>
-        new(m.Id, m.Seq, m.Role, m.Content, m.ToolName, m.ToolParamsJson, DateTime.SpecifyKind(m.CreatedAtUtc, DateTimeKind.Utc));
+        new(m.Id, m.Seq, (StoredRole)(int)m.Role, m.Content, m.ToolName, m.ToolParamsJson, DateTime.SpecifyKind(m.CreatedAtUtc, DateTimeKind.Utc));
 }
