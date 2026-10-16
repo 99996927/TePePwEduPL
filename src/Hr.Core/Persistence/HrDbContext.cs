@@ -16,6 +16,8 @@ public class HrDbContext(DbContextOptions<HrDbContext> options)
 
     public DbSet<WorkEntryRecord> WorkEntries => Set<WorkEntryRecord>();
 
+    public DbSet<PayrollChange> PayrollChanges => Set<PayrollChange>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

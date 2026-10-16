@@ -172,6 +172,61 @@ namespace Hr.Core.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Hr.Core.Domain.PayrollChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Component")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("DecidedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DecisionReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateOnly>("EffectiveFrom")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("Value")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId", "EffectiveFrom");
+
+                    b.ToTable("PayrollChanges", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PayrollChange_FourEyes", "[DecidedByUserId] IS NULL OR [DecidedByUserId] <> [CreatedByUserId]");
+
+                            t.HasCheckConstraint("CK_PayrollChange_Value", "[Value] >= 0");
+                        });
+                });
+
             modelBuilder.Entity("Hr.Core.Domain.Team", b =>
                 {
                     b.Property<Guid>("Id")
@@ -378,6 +433,15 @@ namespace Hr.Core.Persistence.Migrations
                         .HasForeignKey("DecidedByEmployeeId")
                         .OnDelete(DeleteBehavior.NoAction);
 
+                    b.HasOne("Hr.Core.Domain.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Hr.Core.Domain.PayrollChange", b =>
+                {
                     b.HasOne("Hr.Core.Domain.Employee", null)
                         .WithMany()
                         .HasForeignKey("EmployeeId")
