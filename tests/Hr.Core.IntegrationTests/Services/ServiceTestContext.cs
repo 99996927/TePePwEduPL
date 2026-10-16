@@ -51,5 +51,7 @@ public sealed class ServiceTestContext : IAsyncDisposable
 
     public PayrollChangeService PayrollChanges(ICurrentUser user) => new(Db, user, Clock);
 
+    public PayrollService Payroll(ICurrentUser user) => new(Db, user, Clock, Calendar);
+
     public ValueTask DisposeAsync() => Db.DisposeAsync();
 }

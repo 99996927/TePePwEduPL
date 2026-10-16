@@ -24,6 +24,8 @@ public class HrDbContext(DbContextOptions<HrDbContext> options)
 
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
+    public DbSet<PayrollResultRecord> PayrollResults => Set<PayrollResultRecord>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
