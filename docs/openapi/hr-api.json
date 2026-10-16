@@ -1,0 +1,2515 @@
+{
+  "components": {
+    "schemas": {
+      "AddEntryRequest": {
+        "properties": {
+          "breakMinutes": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "end": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "breakMinutes"
+        ],
+        "type": "object"
+      },
+      "AuditEntryDto": {
+        "properties": {
+          "actorUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "afterJson": {
+            "nullable": true,
+            "type": "string"
+          },
+          "atUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "beforeJson": {
+            "nullable": true,
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "actorUserId",
+          "atUtc",
+          "eventType",
+          "entityType",
+          "entityId",
+          "beforeJson",
+          "afterJson"
+        ],
+        "type": "object"
+      },
+      "AuditPageDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEntryDto"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "items"
+        ],
+        "type": "object"
+      },
+      "CorrectEntryRequest": {
+        "properties": {
+          "breakMinutes": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "end": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "breakMinutes",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "CreatePayrollChangeRequest": {
+        "properties": {
+          "component": {
+            "type": "string"
+          },
+          "effectiveFrom": {
+            "format": "date",
+            "type": "string"
+          },
+          "employeeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "value": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "employeeId",
+          "component",
+          "value",
+          "effectiveFrom",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "CurrentUserDto": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "employeeId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "userId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "employeeId",
+          "userName",
+          "displayName",
+          "roles"
+        ],
+        "type": "object"
+      },
+      "EmployeeDto": {
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "hireDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "teamId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "teamName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "lastName",
+          "teamId",
+          "teamName",
+          "hireDate"
+        ],
+        "type": "object"
+      },
+      "LeaveBalanceDto": {
+        "properties": {
+          "approvedDays": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "entitlementDays": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "pendingDays": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "remainingDays": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "entitlementDays",
+          "approvedDays",
+          "pendingDays",
+          "remainingDays"
+        ],
+        "type": "object"
+      },
+      "LeaveDecisionRequest": {
+        "properties": {
+          "approve": {
+            "type": "boolean"
+          },
+          "reason": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "approve",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "LeaveRequestDto": {
+        "properties": {
+          "createdAtUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "days": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "decidedByEmployeeId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "decisionReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "employeeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "from": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "to": {
+            "format": "date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "employeeId",
+          "from",
+          "to",
+          "days",
+          "status",
+          "decidedByEmployeeId",
+          "decisionReason",
+          "createdAtUtc"
+        ],
+        "type": "object"
+      },
+      "LoginRequest": {
+        "properties": {
+          "password": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userName",
+          "password"
+        ],
+        "type": "object"
+      },
+      "OvertimeDto": {
+        "properties": {
+          "hours100": {
+            "format": "double",
+            "type": "number"
+          },
+          "hours50": {
+            "format": "double",
+            "type": "number"
+          },
+          "ruleIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "total": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "hours50",
+          "hours100",
+          "total",
+          "ruleIds"
+        ],
+        "type": "object"
+      },
+      "PayrollChangeDto": {
+        "properties": {
+          "component": {
+            "type": "string"
+          },
+          "createdAtUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdByUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "decidedByUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "decisionReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "effectiveFrom": {
+            "format": "date",
+            "type": "string"
+          },
+          "employeeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "value": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "employeeId",
+          "component",
+          "value",
+          "effectiveFrom",
+          "reason",
+          "status",
+          "createdByUserId",
+          "decidedByUserId",
+          "decisionReason",
+          "createdAtUtc"
+        ],
+        "type": "object"
+      },
+      "PayrollResultDto": {
+        "properties": {
+          "allowance100": {
+            "format": "double",
+            "type": "number"
+          },
+          "allowance50": {
+            "format": "double",
+            "type": "number"
+          },
+          "baseSalary": {
+            "format": "double",
+            "type": "number"
+          },
+          "calculatedAtUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "employeeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "fixedAllowance": {
+            "format": "double",
+            "type": "number"
+          },
+          "gross": {
+            "format": "double",
+            "type": "number"
+          },
+          "month": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "normHours": {
+            "format": "double",
+            "type": "number"
+          },
+          "normalOvertimePay": {
+            "format": "double",
+            "type": "number"
+          },
+          "overtime100Hours": {
+            "format": "double",
+            "type": "number"
+          },
+          "overtime50Hours": {
+            "format": "double",
+            "type": "number"
+          },
+          "ruleIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "year": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "employeeId",
+          "year",
+          "month",
+          "baseSalary",
+          "fixedAllowance",
+          "normHours",
+          "overtime50Hours",
+          "overtime100Hours",
+          "normalOvertimePay",
+          "allowance50",
+          "allowance100",
+          "gross",
+          "ruleIds",
+          "calculatedAtUtc"
+        ],
+        "type": "object"
+      },
+      "ProblemDetails": {
+        "properties": {
+          "detail": {
+            "nullable": true,
+            "type": "string"
+          },
+          "instance": {
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "format": "int32",
+            "nullable": true,
+            "type": "integer"
+          },
+          "title": {
+            "nullable": true,
+            "type": "string"
+          },
+          "type": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "RejectRequest": {
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "type": "object"
+      },
+      "RestViolationDto": {
+        "properties": {
+          "from": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "requiredHours": {
+            "format": "double",
+            "type": "number"
+          },
+          "restHours": {
+            "format": "double",
+            "type": "number"
+          },
+          "ruleId": {
+            "type": "string"
+          },
+          "to": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ruleId",
+          "from",
+          "to",
+          "restHours",
+          "requiredHours"
+        ],
+        "type": "object"
+      },
+      "RunPayrollRequest": {
+        "properties": {
+          "month": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "year": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "month"
+        ],
+        "type": "object"
+      },
+      "SubmitLeaveRequest": {
+        "properties": {
+          "from": {
+            "format": "date",
+            "type": "string"
+          },
+          "to": {
+            "format": "date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "type": "object"
+      },
+      "TimesheetAnalysisDto": {
+        "properties": {
+          "annualOvertimeLimitExceeded": {
+            "type": "boolean"
+          },
+          "normHours": {
+            "format": "double",
+            "type": "number"
+          },
+          "overtime": {
+            "$ref": "#/components/schemas/OvertimeDto"
+          },
+          "overtimeYearToDate": {
+            "format": "double",
+            "type": "number"
+          },
+          "restViolations": {
+            "items": {
+              "$ref": "#/components/schemas/RestViolationDto"
+            },
+            "type": "array"
+          },
+          "weeklyAverage": {
+            "$ref": "#/components/schemas/WeeklyAverageDto"
+          },
+          "workedHours": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "normHours",
+          "workedHours",
+          "overtime",
+          "restViolations",
+          "weeklyAverage",
+          "overtimeYearToDate",
+          "annualOvertimeLimitExceeded"
+        ],
+        "type": "object"
+      },
+      "WeeklyAverageDto": {
+        "properties": {
+          "averageWeeklyHours": {
+            "format": "double",
+            "type": "number"
+          },
+          "exceedsLimit": {
+            "type": "boolean"
+          },
+          "ruleId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "averageWeeklyHours",
+          "exceedsLimit",
+          "ruleId"
+        ],
+        "type": "object"
+      },
+      "WorkEntryDto": {
+        "properties": {
+          "breakMinutes": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "employeeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "end": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "employeeId",
+          "start",
+          "end",
+          "breakMinutes"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "cookieAuth": {
+        "description": "Cookie sesyjne po zalogowaniu (POST /api/auth/login). Metody zapisu wymagają też nagłówka X-XSRF-TOKEN z wartością ciasteczka XSRF-TOKEN.",
+        "in": "cookie",
+        "name": "hr.session",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "title": "Asystent kadrowo-płacowy API",
+    "version": "v1"
+  },
+  "openapi": "3.0.4",
+  "paths": {
+    "/api/audit": {
+      "get": {
+        "operationId": "Audit_Query",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "entityType",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "entityId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actorUserId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "skip",
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "take",
+            "schema": {
+              "default": 50,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPageDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPageDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPageDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Audit"
+        ]
+      }
+    },
+    "/api/auth/antiforgery": {
+      "get": {
+        "operationId": "Auth_Antiforgery",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "Auth_Login",
+        "requestBody": {
+          "content": {
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "423": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Locked"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "Auth_Logout",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "Auth_Me",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/employees": {
+      "get": {
+        "operationId": "Employees_List",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EmployeeDto"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EmployeeDto"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EmployeeDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Employees"
+        ]
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "Health_Get",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/api/leave/balance": {
+      "get": {
+        "operationId": "Leave_Balance",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "employeeId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveBalanceDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveBalanceDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveBalanceDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Leave"
+        ]
+      }
+    },
+    "/api/leave/requests": {
+      "get": {
+        "operationId": "Leave_List",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LeaveRequestDto"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LeaveRequestDto"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LeaveRequestDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Leave"
+        ]
+      },
+      "post": {
+        "operationId": "Leave_Submit",
+        "requestBody": {
+          "content": {
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitLeaveRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitLeaveRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitLeaveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequestDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequestDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequestDto"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Leave"
+        ]
+      }
+    },
+    "/api/leave/requests/{id}": {
+      "get": {
+        "operationId": "Leave_Get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequestDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequestDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequestDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Leave"
+        ]
+      }
+    },
+    "/api/leave/requests/{id}/cancel": {
+      "post": {
+        "operationId": "Leave_Cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequestDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequestDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequestDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Leave"
+        ]
+      }
+    },
+    "/api/leave/requests/{id}/decision": {
+      "post": {
+        "operationId": "Leave_Decide",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaveDecisionRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaveDecisionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaveDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequestDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequestDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequestDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Leave"
+        ]
+      }
+    },
+    "/api/payroll-changes": {
+      "get": {
+        "operationId": "PayrollChanges_List",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "employeeId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PayrollChangeDto"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PayrollChangeDto"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PayrollChangeDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "PayrollChanges"
+        ]
+      },
+      "post": {
+        "operationId": "PayrollChanges_Create",
+        "requestBody": {
+          "content": {
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePayrollChangeRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePayrollChangeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePayrollChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollChangeDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollChangeDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollChangeDto"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "PayrollChanges"
+        ]
+      }
+    },
+    "/api/payroll-changes/{id}/approve": {
+      "post": {
+        "operationId": "PayrollChanges_Approve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollChangeDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollChangeDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollChangeDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "PayrollChanges"
+        ]
+      }
+    },
+    "/api/payroll-changes/{id}/reject": {
+      "post": {
+        "operationId": "PayrollChanges_Reject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollChangeDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollChangeDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollChangeDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "PayrollChanges"
+        ]
+      }
+    },
+    "/api/payroll-changes/{id}/submit": {
+      "post": {
+        "operationId": "PayrollChanges_Submit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollChangeDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollChangeDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollChangeDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "PayrollChanges"
+        ]
+      }
+    },
+    "/api/payroll/results": {
+      "get": {
+        "operationId": "Payroll_Get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "employeeId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "year",
+            "schema": {
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "month",
+            "schema": {
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollResultDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollResultDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollResultDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Payroll"
+        ]
+      }
+    },
+    "/api/payroll/runs": {
+      "post": {
+        "operationId": "Payroll_Run",
+        "requestBody": {
+          "content": {
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunPayrollRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunPayrollRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunPayrollRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PayrollResultDto"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PayrollResultDto"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PayrollResultDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Payroll"
+        ]
+      }
+    },
+    "/api/timesheet/analysis": {
+      "get": {
+        "operationId": "Timesheet_Analyze",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "employeeId",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimesheetAnalysisDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimesheetAnalysisDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimesheetAnalysisDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Timesheet"
+        ]
+      }
+    },
+    "/api/timesheet/entries": {
+      "get": {
+        "operationId": "Timesheet_List",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WorkEntryDto"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WorkEntryDto"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WorkEntryDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Timesheet"
+        ]
+      },
+      "post": {
+        "operationId": "Timesheet_Add",
+        "requestBody": {
+          "content": {
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddEntryRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddEntryRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddEntryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkEntryDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkEntryDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkEntryDto"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Timesheet"
+        ]
+      }
+    },
+    "/api/timesheet/entries/{id}": {
+      "put": {
+        "operationId": "Timesheet_Correct",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectEntryRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectEntryRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectEntryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkEntryDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkEntryDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkEntryDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Timesheet"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Audit"
+    },
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Employees"
+    },
+    {
+      "name": "Health"
+    },
+    {
+      "name": "Leave"
+    },
+    {
+      "name": "PayrollChanges"
+    },
+    {
+      "name": "Payroll"
+    },
+    {
+      "name": "Timesheet"
+    }
+  ]
+}

@@ -78,3 +78,28 @@ Agent wywołuje `check_work_time_violations`, a następnie `propose_correction`.
 ze statusem „do przeglądu”. Dane źródłowe (ewidencja, naliczenia) nie są zmieniane. Korektę przegląda i zatwierdza człowiek z kadr (UC-11).
 Po zatwierdzeniu zmienia się wpis czasu, a naliczenie można uruchomić ponownie na poprawionych danych (UC-16).
 Zmiany stawek i składników wynagrodzenia przechodzą osobny przepływ dwuosobowy według 6.4 i nie są tworzone przez agenta.
+
+## 6.6 UC-01/02 Logowanie z ochroną antyforgery
+```mermaid
+sequenceDiagram
+    actor U as Użytkownik
+    participant UI as Angular
+    participant API as Hr.Api
+    participant ID as Identity
+    UI->>API: GET /api/auth/antiforgery
+    API-->>UI: 204, ciasteczka hr.antiforgery (HttpOnly) i XSRF-TOKEN
+    U->>UI: login i hasło
+    UI->>API: POST /api/auth/login + nagłówek X-XSRF-TOKEN
+    API->>ID: PasswordSignIn (blokada po 5 błędach)
+    alt poprawne dane
+        ID-->>API: tożsamość (role, employee_id, display_name)
+        API-->>UI: 200 CurrentUserDto, ciasteczko hr.session, nowy XSRF-TOKEN
+    else złe dane
+        API-->>UI: 401 InvalidCredentials (identyczna odpowiedź dla złego loginu i hasła)
+    else konto zablokowane
+        API-->>UI: 423 LockedOut
+    end
+    UI->>API: kolejne żądania zapisu z X-XSRF-TOKEN i ciasteczkiem hr.session
+    API-->>UI: wynik serwisu albo ProblemDetails (404, 403, 422, 409)
+```
+Token antyforgery jest związany z tożsamością, dlatego po zalogowaniu i wylogowaniu API wystawia nowy `XSRF-TOKEN`.
