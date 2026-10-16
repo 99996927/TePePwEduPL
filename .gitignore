@@ -5,3 +5,6 @@ obj/
 *.user
 .vs/
 .idea/
+tools/labour_code/.venv/
+tools/labour_code/__pycache__/
+tools/labour_code/*.pdf
