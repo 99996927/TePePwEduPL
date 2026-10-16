@@ -93,6 +93,25 @@ namespace Hr.Core.Persistence.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("Hr.Core.Domain.Conversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Conversations");
+                });
+
             modelBuilder.Entity("Hr.Core.Domain.Employee", b =>
                 {
                     b.Property<Guid>("Id")
@@ -170,6 +189,45 @@ namespace Hr.Core.Persistence.Migrations
 
                             t.HasCheckConstraint("CK_LeaveRequest_Period", "[To] >= [From]");
                         });
+                });
+
+            modelBuilder.Entity("Hr.Core.Domain.Message", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int>("Seq")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ToolName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ToolParamsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId", "Seq")
+                        .IsUnique();
+
+                    b.ToTable("Messages");
                 });
 
             modelBuilder.Entity("Hr.Core.Domain.PayrollChange", b =>
@@ -440,6 +498,15 @@ namespace Hr.Core.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Hr.Core.Domain.Message", b =>
+                {
+                    b.HasOne("Hr.Core.Domain.Conversation", null)
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Hr.Core.Domain.PayrollChange", b =>
                 {
                     b.HasOne("Hr.Core.Domain.Employee", null)
@@ -515,6 +582,11 @@ namespace Hr.Core.Persistence.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Hr.Core.Domain.Conversation", b =>
+                {
+                    b.Navigation("Messages");
                 });
 #pragma warning restore 612, 618
         }

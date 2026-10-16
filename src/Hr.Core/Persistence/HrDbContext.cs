@@ -18,6 +18,10 @@ public class HrDbContext(DbContextOptions<HrDbContext> options)
 
     public DbSet<PayrollChange> PayrollChanges => Set<PayrollChange>();
 
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+
+    public DbSet<Message> Messages => Set<Message>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
