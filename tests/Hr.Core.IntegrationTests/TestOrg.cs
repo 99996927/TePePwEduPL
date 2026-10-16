@@ -22,7 +22,7 @@ public sealed class TestOrg
 
     public IReadOnlyList<Guid> AllEmployees => new[] { Anna, Jan, Tomasz, Ewa, Bartek, Piotr, Maria };
 
-    public static async Task<TestOrg> SeedAsync(HrDbContext db)
+    public static async Task<TestOrg> SeedAsync(HrDbContext db, bool withRequests = true)
     {
         var org = new TestOrg();
         db.Teams.AddRange(
@@ -39,7 +39,7 @@ public sealed class TestOrg
         db.Teams.Find(org.TeamA)!.ManagerEmployeeId = org.Ewa;
         db.Teams.Find(org.TeamB)!.ManagerEmployeeId = org.Bartek;
         var leave = new Dictionary<Guid, Guid>();
-        foreach (var employeeId in org.AllEmployees)
+        foreach (var employeeId in withRequests ? org.AllEmployees : Array.Empty<Guid>())
         {
             var request = new LeaveRequest
             {
