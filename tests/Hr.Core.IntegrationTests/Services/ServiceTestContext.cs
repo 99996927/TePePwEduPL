@@ -47,5 +47,7 @@ public sealed class ServiceTestContext : IAsyncDisposable
 
     public LeaveService Leave(ICurrentUser user) => new(Db, user, Clock, Calendar);
 
+    public TimesheetService Timesheet(ICurrentUser user) => new(Db, user, Clock, Calendar);
+
     public ValueTask DisposeAsync() => Db.DisposeAsync();
 }
