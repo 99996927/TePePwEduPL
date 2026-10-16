@@ -259,11 +259,12 @@ public class AgentToolboxTests(MsSqlFixture fixture)
         var hrTools = c.Toolbox(c.As(c.Org.Piotr, Roles.HR)).DefinitionsForCurrentUser();
 
         Assert.Equal(
-            new[] { "calculate_overtime", "check_work_time_violations", "get_leave_balance", "get_payroll_result", "search_labour_code" },
+            new[] { "calculate_overtime", "check_work_time_violations", "get_leave_balance", "get_payroll_result", "list_work_entries", "search_labour_code" },
             employeeTools.Select(d => d.Name).OrderBy(n => n));
-        Assert.Equal(6, hrTools.Count);
+        Assert.Equal(8, hrTools.Count);
+        Assert.Contains(hrTools, d => d.Name == "find_employee");
         Assert.All(employeeTools.Where(d => d.Name != "search_labour_code"), d => Assert.DoesNotContain("employee_id", d.InputSchemaJson));
-        Assert.All(hrTools.Where(d => d.Name is "get_leave_balance" or "get_payroll_result" or "calculate_overtime" or "check_work_time_violations"),
+        Assert.All(hrTools.Where(d => d.Name is "get_leave_balance" or "get_payroll_result" or "calculate_overtime" or "check_work_time_violations" or "list_work_entries"),
             d => Assert.Contains("employee_id", d.InputSchemaJson));
         Assert.All(hrTools.Concat(employeeTools), d => Assert.Equal(JsonValueKind.Object, JsonDocument.Parse(d.InputSchemaJson).RootElement.ValueKind));
     }
@@ -287,5 +288,81 @@ public class AgentToolboxTests(MsSqlFixture fixture)
         });
         Assert.Contains(rows, r => r.AfterJson!.Contains("get_leave_balance") && r.AfterJson.Contains("\"ok\":true"));
         Assert.Contains(rows, r => r.AfterJson!.Contains("nieznane") && r.AfterJson.Contains("\"ok\":false"));
+    }
+
+    [Fact]
+    public async Task UC26_List_work_entries_returns_ids_that_propose_correction_accepts()
+    {
+        await using var c = await ServiceTestContext.CreateAsync(fixture, withRequests: true);
+        var hr = c.Toolbox(c.As(c.Org.Piotr, Roles.HR));
+
+        var listed = Parse(await Run(hr, "list_work_entries", new { from = "2026-10-01", to = "2026-10-31", employee_id = c.Org.Anna }));
+        var entry = listed.GetProperty("entries").EnumerateArray().Single();
+        var created = await Run(hr, "propose_correction",
+            new { work_entry_id = entry.GetProperty("id").GetGuid(), start = "2026-10-05T09:00:00", end = "2026-10-05T17:00:00", break_minutes = 30, reason = "Korekta" });
+
+        Assert.Equal(c.Org.Anna, listed.GetProperty("employeeId").GetGuid());
+        Assert.Equal("2026-10-05T08:00:00", entry.GetProperty("start").GetString());
+        Assert.Equal(0, entry.GetProperty("breakMinutes").GetInt32());
+        Assert.False(created.IsError, created.Json);
+    }
+
+    [Fact]
+    public async Task UC24_List_work_entries_for_employee_ignores_employee_id_and_manager_sees_only_own()
+    {
+        await using var c = await ServiceTestContext.CreateAsync(fixture, withRequests: true);
+        var anna = c.Toolbox(c.As(c.Org.Anna, Roles.Employee));
+        var ewa = c.Toolbox(c.As(c.Org.Ewa, Roles.Manager));
+
+        var asAnna = Parse(await Run(anna, "list_work_entries", new { from = "2026-10-01", to = "2026-10-31", employee_id = c.Org.Jan }));
+        var asEwa = Parse(await Run(ewa, "list_work_entries", new { from = "2026-10-01", to = "2026-10-31", employee_id = c.Org.Anna }));
+
+        Assert.Equal(c.Org.Anna, asAnna.GetProperty("employeeId").GetGuid());
+        Assert.Single(asAnna.GetProperty("entries").EnumerateArray());
+        Assert.Equal(c.Org.Ewa, asEwa.GetProperty("employeeId").GetGuid());
+        Assert.Single(asEwa.GetProperty("entries").EnumerateArray());
+    }
+
+    [Fact]
+    public async Task List_work_entries_validates_period()
+    {
+        await using var c = await ServiceTestContext.CreateAsync(fixture);
+        var toolbox = c.Toolbox(c.As(c.Org.Anna, Roles.Employee));
+
+        Assert.Equal("Validation", ErrorCode(await Run(toolbox, "list_work_entries", new { from = "2026-10-31", to = "2026-10-01" })));
+        Assert.Equal("Validation", ErrorCode(await Run(toolbox, "list_work_entries", new { from = "2024-01-01", to = "2026-10-01" })));
+        Assert.Equal("InvalidInput", ErrorCode(await Run(toolbox, "list_work_entries", new { from = "2026-10-01" })));
+    }
+
+    [Fact]
+    public async Task UC24_Find_employee_is_HR_only_and_returns_ids_without_salary()
+    {
+        await using var c = await ServiceTestContext.CreateAsync(fixture);
+
+        var found = await Run(c.Toolbox(c.As(c.Org.Piotr, Roles.HR)), "find_employee", new { query = "nowak" });
+        var none = await Run(c.Toolbox(c.As(c.Org.Piotr, Roles.HR)), "find_employee", new { query = "zzzz" });
+        var asEmployee = await Run(c.Toolbox(c.As(c.Org.Anna, Roles.Employee)), "find_employee", new { query = "nowak" });
+        var asManager = await Run(c.Toolbox(c.As(c.Org.Ewa, Roles.Manager)), "find_employee", new { query = "nowak" });
+
+        var hit = Parse(found).GetProperty("employees").EnumerateArray().Single();
+        Assert.Equal(c.Org.Anna, hit.GetProperty("id").GetGuid());
+        Assert.Equal("Anna", hit.GetProperty("firstName").GetString());
+        Assert.DoesNotContain("alary", found.Json, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(Parse(none).GetProperty("employees").EnumerateArray());
+        Assert.Equal("Forbidden", ErrorCode(asEmployee));
+        Assert.Equal("Forbidden", ErrorCode(asManager));
+    }
+
+    [Fact]
+    public async Task UC24_Find_employee_matches_full_name_and_limits_results()
+    {
+        await using var c = await ServiceTestContext.CreateAsync(fixture);
+        var hr = c.Toolbox(c.As(c.Org.Piotr, Roles.HR));
+
+        var byFullName = Parse(await Run(hr, "find_employee", new { query = "Jan Kowalski" }));
+        var everyone = Parse(await Run(hr, "find_employee", new { query = "a" }));
+
+        Assert.Equal(c.Org.Jan, byFullName.GetProperty("employees").EnumerateArray().Single().GetProperty("id").GetGuid());
+        Assert.True(everyone.GetProperty("employees").GetArrayLength() <= 10);
     }
 }

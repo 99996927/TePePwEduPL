@@ -81,6 +81,7 @@ sequenceDiagram
     participant APP as Serwisy
     participant API as API
     H->>AG: "Sprawdź Annę za październik i przygotuj korektę"
+    AG->>APP: find_employee, list_work_entries (identyfikatory)
     AG->>APP: check_work_time_violations
     APP-->>AG: naruszenia z identyfikatorem reguły
     AG->>APP: propose_correction (wpis, nowe czasy, uzasadnienie)
@@ -89,7 +90,7 @@ sequenceDiagram
     API->>APP: CorrectionDraftService.DecideAsync
     APP->>APP: TimesheetService.CorrectEntryAsync (audyt WorkEntryCorrected)
 ```
-Agent wywołuje `check_work_time_violations`, a następnie `propose_correction` (tylko `HR` i `HRApprover`). Narzędzie zapisuje szkic korekty **wpisu czasu pracy**
+Agent ustala identyfikatory (`find_employee`, `list_work_entries`), wywołuje `check_work_time_violations`, a następnie `propose_correction` (tylko `HR` i `HRApprover`). Narzędzie zapisuje szkic korekty **wpisu czasu pracy**
 ze statusem „oczekuje” (`Pending`). Dane źródłowe (ewidencja, naliczenia) nie są zmieniane. Korektę przegląda i zatwierdza człowiek z kadr (UC-11):
 zatwierdzenie woła `TimesheetService.CorrectEntryAsync`, a błąd walidacji zostawia szkic w stanie `Pending`.
 Po zatwierdzeniu zmienia się wpis czasu, a naliczenie można uruchomić ponownie na poprawionych danych (UC-16).

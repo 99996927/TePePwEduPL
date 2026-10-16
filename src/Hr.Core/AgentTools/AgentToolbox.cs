@@ -9,7 +9,7 @@ using Hr.Rules.Overtime;
 namespace Hr.Core.AgentTools;
 
 /// <summary>
-/// Sześć narzędzi agenta (5.4): każde woła serwis aplikacyjny w kontekście zalogowanego użytkownika, a liczby pochodzą z silnika reguł.
+/// Narzędzia agenta (5.4): każde woła serwis aplikacyjny w kontekście zalogowanego użytkownika, a liczby pochodzą z silnika reguł.
 /// Parametr <c>employee_id</c> jest honorowany tylko dla kadr; dla pozostałych narzędzia działają na własnych danych (UC-24).
 /// </summary>
 public sealed class AgentToolbox(
@@ -21,9 +21,11 @@ public sealed class AgentToolbox(
     PayrollService payroll,
     CorrectionDraftService drafts,
     LabourCodeSearch labourCode,
+    EmployeeDirectoryService directory,
     IAuditWriter audit) : IAgentToolbox
 {
     private const int MaxPeriodDays = 400;
+    private const int MaxEmployeeHits = 10;
     private const int MaxAuditedInputLength = 2000;
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private static readonly string[] LocalTimeFormats = { "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd'T'HH:mm" };
@@ -49,6 +51,9 @@ public sealed class AgentToolbox(
             new("get_payroll_result",
                 "Odczytuje zapisane wstępne naliczenie wynagrodzenia za miesiąc (podstawa, dodatki, brutto). Niczego nie oblicza ani nie uruchamia; gdy naliczenia nie wykonano, zwraca błąd i nie wolno podawać kwoty.",
                 Schema(hr, ("year", "integer", "Rok, np. 2026.", true), ("month", "integer", "Miesiąc 1-12.", true))),
+            new("list_work_entries",
+                "Wypisuje wpisy czasu pracy w okresie (identyfikator, początek, koniec, przerwa). Identyfikator wpisu jest potrzebny do propose_correction.",
+                Schema(hr, ("from", "string", "Początek okresu, format yyyy-MM-dd.", true), ("to", "string", "Koniec okresu włącznie, format yyyy-MM-dd.", true))),
             new("search_labour_code",
                 "Wyszukuje przepisy Kodeksu pracy po numerze artykułu (np. 'art. 151[1]') albo słowach kluczowych. Zwraca tekst i cytat z numerem artykułu.",
                 Schema(false, ("query", "string", "Numer artykułu albo słowa kluczowe.", true))),
@@ -56,8 +61,11 @@ public sealed class AgentToolbox(
 
         if (hr)
         {
+            tools.Add(new("find_employee",
+                "Wyszukuje pracownika po imieniu lub nazwisku (do 10 wyników) i zwraca jego identyfikator do parametru employee_id innych narzędzi.",
+                Schema(false, ("query", "string", "Imię, nazwisko lub ich część.", true))));
             tools.Add(new("propose_correction",
-                "Przygotowuje szkic korekty wpisu czasu pracy dla działu kadr (status Pending). Nie zmienia ewidencji; zmianę zatwierdza człowiek.",
+                "Przygotowuje szkic korekty wpisu czasu pracy dla działu kadr (status Pending). Identyfikator wpisu weź z list_work_entries. Nie zmienia ewidencji; zmianę zatwierdza człowiek.",
                 Schema(false,
                     ("work_entry_id", "string", "Identyfikator wpisu czasu pracy (GUID).", true),
                     ("start", "string", "Proponowany początek, czas lokalny bez strefy, np. 2026-10-05T08:00:00.", true),
@@ -82,6 +90,8 @@ public sealed class AgentToolbox(
                 "calculate_overtime" => await CalculateOvertimeAsync(input, ct),
                 "check_work_time_violations" => await CheckViolationsAsync(input, ct),
                 "get_payroll_result" => await GetPayrollAsync(input, ct),
+                "list_work_entries" => await ListWorkEntriesAsync(input, ct),
+                "find_employee" => await FindEmployeeAsync(input, ct),
                 "search_labour_code" => await SearchLabourCodeAsync(input, ct),
                 "propose_correction" => await ProposeCorrectionAsync(input, conversationId, ct),
                 _ => Fail("UnknownTool", $"Nieznane narzędzie: {toolName}."),
@@ -195,6 +205,59 @@ public sealed class AgentToolbox(
                 .ToList(),
             weeklyAverage = new { a.WeeklyAverage.AverageWeeklyHours, a.WeeklyAverage.ExceedsLimit, a.WeeklyAverage.RuleId },
         });
+    }
+
+    private async Task<ToolOutcome> ListWorkEntriesAsync(JsonElement input, CancellationToken ct)
+    {
+        var (from, to) = ReadPeriod(input, out var tooLong);
+        if (tooLong is not null)
+        {
+            return tooLong;
+        }
+
+        if (to < from)
+        {
+            return Fail("Validation", "Koniec okresu nie może być przed jego początkiem.");
+        }
+
+        if (TargetEmployee(input) is not { } employeeId)
+        {
+            return NotLinked();
+        }
+
+        if (!(await directory.ListAsync(ct)).Any(e => e.Id == employeeId))
+        {
+            return Fail("NotFound", "Nie znaleziono pracownika.");
+        }
+
+        var entries = (await timesheet.ListAsync(from, to, ct)).Where(w => w.EmployeeId == employeeId).ToList();
+        return Ok(new
+        {
+            employeeId,
+            from,
+            to,
+            count = entries.Count,
+            entries = entries.Select(w => new { w.Id, w.Start, w.End, breakMinutes = (int)w.Break.TotalMinutes }).ToList(),
+        });
+    }
+
+    private async Task<ToolOutcome> FindEmployeeAsync(JsonElement input, CancellationToken ct)
+    {
+        if (!IsHrStaff)
+        {
+            return Fail("Forbidden", "Wyszukiwanie pracowników jest dostępne dla działu kadr.");
+        }
+
+        string query = RequiredString(input, "query").Trim();
+        var compare = CultureInfo.InvariantCulture.CompareInfo;
+        const CompareOptions Loose = CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace;
+        var words = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var found = (await directory.ListAsync(ct))
+            .Where(e => words.All(w => compare.IndexOf($"{e.FirstName} {e.LastName}", w, Loose) >= 0))
+            .Take(MaxEmployeeHits)
+            .Select(e => new { e.Id, e.FirstName, e.LastName, e.TeamName })
+            .ToList();
+        return Ok(new { query, count = found.Count, employees = found });
     }
 
     private async Task<ToolOutcome> GetPayrollAsync(JsonElement input, CancellationToken ct)
@@ -359,7 +422,7 @@ public sealed class AgentToolbox(
         var props = properties.ToDictionary(p => p.Name, p => (object)new { type = p.Type, description = p.Description });
         if (withEmployeeId)
         {
-            props["employee_id"] = new { type = "string", description = "Identyfikator pracownika (GUID); pomiń, aby pytać o siebie." };
+            props["employee_id"] = new { type = "string", description = "Identyfikator pracownika (GUID, znajdź go narzędziem find_employee); pomiń, aby pytać o siebie." };
         }
 
         return JsonSerializer.Serialize(

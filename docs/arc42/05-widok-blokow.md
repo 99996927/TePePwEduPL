@@ -69,7 +69,7 @@ Referencja projektu nie ogranicza widoczności typów publicznych, więc granica
 ## 5.4 Moduł agenta (`Hr.Agent`) i interfejs narzędzi (`Hr.Core.AgentTools`)
 `Hr.Agent` jest zbudowany na oficjalnym SDK Anthropic dla C# i `Microsoft.Extensions.AI` (ADR-26): narzędzia to `AIFunction`, a pętlę narzędzi prowadzi SDK.
 Narzędzia: `get_leave_balance`, `calculate_overtime`, `check_work_time_violations`, `get_payroll_result` (tylko odczyt zapisanego naliczenia),
-`search_labour_code`, `propose_correction` (tylko kadry). Każde wywołuje serwis aplikacyjny w kontekście zalogowanego użytkownika
+`list_work_entries`, `search_labour_code`, a tylko dla kadr `find_employee` i `propose_correction`. Każde wywołuje serwis aplikacyjny w kontekście zalogowanego użytkownika
 (tożsamość z sesji, nie od modelu; `employee_id` honorowany tylko dla `HR` i `HRApprover`). `propose_correction` tworzy tylko szkic.
 
 **Historia rozmów:** każda rozmowa (pytania, odpowiedzi, wywołania narzędzi z parametrami i wynikiem) jest zapisywana w bazie

@@ -57,7 +57,7 @@ public sealed class ServiceTestContext : IAsyncDisposable
     public CorrectionDraftService Drafts(ICurrentUser user) => new(Db, user, Clock, Timesheet(user));
 
     public AgentToolbox Toolbox(ICurrentUser user) => new(
-        Db, user, Clock, Leave(user), Timesheet(user), Payroll(user), Drafts(user), new LabourCodeSearch(Db), new AuditWriter(Db, user, Clock));
+        Db, user, Clock, Leave(user), Timesheet(user), Payroll(user), Drafts(user), new LabourCodeSearch(Db), new EmployeeDirectoryService(Db, user), new AuditWriter(Db, user, Clock));
 
     public ConversationStore Store(ICurrentUser user) => Store(Db, user);
 
