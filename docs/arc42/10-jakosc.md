@@ -12,10 +12,10 @@
 | Q-01 | Te same dane wejściowe dla silnika wywołane dwukrotnie | Identyczny wynik. |
 | Q-02 | `tomasz.lis` żąda zasobu Anny bezpośrednim wywołaniem API | 403/404, brak danych w odpowiedzi. |
 | Q-03 | `piotr.zielinski` próbuje zatwierdzić własną zmianę | Odmowa w serwisie i w bazie. |
-| Q-04 | Model zwraca w odpowiedzi liczbę niepochodzącą z wyniku narzędzia | Test wykrywa niezgodność (odpowiedź zawiera tylko liczby z wyników narzędzi). |
-| Q-05 | Anthropic API niedostępne | Reszta systemu działa, agent informuje o niedostępności. |
+| Q-04 | Model zwraca w odpowiedzi liczbę niepochodzącą z wyniku narzędzia | `NumberGuard` wykrywa liczbę spoza wyników narzędzi, model dostaje jedną rundę korekty, a gdy liczba zostaje, API zwraca `ungroundedNumbers` i zapisuje zdarzenie w audycie (ADR-26). |
+| Q-05 | Anthropic API niedostępne | Reszta systemu działa, API zwraca `503` z `code=AgentUnavailable`, pytanie zostaje w historii. |
 | Q-06 | Start od pustego środowiska | Po `docker compose up` baza jest zmigrowana i zasilona danymi demo. |
-| Q-07 | `Hr.Agent` próbuje użyć typu `Hr.Rules` lub `DbContext` | Test architektury kończy się niepowodzeniem. |
+| Q-07 | `Hr.Agent` próbuje użyć typu `Hr.Rules` lub `DbContext` | Test architektury (`AgentIsolationTests`) kończy się niepowodzeniem: `Hr.Agent` używa tylko `Hr.Core.AgentTools`. |
 | Q-08 | Kierownik lub inny pracownik żąda cudzej rozmowy z agentem | 403/404. Kadry otrzymują treść, a odczyt jest w audycie. |
 
 ## 10.3 Poziomy testów

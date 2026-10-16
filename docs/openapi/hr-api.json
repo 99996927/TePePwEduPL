@@ -23,6 +23,53 @@
         ],
         "type": "object"
       },
+      "AskRequest": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "conversationId",
+          "text"
+        ],
+        "type": "object"
+      },
+      "AskResponse": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageDto"
+            },
+            "type": "array"
+          },
+          "text": {
+            "type": "string"
+          },
+          "ungroundedNumbers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "conversationId",
+          "text",
+          "messages",
+          "ungroundedNumbers"
+        ],
+        "type": "object"
+      },
       "AuditEntryDto": {
         "properties": {
           "actorUserId": {
@@ -87,6 +134,67 @@
         ],
         "type": "object"
       },
+      "ConversationDetailDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageDto"
+            },
+            "type": "array"
+          },
+          "startedAtUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "userId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "startedAtUtc",
+          "messages"
+        ],
+        "type": "object"
+      },
+      "ConversationSummaryDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "messageCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "preview": {
+            "nullable": true,
+            "type": "string"
+          },
+          "startedAtUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "userId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "startedAtUtc",
+          "preview",
+          "messageCount"
+        ],
+        "type": "object"
+      },
       "CorrectEntryRequest": {
         "properties": {
           "breakMinutes": {
@@ -106,6 +214,115 @@
           }
         },
         "required": [
+          "start",
+          "end",
+          "breakMinutes",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "CorrectionDraftDto": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAtUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdByUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "decidedAtUtc": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "decidedByUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "decisionNote": {
+            "nullable": true,
+            "type": "string"
+          },
+          "employeeId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "proposedBreakMinutes": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "proposedEnd": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "proposedStart": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "workEntryId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "employeeId",
+          "workEntryId",
+          "proposedStart",
+          "proposedEnd",
+          "proposedBreakMinutes",
+          "reason",
+          "status",
+          "createdByUserId",
+          "conversationId",
+          "decidedByUserId",
+          "createdAtUtc",
+          "decidedAtUtc",
+          "decisionNote"
+        ],
+        "type": "object"
+      },
+      "CreateCorrectionDraftRequest": {
+        "properties": {
+          "breakMinutes": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "end": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "start": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "workEntryId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workEntryId",
           "start",
           "end",
           "breakMinutes",
@@ -173,6 +390,22 @@
           "userName",
           "displayName",
           "roles"
+        ],
+        "type": "object"
+      },
+      "DraftDecisionRequest": {
+        "properties": {
+          "approve": {
+            "type": "boolean"
+          },
+          "note": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "approve",
+          "note"
         ],
         "type": "object"
       },
@@ -317,6 +550,41 @@
         "required": [
           "userName",
           "password"
+        ],
+        "type": "object"
+      },
+      "MessageDto": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "createdAtUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "seq": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "toolName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "toolParams": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "seq",
+          "role",
+          "content",
+          "toolName",
+          "toolParams",
+          "createdAtUtc"
         ],
         "type": "object"
       },
@@ -974,6 +1242,501 @@
         ],
         "tags": [
           "Auth"
+        ]
+      }
+    },
+    "/api/conversations": {
+      "get": {
+        "operationId": "Conversations_List",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConversationSummaryDto"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConversationSummaryDto"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConversationSummaryDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Conversations"
+        ]
+      }
+    },
+    "/api/conversations/messages": {
+      "post": {
+        "operationId": "Conversations_Ask",
+        "requestBody": {
+          "content": {
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskResponse"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Conversations"
+        ]
+      }
+    },
+    "/api/conversations/{id}": {
+      "get": {
+        "operationId": "Conversations_Get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetailDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetailDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetailDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "Conversations"
+        ]
+      }
+    },
+    "/api/correction-drafts": {
+      "get": {
+        "operationId": "CorrectionDrafts_List",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CorrectionDraftDto"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CorrectionDraftDto"
+                  },
+                  "type": "array"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CorrectionDraftDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "CorrectionDrafts"
+        ]
+      },
+      "post": {
+        "operationId": "CorrectionDrafts_Create",
+        "requestBody": {
+          "content": {
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCorrectionDraftRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCorrectionDraftRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCorrectionDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorrectionDraftDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorrectionDraftDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorrectionDraftDto"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "CorrectionDrafts"
+        ]
+      }
+    },
+    "/api/correction-drafts/{id}/decision": {
+      "post": {
+        "operationId": "CorrectionDrafts_Decide",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftDecisionRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftDecisionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorrectionDraftDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorrectionDraftDto"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorrectionDraftDto"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Brak lub niepoprawny token antyforgery (code = AntiforgeryTokenInvalid) albo niepoprawne żądanie."
+          },
+          "401": {
+            "description": "Brak sesji: zaloguj się (bez ciała odpowiedzi)."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "tags": [
+          "CorrectionDrafts"
         ]
       }
     },
@@ -2492,6 +3255,12 @@
     },
     {
       "name": "Auth"
+    },
+    {
+      "name": "Conversations"
+    },
+    {
+      "name": "CorrectionDrafts"
     },
     {
       "name": "Employees"
