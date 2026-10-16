@@ -178,6 +178,72 @@ public class ConversationStoreTests(MsSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Tool_pair_is_written_atomically_with_consecutive_seq()
+    {
+        await using var c = await ServiceTestContext.CreateAsync(fixture);
+        var store = c.Store(c.As(c.Org.Anna, Roles.Employee));
+        var id = await StartAs(store);
+        await Say(store, id, StoredRole.User, "q");
+
+        var pair = await store.AppendToolPairAsync(id, "toolu_1", "get_leave_balance", "{}", "{\"remainingDays\":7}", CancellationToken.None);
+
+        Assert.True(pair.IsSuccess);
+        Assert.Equal(new[] { StoredRole.ToolCall, StoredRole.ToolResult }, pair.Value!.Select(m => m.Role));
+        Assert.Equal(new[] { 2, 3 }, pair.Value!.Select(m => m.Seq));
+        var loaded = (await store.LoadAsync(id, 40, CancellationToken.None)).Value!;
+        Assert.Equal("toolu_1", loaded[1].Content);
+        Assert.Equal("{\"remainingDays\":7}", loaded[2].Content);
+    }
+
+    [Fact]
+    public async Task Tool_pair_on_foreign_conversation_is_NotFound_and_writes_nothing()
+    {
+        await using var c = await ServiceTestContext.CreateAsync(fixture);
+        var id = await StartAs(c.Store(c.As(c.Org.Anna, Roles.Employee)));
+
+        var result = await c.Store(c.As(c.Org.Jan, Roles.Employee)).AppendToolPairAsync(id, "t", "get_leave_balance", "{}", "{}", CancellationToken.None);
+
+        Assert.Equal(StoreFailure.NotFound, result.Failure);
+        Assert.Equal(0, await c.Db.Messages.CountAsync());
+    }
+
+    [Fact]
+    public async Task Concurrent_tool_pairs_never_leave_a_lone_tool_call()
+    {
+        await using var c = await ServiceTestContext.CreateAsync(fixture);
+        var user = c.As(c.Org.Anna, Roles.Employee);
+        var id = await StartAs(c.Store(user));
+        string connection = c.Db.Database.GetConnectionString()!;
+        var contexts = new List<Hr.Core.Persistence.HrDbContext>();
+        try
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                contexts.Add(await fixture.OpenContextAsync(connection, user, c.Clock));
+            }
+
+            var results = await Task.WhenAll(contexts.Select((db, i) => Task.Run(() =>
+                c.Store(db, user).AppendToolPairAsync(id, $"toolu_{i}", "get_leave_balance", "{}", "{}", CancellationToken.None))));
+
+            Assert.All(results.Where(r => !r.IsSuccess), r => Assert.Equal(StoreFailure.Conflict, r.Failure));
+            var stored = await c.Db.Messages.AsNoTracking().Where(m => m.ConversationId == id).OrderBy(m => m.Seq).ToListAsync();
+            Assert.Equal(results.Count(r => r.IsSuccess) * 2, stored.Count);
+            for (int i = 0; i < stored.Count; i += 2)
+            {
+                Assert.Equal(MessageRole.ToolCall, stored[i].Role);
+                Assert.Equal(MessageRole.ToolResult, stored[i + 1].Role);
+            }
+        }
+        finally
+        {
+            foreach (var db in contexts)
+            {
+                await db.DisposeAsync();
+            }
+        }
+    }
+
+    [Fact]
     public async Task Append_after_conflict_on_same_store_succeeds_with_next_seq()
     {
         await using var c = await ServiceTestContext.CreateAsync(fixture);

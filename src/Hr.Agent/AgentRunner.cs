@@ -76,10 +76,15 @@ public sealed class AgentRunner(IChatClient chat, IAgentToolbox toolbox, IConver
         var toolResults = new List<string>();
         var functions = ToolFunctionAdapter.For(toolbox, () => id, async (callId, tool, input, result) =>
         {
-            // Para wywołanie/wynik zapisywana jest dopiero po wykonaniu narzędzia, więc nigdy nie powstaje samo wywołanie.
-            if (await AppendAsync(StoredRole.ToolCall, callId, tool, input))
+            // Para wywołanie/wynik jest zapisywana w jednym zapisie po wykonaniu narzędzia, więc nigdy nie powstaje samo wywołanie.
+            var pair = await store.AppendToolPairAsync(id, callId, tool, input, result, ct);
+            if (pair.IsSuccess)
             {
-                await AppendAsync(StoredRole.ToolResult, result, tool);
+                newMessages.AddRange(pair.Value!);
+            }
+            else
+            {
+                appendFailure ??= pair.Failure;
             }
 
             toolResults.Add(result);

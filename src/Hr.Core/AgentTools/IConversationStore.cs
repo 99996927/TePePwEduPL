@@ -15,6 +15,10 @@ public interface IConversationStore
     Task<StoreResult<StoredMessage>> AppendAsync(
         Guid conversationId, StoredRole role, string content, string? toolName, string? toolParamsJson, CancellationToken ct);
 
+    /// <summary>Dopisuje wywołanie narzędzia i jego wynik w jednym zapisie (dwa kolejne numery albo nic), więc w historii nie ma samotnego wywołania.</summary>
+    Task<StoreResult<IReadOnlyList<StoredMessage>>> AppendToolPairAsync(
+        Guid conversationId, string callId, string toolName, string toolParamsJson, string resultJson, CancellationToken ct);
+
     Task<IReadOnlyList<ConversationSummary>> ListAsync(CancellationToken ct);
 
     /// <summary>Pełna rozmowa widoczna dla użytkownika; odczyt cudzej zapisuje <c>ConversationRead</c> w audycie.</summary>

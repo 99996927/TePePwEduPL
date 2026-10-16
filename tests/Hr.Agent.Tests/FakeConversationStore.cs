@@ -9,6 +9,9 @@ public sealed class FakeConversationStore : IConversationStore
 
     public HashSet<Guid> Foreign { get; } = new();
 
+    /// <summary>Gdy true, zapis pary wywołanie/wynik kończy się konfliktem i nic nie zapisuje.</summary>
+    public bool FailToolPairs { get; set; }
+
     public List<(Guid ConversationId, string EventType, string Details)> Warnings { get; } = new();
 
     public IReadOnlyList<StoredMessage> Messages(Guid conversationId) => _conversations[conversationId];
@@ -38,6 +41,36 @@ public sealed class FakeConversationStore : IConversationStore
         var message = new StoredMessage(Guid.NewGuid(), list.Count + 1, role, content, toolName, toolParamsJson, DateTime.UtcNow);
         list.Add(message);
         return Task.FromResult(StoreResult<StoredMessage>.Ok(message));
+    }
+
+    public Task<StoreResult<IReadOnlyList<StoredMessage>>> AppendToolPairAsync(
+        Guid conversationId, string callId, string toolName, string toolParamsJson, string resultJson, CancellationToken ct)
+    {
+        if (!_conversations.TryGetValue(conversationId, out var list) || Foreign.Contains(conversationId))
+        {
+            return Task.FromResult(StoreResult<IReadOnlyList<StoredMessage>>.Fail(StoreFailure.NotFound));
+        }
+
+        if (FailToolPairs)
+        {
+            return Task.FromResult(StoreResult<IReadOnlyList<StoredMessage>>.Fail(StoreFailure.Conflict));
+        }
+
+        var call = new StoredMessage(Guid.NewGuid(), list.Count + 1, StoredRole.ToolCall, callId, toolName, toolParamsJson, DateTime.UtcNow);
+        var result = new StoredMessage(Guid.NewGuid(), list.Count + 2, StoredRole.ToolResult, resultJson, toolName, null, DateTime.UtcNow);
+        list.Add(call);
+        list.Add(result);
+        return Task.FromResult(StoreResult<IReadOnlyList<StoredMessage>>.Ok([call, result]));
+    }
+
+    /// <summary>Wstawia gotową historię (np. uszkodzoną), z pominięciem reguł zapisu.</summary>
+    public void Seed(Guid conversationId, params (StoredRole Role, string Content, string? Tool)[] messages)
+    {
+        var list = _conversations[conversationId];
+        foreach (var (role, content, tool) in messages)
+        {
+            list.Add(new StoredMessage(Guid.NewGuid(), list.Count + 1, role, content, tool, role == StoredRole.ToolCall ? "{}" : null, DateTime.UtcNow));
+        }
     }
 
     public Task<IReadOnlyList<ConversationSummary>> ListAsync(CancellationToken ct) =>

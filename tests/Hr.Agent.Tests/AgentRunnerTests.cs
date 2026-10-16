@@ -245,4 +245,54 @@ public class AgentRunnerTests
         Assert.Empty(result.Reply!.UngroundedNumbers);
         Assert.Equal(2, _model.Requests.Count);
     }
+
+    [Fact]
+    public async Task Orphan_tool_call_in_history_is_skipped_and_does_not_hang()
+    {
+        var id = (await _store.StartAsync(default)).Value;
+        _store.Seed(id,
+            (StoredRole.User, "Pierwsze pytanie", null),
+            (StoredRole.ToolCall, "toolu_orphan", "get_leave_balance"),
+            (StoredRole.User, "Drugie pytanie", null));
+        _model.ThenText("Odpowiedź.");
+
+        var result = await Task.Run(() => Runner().AskAsync(id, "Trzecie pytanie", default)).WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.Equal("Odpowiedź.", result.Reply!.Text);
+        var sent = _model.Requests[0];
+        Assert.Equal(new[] { "Pierwsze pytanie", "Drugie pytanie", "Trzecie pytanie" }, sent.Select(m => m.Text));
+        Assert.DoesNotContain(sent.SelectMany(m => m.Contents), c => c is FunctionCallContent);
+    }
+
+    [Fact]
+    public async Task Orphan_tool_call_after_complete_pair_keeps_the_pair()
+    {
+        var id = (await _store.StartAsync(default)).Value;
+        _store.Seed(id,
+            (StoredRole.User, "q1", null),
+            (StoredRole.ToolCall, "call_ok", "get_leave_balance"),
+            (StoredRole.ToolResult, "{\"remainingDays\":7}", "get_leave_balance"),
+            (StoredRole.ToolCall, "call_orphan", "get_leave_balance"),
+            (StoredRole.Assistant, "a1", null));
+        _model.ThenText("ok");
+
+        var result = await Task.Run(() => Runner().AskAsync(id, "q2", default)).WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.Null(result.Failure);
+        var calls = _model.Requests[0].SelectMany(m => m.Contents).OfType<FunctionCallContent>().Select(c => c.CallId);
+        Assert.Equal(new[] { "call_ok" }, calls);
+    }
+
+    [Fact]
+    public async Task Failed_tool_pair_write_leaves_no_lone_tool_call_and_run_reports_Conflict()
+    {
+        _toolbox.Results["get_leave_balance"] = new ToolOutcome("{\"remainingDays\":7}", false);
+        _store.FailToolPairs = true;
+        _model.ThenToolCall("call_1", "get_leave_balance").ThenText("Zostało 7 dni.");
+
+        var result = await Runner().AskAsync(null, "Ile mam urlopu?", default);
+
+        Assert.Equal(AgentFailure.Conflict, result.Failure);
+        Assert.Equal(new[] { StoredRole.User }, Roles(OnlyConversation()));
+    }
 }

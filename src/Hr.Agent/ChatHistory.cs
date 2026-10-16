@@ -22,6 +22,7 @@ internal static class ChatHistory
                     messages.Add(new ChatMessage(ChatRole.Assistant, message.Content));
                     break;
                 case StoredRole.ToolCall:
+                    // Samotne wywołanie (bez wyniku, np. po przerwanym zapisie) jest pomijane: model nie może dostać tool_use bez tool_result.
                     var calls = new List<AIContent>();
                     var results = new List<AIContent>();
                     // Kolejne kompletne pary (wywołanie, wynik) trafiają do jednej wiadomości assistant i jednej tool.
@@ -33,9 +34,10 @@ internal static class ChatHistory
                         i += 2;
                     }
 
-                    i--;
                     if (calls.Count > 0)
                     {
+                        // Następna iteracja pętli „for” ma wziąć pierwszy nieprzetworzony element.
+                        i--;
                         messages.Add(new ChatMessage(ChatRole.Assistant, calls));
                         messages.Add(new ChatMessage(ChatRole.Tool, results));
                     }

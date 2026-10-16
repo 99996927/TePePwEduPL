@@ -77,6 +77,41 @@ public sealed class ConversationStore(HrDbContext db, ICurrentUser user, IClock 
         return StoreResult<StoredMessage>.Ok(Map(message));
     }
 
+    public async Task<StoreResult<IReadOnlyList<StoredMessage>>> AppendToolPairAsync(
+        Guid conversationId, string callId, string toolName, string toolParamsJson, string resultJson, CancellationToken ct)
+    {
+        if (!await OwnsAsync(conversationId, ct))
+        {
+            return StoreResult<IReadOnlyList<StoredMessage>>.Fail(StoreFailure.NotFound);
+        }
+
+        int last = await db.Messages.Where(m => m.ConversationId == conversationId).Select(m => (int?)m.Seq).MaxAsync(ct) ?? 0;
+        var now = clock.UtcNow;
+        var call = new Message
+        {
+            Id = Guid.NewGuid(), ConversationId = conversationId, Seq = last + 1, Role = MessageRole.ToolCall,
+            Content = callId, ToolName = toolName, ToolParamsJson = toolParamsJson, CreatedAtUtc = now,
+        };
+        var result = new Message
+        {
+            Id = Guid.NewGuid(), ConversationId = conversationId, Seq = last + 2, Role = MessageRole.ToolResult,
+            Content = resultJson, ToolName = toolName, CreatedAtUtc = now,
+        };
+        db.Messages.AddRange(call, result);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 2601 or 2627 })
+        {
+            db.Entry(call).State = EntityState.Detached;
+            db.Entry(result).State = EntityState.Detached;
+            return StoreResult<IReadOnlyList<StoredMessage>>.Fail(StoreFailure.Conflict);
+        }
+
+        return StoreResult<IReadOnlyList<StoredMessage>>.Ok([Map(call), Map(result)]);
+    }
+
     public async Task<IReadOnlyList<ConversationSummary>> ListAsync(CancellationToken ct)
     {
         var rows = await db.Conversations.Visible(user)
