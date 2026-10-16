@@ -13,8 +13,6 @@ public sealed record LeaveBalance(int EntitlementDays, int ApprovedDays, int Pen
 /// <summary>Saldo, wnioski i decyzje urlopowe (UC-05 do UC-09). Liczby pochodzą z <c>Hr.Rules</c>.</summary>
 public sealed class LeaveService(HrDbContext db, ICurrentUser user, IClock clock, WorkCalendar calendar)
 {
-    internal WorkCalendar Calendar => calendar;
-
     public async Task<ServiceResult<LeaveBalance>> GetBalanceAsync(Guid employeeId, CancellationToken ct = default)
     {
         var employee = await db.VisibleEmployees(user).FirstOrDefaultAsync(e => e.Id == employeeId, ct);
@@ -23,15 +21,81 @@ public sealed class LeaveService(HrDbContext db, ICurrentUser user, IClock clock
             return ServiceResult<LeaveBalance>.Fail(ServiceErrorCode.NotFound, "Nie znaleziono pracownika.");
         }
 
-        return ServiceResult<LeaveBalance>.Ok(await BalanceOfAsync(employee, ct));
+        return ServiceResult<LeaveBalance>.Ok(await BalanceOfAsync(employee, Today.Year, ct));
     }
 
-    private async Task<LeaveBalance> BalanceOfAsync(Employee employee, CancellationToken ct)
+    /// <summary>Składa wniosek dla siebie (UC-06). Dni i saldo liczy silnik reguł (KP-154-1).</summary>
+    public async Task<ServiceResult<LeaveRequest>> SubmitAsync(DateOnly from, DateOnly to, CancellationToken ct = default)
     {
-        var today = DateOnly.FromDateTime(clock.UtcNow);
-        int entitlement = LeaveEntitlement.AnnualDays(LeaveEntitlement.YearsOfService(employee.HireDate, today));
-        var yearStart = new DateOnly(today.Year, 1, 1);
-        var yearEnd = new DateOnly(today.Year, 12, 31);
+        if (user.EmployeeId is not { } employeeId || !Roles.All.Any(user.IsInRole))
+        {
+            return ServiceResult<LeaveRequest>.Fail(ServiceErrorCode.Forbidden, "Użytkownik nie jest powiązany z pracownikiem.");
+        }
+
+        var employee = await db.Employees.FirstOrDefaultAsync(e => e.Id == employeeId, ct);
+        if (employee is null)
+        {
+            return ServiceResult<LeaveRequest>.Fail(ServiceErrorCode.Forbidden, "Użytkownik nie jest powiązany z pracownikiem.");
+        }
+
+        if (to < from)
+        {
+            return ServiceResult<LeaveRequest>.Fail(ServiceErrorCode.Validation, "Data końcowa nie może być wcześniejsza niż początkowa.");
+        }
+
+        if (from.Year != to.Year)
+        {
+            return ServiceResult<LeaveRequest>.Fail(ServiceErrorCode.Validation, "Wniosek musi mieścić się w jednym roku kalendarzowym.");
+        }
+
+        bool overlaps = await db.LeaveRequests.AnyAsync(
+            l => l.EmployeeId == employeeId && (l.Status == LeaveStatus.Pending || l.Status == LeaveStatus.Approved)
+                 && l.From <= to && l.To >= from, ct);
+        if (overlaps)
+        {
+            return ServiceResult<LeaveRequest>.Fail(ServiceErrorCode.Conflict, "Wniosek nakłada się na istniejący wniosek urlopowy.");
+        }
+
+        var balance = await BalanceOfAsync(employee, from.Year, ct);
+        var check = LeaveRequestRules.Evaluate(balance.EntitlementDays, balance.ApprovedDays + balance.PendingDays, from, to, calendar);
+        if (check.Days == 0)
+        {
+            return ServiceResult<LeaveRequest>.Fail(ServiceErrorCode.Validation, "Wniosek nie obejmuje żadnego dnia roboczego.");
+        }
+
+        if (!check.Sufficient)
+        {
+            return ServiceResult<LeaveRequest>.Fail(
+                ServiceErrorCode.Validation,
+                $"Niewystarczające saldo urlopu: brakuje {-check.RemainingAfter} dni.",
+                check.RuleId);
+        }
+
+        var request = new LeaveRequest
+        {
+            Id = Guid.NewGuid(),
+            EmployeeId = employeeId,
+            From = from,
+            To = to,
+            Days = check.Days,
+            Status = LeaveStatus.Pending,
+            CreatedAtUtc = clock.UtcNow,
+        };
+        db.LeaveRequests.Add(request);
+        await db.SaveChangesAsync(ct);
+        return ServiceResult<LeaveRequest>.Ok(request);
+    }
+
+    private DateOnly Today => DateOnly.FromDateTime(clock.UtcNow);
+
+    private async Task<LeaveBalance> BalanceOfAsync(Employee employee, int year, CancellationToken ct)
+    {
+        var today = Today;
+        // Staż liczony na dziś dla bieżącego roku, na 1 stycznia dla pozostałych lat.
+        var asOf = year == today.Year ? today : new DateOnly(year, 1, 1);
+        int entitlement = LeaveEntitlement.AnnualDays(LeaveEntitlement.YearsOfService(employee.HireDate, asOf));
+        var yearStart = new DateOnly(year, 1, 1);
+        var yearEnd = new DateOnly(year, 12, 31);
 
         var days = await db.LeaveRequests
             .Where(l => l.EmployeeId == employee.Id && l.From >= yearStart && l.From <= yearEnd
