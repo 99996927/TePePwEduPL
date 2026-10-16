@@ -26,6 +26,7 @@
 | ADR-22 | Uproszczenia silnika reguł (plan 1) | Przyjęta |
 | ADR-23 | Testy integracyjne warstwy danych na prawdziwym SQL Server w kontenerze (Testcontainers) | Przyjęta |
 | ADR-24 | Serwisy aplikacyjne i reguły ich działania | Do przeglądu |
+| ADR-25 | Konwencje API REST i uwierzytelnianie cookie | Do przeglądu |
 
 ## ADR-01 Trzy warstwy, dwa kontenery
 **Kontekst:** wymóg trójwarstwowości i uruchomienia na jednej maszynie.
@@ -188,3 +189,16 @@ Sześć kont z sekcji 7.2 pozostaje stałych i nazwanych, bo na nich opierają s
 - **Naliczenia:** stały dodatek (`FixedAllowance`) dochodzi do brutto, ale nie wchodzi do podstawy stawki godzinowej; stawka godzinowa liczona z nominalnego wymiaru miesiąca, bez odejmowania urlopów; stawki z zatwierdzonych zmian od daty obowiązywania włącznie; ponowne uruchomienie za ten sam miesiąc aktualizuje wiersz (unikalny `(EmployeeId, Year, Month)`), a błąd w ewidencji któregokolwiek pracownika przerywa całe uruchomienie bez zapisu częściowego.
 **Alternatywy:** `Forbidden` także dla obiektów poza zakresem (ujawnia istnienie cudzych danych); wnioski przez granicę roku z podziałem na lata (więcej reguł, poza zakresem planu 3).
 **Konsekwencje:** API i agent dostają jednolite kody błędów i gotowe reguły. Poza zakresem pozostają wnioski przez granicę roku, anulowanie zatwierdzonych wniosków i korekty zamkniętych naliczeń.
+
+## ADR-25 Konwencje API REST i uwierzytelnianie cookie
+**Kontekst:** `Hr.Api` jest jedyną granicą między przeglądarką (Angular, plan 6) i agentem (plan 5) a serwisami z `Hr.Core`. Konwencje muszą być spójne, bo klient TypeScript jest generowany z OpenAPI (ADR-16).
+**Decyzja:**
+- **Struktura:** trasy pod `/api`, kontrolery (nie minimal API), cienkie: DTO zamiast encji (statyczne fabryki `Of`), mapowanie `ServiceResult<T>` na odpowiedź HTTP w jednym miejscu. Kontrolery nie dotykają `HrDbContext` i nie mają atrybutów ról: role i zakres danych egzekwują serwisy (jedno źródło prawdy). Dostęp bez logowania blokuje domyślna polityka (`FallbackPolicy`), a test wylicza wszystkie endpointy i wymaga 401 dla każdego poza `health`, `login` i `antiforgery`.
+- **Kody błędów (ProblemDetails, `application/problem+json`, pola `code` i `ruleId`):** 404 `NotFound`, 403 `Forbidden`, 422 `Validation`, 409 `Conflict`, 400 brak lub zły token antyforgery (`AntiforgeryTokenInvalid`) albo niepoprawne żądanie, 423 konto zablokowane (`LockedOut`), 500 bez szczegółów wyjątku (`ServerError`). Brak sesji to 401 bez ciała i bez przekierowania. Uwaga: przy domyślnej polityce wymagającej logowania także trasa niedopasowana do żadnego endpointu zwraca niezalogowanemu 401, a zalogowanemu 404.
+- **Sesja:** cookie `hr.session` (`HttpOnly`, `SameSite=Strict`, wygasanie przesuwane 8 h), lokalne konta Identity (ADR-06, ADR-10). Blokada konta po 5 nieudanych próbach na 15 minut. Zły login i złe hasło dają identyczną odpowiedź 401, a blokada 423 (ujawnia istnienie tylko zablokowanych kont).
+- **Antyforgery:** ciasteczko `hr.antiforgery` (`HttpOnly`) oraz token w ciasteczku `XSRF-TOKEN` czytelnym dla JavaScript i nagłówku `X-XSRF-TOKEN` (tak działa domyślnie Angular), wymagany dla metod innych niż GET, HEAD, OPTIONS i TRACE, także dla logowania. Token jest odświeżany po zalogowaniu i wylogowaniu, bo jest związany z tożsamością. Walidację realizuje własny filtr (wbudowany `AutoValidateAntiforgeryToken` wymaga usług widoków MVC).
+- **Czas w JSON:** pola `*Utc` z sufiksem `Z`; wpisy czasu pracy jako czas lokalny bez strefy (ADR-17); zakresy w audycie jako UTC (`DateTimeOffset`).
+- **Start aplikacji:** zawsze migruje bazę; konta i dane demo tylko przy `Hr:SeedDemoData=true` (domyślnie `false`).
+- **OpenAPI:** dokument generowany z kontrolerów (`operationId` w postaci `Kontroler_Akcja`, jawne typy odpowiedzi i błędów, schemat zabezpieczeń cookie), wystawiany tylko w środowisku Development, z zatwierdzoną migawką `docs/openapi/hr-api.json` i testem, który wykrywa każdą zmianę kontraktu (aktualizacja: `UPDATE_OPENAPI=1`).
+**Alternatywy:** role na kontrolerach (dubluje reguły serwisów), JWT (ADR-10 wybrał cookie), `AutoValidateAntiforgeryToken` z `AddControllersWithViews` (dodatkowe zależności), 404 zamiast 401 dla tras bez endpointu (wymagałoby własnej obsługi fallbacku).
+**Konsekwencje:** angular i agent dostają jednolity kontrakt. Poza zakresem tego etapu: HTTPS i HSTS (plan Docker), ograniczanie liczby żądań poza blokadą konta, konwersacje agenta (plan 5), stronicowanie list innych niż audyt. Migracje przy starcie aplikacji są wygodne dla demo, ale w środowisku produkcyjnym powinny być osobnym krokiem wdrożenia.

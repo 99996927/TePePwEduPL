@@ -7,7 +7,8 @@
 - **Zakres danych** (własne / zespół / wszyscy) wyznaczany w warstwie logiki i stosowany jako filtr w zapytaniach, a nie tylko w UI.
   Brak dostępu zwraca 403/404 (UC-03, UC-04).
 - **Zasada czterech oczu:** zmiana płacowa wymaga innej osoby jako zatwierdzającej (UC-18, UC-19).
-- **Blokada konta** po kilku nieudanych logowaniach (UC-02).
+- **Blokada konta** po 5 nieudanych logowaniach na 15 minut (UC-02); odpowiedź 423, a zły login i złe hasło dają identyczne 401 (ADR-25).
+- **Ciasteczko sesji** `hr.session`: `HttpOnly`, `SameSite=Strict`, wygasanie przesuwane 8 h. **Antyforgery:** token `XSRF-TOKEN` i nagłówek `X-XSRF-TOKEN` dla każdej metody zapisu, także logowania.
 - **Sekrety** (klucz API, hasło SA) tylko w zmiennych środowiskowych, nigdy w repozytorium.
 
 ## 8.2 Determinizm obliczeń i rola agenta
@@ -43,6 +44,19 @@ narzędzia przez agenta (narzędzie, parametry, wynik, użytkownik).
 ## 8.5 Obsługa błędów
 Błędy walidacji i reguł zwracane są jako ustrukturyzowane odpowiedzi (kod, komunikat, identyfikator reguły). Błędy zewnętrzne
 (Anthropic API) nie przerywają pracy systemu poza funkcją agenta, a agent informuje użytkownika o niedostępności.
+
+Mapowanie błędów serwisów na HTTP (ADR-24, ADR-25):
+
+| Kod serwisu | HTTP | Znaczenie |
+|---|---|---|
+| `NotFound` | 404 | Zasób nie istnieje albo jest poza zakresem użytkownika (bez ujawniania istnienia cudzych danych) |
+| `Forbidden` | 403 | Zasób widoczny, ale rola lub reguła nie pozwala na operację |
+| `Validation` | 422 | Naruszenie reguły; `ruleId` wskazuje regułę silnika (np. `KP-154-1`) |
+| `Conflict` | 409 | Niezgodny stan lub nakładanie |
+| (brak sesji) | 401 | Bez ciała i bez przekierowania |
+| (konto zablokowane) | 423 | `code = LockedOut` |
+| (antyforgery) | 400 | `code = AntiforgeryTokenInvalid` |
+| (wyjątek) | 500 | `code = ServerError`, bez szczegółów wyjątku |
 
 ## 8.6 Testowalność
 Silnik reguł jest czysty i testowany jednostkowo. Czas pochodzi z wstrzykiwanego dostawcy zegara, aby testy były powtarzalne.

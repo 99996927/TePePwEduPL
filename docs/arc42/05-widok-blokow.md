@@ -50,7 +50,7 @@ flowchart LR
 
 | Projekt | Zależności | Zawartość |
 |---|---|---|
-| `Hr.Api` | Core, Agent | Kontrolery REST, ASP.NET Core Identity (cookie sesyjne), serwowanie statycznego Angulara, `Program.cs`, kompozycja zależności. Przekazuje agentowi tożsamość użytkownika. |
+| `Hr.Api` | Core, Agent | Kontrolery REST pod `/api` (cienkie, DTO, `ServiceResult` mapowany na ProblemDetails, ADR-25), ASP.NET Core Identity (cookie sesyjne), serwowanie statycznego Angulara, `Program.cs`, kompozycja zależności. Przekazuje agentowi tożsamość użytkownika. |
 | `Hr.Core` | Rules | Domena (pracownik, wniosek, wpis czasu, naliczenie, zmiana płacowa, rozmowa), serwisy aplikacyjne (`LeaveService`, `TimesheetService`, `PayrollChangeService`, `PayrollService` zwracające `ServiceResult<T>`, ADR-24), autoryzacja zakresu danych, EF Core, migracje, seed, import Kodeksu pracy, audyt. Wystawia interfejs narzędzi dla agenta. Nie zna projektu `Agent`. |
 | `Hr.Rules` | brak | Silnik reguł płacowych: czyste funkcje, `decimal`, parametry wg daty. Bez I/O. |
 | `Hr.Agent` | Core (tylko interfejs narzędzi) | Klient Anthropic API, pętla tool use, instrukcja systemowa, zapis rozmowy przez interfejs z `Core`. Nie ma dostępu do bazy ani do silnika reguł. |
