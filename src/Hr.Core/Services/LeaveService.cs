@@ -86,6 +86,78 @@ public sealed class LeaveService(HrDbContext db, ICurrentUser user, IClock clock
         return ServiceResult<LeaveRequest>.Ok(request);
     }
 
+    /// <summary>Anuluje własny wniosek w statusie oczekującym (UC-09).</summary>
+    public async Task<ServiceResult<LeaveRequest>> CancelAsync(Guid requestId, CancellationToken ct = default)
+    {
+        var request = user.EmployeeId is { } me
+            ? await db.LeaveRequests.FirstOrDefaultAsync(l => l.Id == requestId && l.EmployeeId == me, ct)
+            : null;
+        if (request is null)
+        {
+            return ServiceResult<LeaveRequest>.Fail(ServiceErrorCode.NotFound, "Nie znaleziono wniosku.");
+        }
+
+        if (request.Status != LeaveStatus.Pending)
+        {
+            return ServiceResult<LeaveRequest>.Fail(ServiceErrorCode.Conflict, "Anulować można tylko wniosek oczekujący na decyzję.");
+        }
+
+        request.Status = LeaveStatus.Cancelled;
+        await db.SaveChangesAsync(ct);
+        return ServiceResult<LeaveRequest>.Ok(request);
+    }
+
+    /// <summary>Zatwierdza lub odrzuca wniosek (UC-08): kierownik zespołu albo kadry, nigdy autor wniosku.</summary>
+    public async Task<ServiceResult<LeaveRequest>> DecideAsync(Guid requestId, bool approve, string? reason, CancellationToken ct = default)
+    {
+        var request = await db.LeaveRequests.Visible(db, user).FirstOrDefaultAsync(l => l.Id == requestId, ct);
+        if (request is null)
+        {
+            return ServiceResult<LeaveRequest>.Fail(ServiceErrorCode.NotFound, "Nie znaleziono wniosku.");
+        }
+
+        bool canDecide = user.IsInRole(Roles.Manager) || user.IsInRole(Roles.HR) || user.IsInRole(Roles.HRApprover);
+        if (!canDecide || request.EmployeeId == user.EmployeeId)
+        {
+            return ServiceResult<LeaveRequest>.Fail(ServiceErrorCode.Forbidden, "Brak uprawnień do podjęcia decyzji w tym wniosku.");
+        }
+
+        if (request.Status != LeaveStatus.Pending)
+        {
+            return ServiceResult<LeaveRequest>.Fail(ServiceErrorCode.Conflict, "Wniosek został już rozpatrzony lub anulowany.");
+        }
+
+        if (!approve && string.IsNullOrWhiteSpace(reason))
+        {
+            return ServiceResult<LeaveRequest>.Fail(ServiceErrorCode.Validation, "Odrzucenie wniosku wymaga uzasadnienia.");
+        }
+
+        if (approve)
+        {
+            var employee = await db.Employees.FirstAsync(e => e.Id == request.EmployeeId, ct);
+            var balance = await BalanceOfAsync(employee, request.From.Year, ct);
+            int usedByOthers = balance.ApprovedDays + balance.PendingDays - request.Days;
+            var check = LeaveRequestRules.Evaluate(balance.EntitlementDays, usedByOthers, request.From, request.To, calendar);
+            if (!check.Sufficient)
+            {
+                return ServiceResult<LeaveRequest>.Fail(
+                    ServiceErrorCode.Validation,
+                    $"Niewystarczające saldo urlopu: brakuje {-check.RemainingAfter} dni.",
+                    check.RuleId);
+            }
+        }
+
+        request.Status = approve ? LeaveStatus.Approved : LeaveStatus.Rejected;
+        request.DecidedByEmployeeId = user.EmployeeId;
+        request.DecisionReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+        await db.SaveChangesAsync(ct);
+        return ServiceResult<LeaveRequest>.Ok(request);
+    }
+
+    /// <summary>Widoczne wnioski, od najnowszych.</summary>
+    public async Task<IReadOnlyList<LeaveRequest>> ListAsync(CancellationToken ct = default) =>
+        await db.LeaveRequests.Visible(db, user).OrderByDescending(l => l.From).ToListAsync(ct);
+
     private DateOnly Today => DateOnly.FromDateTime(clock.UtcNow);
 
     private async Task<LeaveBalance> BalanceOfAsync(Employee employee, int year, CancellationToken ct)
