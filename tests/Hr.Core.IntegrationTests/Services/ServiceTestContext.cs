@@ -1,4 +1,6 @@
+using Hr.Core.AgentTools;
 using Hr.Core.Abstractions;
+using Hr.Core.Auditing;
 using Hr.Core.Persistence;
 using Hr.Core.Services;
 using Hr.Rules.Calendar;
@@ -52,6 +54,9 @@ public sealed class ServiceTestContext : IAsyncDisposable
     public PayrollChangeService PayrollChanges(ICurrentUser user) => new(Db, user, Clock);
 
     public CorrectionDraftService Drafts(ICurrentUser user) => new(Db, user, Clock, Timesheet(user));
+
+    public AgentToolbox Toolbox(ICurrentUser user) => new(
+        Db, user, Clock, Leave(user), Timesheet(user), Payroll(user), Drafts(user), new LabourCodeSearch(Db), new AuditWriter(Db, user, Clock));
 
     public PayrollService Payroll(ICurrentUser user) => new(Db, user, Clock, Calendar);
 

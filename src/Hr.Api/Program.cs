@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Hr.Api.Security;
 using Hr.Core.Abstractions;
+using Hr.Core.AgentTools;
 using Hr.Core.Auditing;
 using Hr.Core.Domain;
 using Hr.Core.Persistence;
@@ -34,6 +35,9 @@ builder.Services.AddScoped<CorrectionDraftService>();
 builder.Services.AddScoped<PayrollChangeService>();
 builder.Services.AddScoped<PayrollService>();
 builder.Services.AddScoped<AuditService>();
+builder.Services.AddScoped<IAuditWriter, AuditWriter>();
+builder.Services.AddScoped<LabourCodeSearch>();
+builder.Services.AddScoped<IAgentToolbox, AgentToolbox>();
 
 builder.Services.AddIdentityCore<ApplicationUser>(HrIdentityOptions.Apply)
     .AddRoles<IdentityRole<Guid>>()
