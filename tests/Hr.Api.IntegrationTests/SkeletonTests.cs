@@ -60,7 +60,7 @@ public class SkeletonTests(MsSqlFixture fixture)
             .Where(e => !e.RoutePattern.RawText!.TrimStart('/').StartsWith("test/", StringComparison.Ordinal))
             .Where(e => !PublicRoutes.Contains(e.RoutePattern.RawText!.TrimStart('/')))
             .ToList();
-        // Warunek niepustej listy dochodzi w tasku 3, gdy pojawią się pierwsze chronione endpointy (np. /api/auth/me).
+        Assert.NotEmpty(endpoints);
 
         foreach (var endpoint in endpoints)
         {

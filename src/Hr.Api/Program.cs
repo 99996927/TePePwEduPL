@@ -9,6 +9,7 @@ using Hr.Core.Services;
 using Hr.Rules.Calendar;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -58,7 +59,18 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
-builder.Services.AddControllers()
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = AntiforgeryCookie.HeaderName;
+    options.Cookie.Name = "hr.antiforgery";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+});
+builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add<AntiforgeryValidationFilter>();
+    })
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 var app = builder.Build();
