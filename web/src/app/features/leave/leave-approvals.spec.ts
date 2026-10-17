@@ -12,9 +12,9 @@ import { SessionService } from '../../core/session';
 import { LeaveApprovals } from './leave-approvals';
 
 const employees = [
-  { id: 'e1', firstName: 'Anna', lastName: 'Nowak', hireDate: '2020-01-01', teamId: 't1', teamName: 'Zespół A' },
-  { id: 'e2', firstName: 'Jan', lastName: 'Kowalski', hireDate: '2020-01-01', teamId: 't1', teamName: 'Zespół B' },
-  { id: 'e3', firstName: 'Ewa', lastName: 'Lis', hireDate: '2020-01-01', teamId: 't1', teamName: 'Zespół C' },
+  { id: 'e1', firstName: 'Anna', lastName: 'Nowak', hireDate: '2020-01-01', teamId: 't1', teamName: 'Zespół A', userId: null },
+  { id: 'e2', firstName: 'Jan', lastName: 'Kowalski', hireDate: '2020-01-01', teamId: 't1', teamName: 'Zespół B', userId: null },
+  { id: 'e3', firstName: 'Ewa', lastName: 'Lis', hireDate: '2020-01-01', teamId: 't1', teamName: 'Zespół C', userId: null },
 ];
 
 function req(id: string, employeeId: string, status: string, from: string): LeaveRequestDto {

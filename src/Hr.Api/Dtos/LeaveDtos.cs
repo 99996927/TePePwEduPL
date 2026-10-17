@@ -3,9 +3,9 @@ using Hr.Core.Services;
 
 namespace Hr.Api.Dtos;
 
-public sealed record EmployeeDto(Guid Id, string FirstName, string LastName, Guid TeamId, string TeamName, DateOnly HireDate)
+public sealed record EmployeeDto(Guid Id, string FirstName, string LastName, Guid TeamId, string TeamName, DateOnly HireDate, Guid? UserId)
 {
-    public static EmployeeDto Of(EmployeeSummary e) => new(e.Id, e.FirstName, e.LastName, e.TeamId, e.TeamName, e.HireDate);
+    public static EmployeeDto Of(EmployeeSummary e) => new(e.Id, e.FirstName, e.LastName, e.TeamId, e.TeamName, e.HireDate, e.UserId);
 }
 
 public sealed record LeaveBalanceDto(int EntitlementDays, int ApprovedDays, int PendingDays, int RemainingDays)

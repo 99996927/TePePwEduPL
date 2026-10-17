@@ -6,8 +6,8 @@ import { EmployeeDto } from '../api/models/employee-dto';
 import { EmployeePicker } from './employee-picker';
 
 const employees: EmployeeDto[] = [
-  { id: 'e1', firstName: 'Anna', lastName: 'Nowak', hireDate: '2020-01-01', teamId: 't1', teamName: 'Platforma' },
-  { id: 'e2', firstName: 'Jan', lastName: 'Kowalski', hireDate: '2021-01-01', teamId: 't2', teamName: 'Dane' },
+  { id: 'e1', firstName: 'Anna', lastName: 'Nowak', hireDate: '2020-01-01', teamId: 't1', teamName: 'Platforma', userId: null },
+  { id: 'e2', firstName: 'Jan', lastName: 'Kowalski', hireDate: '2021-01-01', teamId: 't2', teamName: 'Dane', userId: null },
 ];
 
 describe('EmployeePicker', () => {

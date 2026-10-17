@@ -32,7 +32,7 @@ describe('EmployeeDirectory', () => {
 
   afterEach(() => http.verify());
 
-  const employee = { id: 'e1', firstName: 'Anna', lastName: 'Nowak', hireDate: '2020-01-01', teamId: 't', teamName: 'T' };
+  const employee = { id: 'e1', firstName: 'Anna', lastName: 'Nowak', hireDate: '2020-01-01', teamId: 't', teamName: 'T', userId: null };
 
   it('load_second_call_does_not_hit_api', async () => {
     const first = directory.load();

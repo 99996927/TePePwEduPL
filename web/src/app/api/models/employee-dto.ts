@@ -8,4 +8,5 @@ export interface EmployeeDto {
   lastName: string;
   teamId: string;
   teamName: string;
+  userId: string | null;
 }
