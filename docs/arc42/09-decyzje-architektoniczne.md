@@ -33,6 +33,7 @@
 | ADR-29 | Frontend: Angular 22, Angular Material, `ng-openapi-gen`, standalone i signals | Przyjęta, zrealizowana w planie 7a |
 | ADR-30 | `userId` w `EmployeeDto`: UI buduje mapę nazwisk dla zmian płacowych, szkiców i audytu | Przyjęta, zrealizowana w planie 7b |
 | ADR-31 | Ekran agenta: jedna trasa z `UrlMatcher`, odpowiedź w całości, ostrzeżenie o liczbach, cudze rozmowy tylko do odczytu, bez zmian kontraktu | Przyjęta, zrealizowana w planie 7c |
+| ADR-32 | Motyw: Material 3 z nadpisaniem tokenów i wspólne klasy stylów (styl „Material Dashboard”) | Przyjęta, zrealizowana w planie 7d |
 
 ## ADR-01 Trzy warstwy, dwa kontenery
 **Kontekst:** wymóg trójwarstwowości i uruchomienia na jednej maszynie.
@@ -321,3 +322,27 @@ rozmowy zapisuje `ConversationRead` w audycie.
 - Długie oczekiwanie na model nie pokazuje odpowiedzi częściowej; użytkownik widzi tylko wskaźnik „Agent pisze…”.
 - Ostrzeżenie o liczbach znika po przeładowaniu rozmowy (nie jest w historii); trwały ślad jest w audycie (ADR-26).
 - Do testów ręcznych z prawdziwym modelem klucz trafia do `.env` (`ANTHROPIC_API_KEY=...`), a `tools/dev/run.sh` przekazuje go tylko procesowi `Hr.Api` (sekcja 7.4).
+
+## ADR-32 Motyw: Material 3 z nadpisaniem tokenów i wspólne klasy stylów
+**Kontekst:** po planach 7a–7c aplikacja miała domyślny wygląd Angular Material (biały pasek, zwykłe listy, karty bez wyróżników). Właściciel chciał atrakcyjniejszego,
+spójnego stylu wzorowanego na „Material Dashboard” (Creative Tim); wybrano wariant z jasnoszarym menu i fioletowym gradientem akcentu (makiety, 2026-10-17).
+**Decyzja:**
+- **Motyw Material 3** z paletą `violet` (główna) i `cyan` (trzeciorzędna); tokeny wyglądu jako zmienne CSS (`--app-bg`, `--app-menu-bg`, `--app-card-shadow`, `--app-card-radius`,
+  `--app-grad-*`) w `web/src/styles/_tokens.scss`.
+- **Wspólne klasy** w `web/src/styles/_components.scss`: `page-card`, `page-card__header` (gradientowy nagłówek z modyfikatorami `--success|--warning|--danger|--info`),
+  `page-card__body`, `page-card--tile` z `page-card__icon`, `data-table`, `status-chip`; style dialogów globalnie. Komponent `app-status-chip` mapuje status API na ton
+  (`statusTone`, nieznany status jest neutralny); chip renderuje wyłącznie polską etykietę, więc kolor jest dodatkiem, a nie jedynym nośnikiem informacji.
+- **Szkielet:** jasnoszare menu (260 px) z ikonami i gradientem na aktywnej pozycji, biały pasek z okruszkami „Asystent kadrowo-płacowy / tytuł ekranu”, nazwą i rolą
+  użytkownika oraz przyciskiem „Wyloguj”. Ikony: Material Symbols przez `MAT_ICON_DEFAULT_OPTIONS` (`fontSet: material-symbols-outlined`); wcześniej domyślny zestaw
+  `material-icons` nie był zdefiniowany przez załadowany font.
+- **Kontrast:** biały tekst tylko na ciemnych odcieniach gradientów (początki gradientów przyciemnione do ≥ 4,5:1: fiolet 6,3, zielony 5,1, pomarańczowy 5,6, czerwony 5,0,
+  turkus 4,5), chipy to ciemny tekst na jasnym tle tonu (≥ 5,7:1).
+- **Bez zmian logiki:** teksty, atrybuty `data-*`, role ARIA i kontrakt API pozostają; testy dotychczasowych ekranów przechodzą bez zmian asercji.
+**Alternatywy:**
+- Własny CSS zamiast Angular Material: odrzucone (przepisanie UI, utrata gotowych kontrolek i dostępności).
+- Zakup szablonu Creative Tim: odrzucone (licencja, inny stos); odtworzono tylko wygląd.
+- Tryb ciemny: poza zakresem planu 7d.
+**Konsekwencje:**
+- Wygląd ocenia właściciel w przeglądarce; agent nie ma przeglądarki, więc testy sprawdzają strukturę (klasy, ikony, tony), nie piksele.
+- Filtry (`mat-form-field`) zostają w ciele karty, bo pola Material na gradiencie nie spełniają kontrastu; w nagłówku są tytuł i przyciski akcji.
+- Fonty i ikony nadal z Google Fonts (samodzielne hostowanie w planie Docker).

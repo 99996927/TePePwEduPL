@@ -43,6 +43,17 @@ Trasa `/agent` (nowa rozmowa) i `/agent/<id>` (otwarta rozmowa), jeden komponent
 - Pole pytania (limit 4000 znaków, Enter wysyła, Shift+Enter nowy wiersz) tylko we własnej lub nowej rozmowie; cudza rozmowa jest tylko do odczytu z banerem o audycie.
 - Pytania wymagają klucza Anthropic: wiersz `ANTHROPIC_API_KEY=...` w `.env` w katalogu głównym repozytorium (poza gitem) i ponowne `tools/dev/run.sh`. Bez klucza API zwraca `503`, ekran pokazuje komunikat, a pytanie zostaje w polu.
 
+## Wygląd i style (`src/styles/`, plan 7d)
+
+- `src/styles/_tokens.scss`: zmienne CSS `--app-bg`, `--app-menu-bg`, `--app-card-shadow`, `--app-card-radius` i gradienty `--app-grad-primary|success|warning|danger|info`.
+  Biały tekst wolno kłaść tylko na tych gradientach (kontrast ≥ 4,5:1).
+- `src/styles/_components.scss`: klasy `page-card` (biała karta), `page-card__header` (gradientowy nagłówek; modyfikatory `--success|--warning|--danger|--info`; przyciski „filled”
+  w nagłówku są białe), `page-card__body`, `page-card--tile` z `page-card__icon` (kafelek z pływającą ikoną), `data-table` (klasa na `<table mat-table>`), `status-chip` i style dialogów.
+- Nowy ekran: `<div class="page-card"><div class="page-card__header"><h1>Tytuł</h1></div><div class="page-card__body">…</div></div>`; filtry i pola formularzy w ciele karty.
+- Status jako chip: `<app-status-chip [status]="r.status" [label]="statusLabel(r.status)" />` (`shared/status-chip.ts`; ton z `statusTone`, nieznany status jest neutralny).
+- Nowa pozycja menu: wpis w stałej `MENU` w `core/layout/shell.ts` z nazwą ikony Material Symbols (`icon`); tytuł ekranu w pasku bierze się z etykiety pozycji.
+- Ikony: `<mat-icon fontIcon="nazwa" />` (zestaw `material-symbols-outlined` ustawia `MAT_ICON_DEFAULT_OPTIONS` w `app.config.ts`); nie wpisuj nazwy ikony jako tekstu.
+
 ## Uwagi
 
 - Po aktualizacji do planu 7b istniejąca baza dev nie ma szkicu korekty w danych demo; wykonaj `tools/dev/stop.sh --reset` i `tools/dev/run.sh`.
