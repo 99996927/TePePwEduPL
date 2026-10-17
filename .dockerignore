@@ -1,0 +1,13 @@
+.env
+.run/
+.git/
+.superpowers/
+**/bin/
+**/obj/
+web/node_modules/
+web/dist/
+web/.angular/
+src/Hr.Api/wwwroot/*
+!src/Hr.Api/wwwroot/.gitkeep
+tests/
+docs/

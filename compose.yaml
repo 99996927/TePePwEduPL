@@ -1,0 +1,50 @@
+# Lokalne uruchomienie całego systemu: tools/docker/up.sh (patrz README.md).
+# Sekrety pochodzą wyłącznie z pliku .env (poza repozytorium); w tym pliku nie ma żadnych wartości.
+name: hr
+
+services:
+  hr-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: hr-db
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${HR_DB_PASSWORD:?Brak HR_DB_PASSWORD w .env (uruchom tools/docker/up.sh)}
+      SQLCMDPASSWORD: ${HR_DB_PASSWORD}
+    # Brak sekcji ports: baza jest dostępna tylko w sieci Compose.
+    volumes:
+      - hr-db-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -Q 'SELECT 1' -b"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  hr-app:
+    build:
+      context: .
+    image: hr-app:local
+    container_name: hr-app
+    restart: unless-stopped
+    depends_on:
+      hr-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Hr: Server=hr-db,1433;Database=hr;User Id=sa;Password=${HR_DB_PASSWORD};TrustServerCertificate=True
+      Hr__SeedDemoData: "true"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "127.0.0.1:5080:8080"
+    healthcheck:
+      # Obraz ASP.NET nie ma curl, więc zapytanie HTTP wykonuje sam bash.
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /api/health HTTP/1.0\\r\\n\\r\\n\" >&3 && head -n1 <&3 | grep -q 200'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+volumes:
+  hr-db-data:
+    name: hr-db-data
