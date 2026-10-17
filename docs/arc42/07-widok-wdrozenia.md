@@ -94,14 +94,15 @@ wnioski urlopowe, zmiany płacowe i naliczenia) mają w `AuditLog` wpisy z pusty
 Do testów ręcznych całe rozwiązanie uruchamia się bez Docker Compose (docelowe wdrożenie z sekcji 7.1 powstanie w planie Docker): baza w kontenerze,
 Angular zbudowany do `wwwroot`, `Hr.Api` jako proces w tle. Skrypty są w `tools/dev/` i działają z dowolnego katalogu.
 
-**Wymagania:** Docker (dostęp bez `sudo`), .NET SDK 9, Node `^24.15.0` z npm, `curl`; obraz `mcr.microsoft.com/mssql/server:2022-latest` (pobierany przy pierwszym starcie).
+**Wymagania:** Docker (dostęp bez `sudo`), .NET SDK 9, Node `^24.15.0` z npm, `curl`, `ss` (iproute2) i `setsid` (util-linux); obraz `mcr.microsoft.com/mssql/server:2022-latest` (pobierany przy pierwszym starcie).
 
 | Polecenie | Działanie |
 |---|---|
 | `tools/dev/run.sh` | Sprawdza programy; tworzy (jeśli brak) plik `.env` z losowym hasłem `HR_DEV_SA_PASSWORD` (`chmod 600`, nigdy nie jest wypisywane); uruchamia lub wznawia kontener `hr-dev-db` (port `127.0.0.1:14330`, wolumen `hr-dev-db-data`) i czeka do 90 s na `SELECT 1`; buduje Angulara (`npm ci`, `npm run build:dev`, `npm run build:wwwroot`); kończy poprzednie `Hr.Api` i uruchamia nowe w tle na `http://127.0.0.1:5080` (`ASPNETCORE_ENVIRONMENT=Development`, baza `hr_dev`, `Hr__SeedDemoData=true`, profil `Full`); czeka do 120 s na `/api/health`, uruchamia `smoke.sh` i wypisuje adres oraz komendę tunelu SSH. Można go uruchamiać wielokrotnie. |
 | `tools/dev/stop.sh` | Kończy `Hr.Api` (PID z `.run/api.pid`, a gdy plik jest nieaktualny: proces `Hr.Api` na porcie 5080), zamyka SQL Server poleceniem `SHUTDOWN` i zatrzymuje kontener; dane zostają w wolumenie. |
+| `tools/dev/stop.sh --api-only` | Kończy tylko `Hr.Api` (kontener bazy zostaje); używane przez `run.sh` przed ponownym startem. |
 | `tools/dev/stop.sh --reset` | Dodatkowo usuwa kontener `hr-dev-db` i wolumen `hr-dev-db-data`; następne `run.sh` zakłada bazę i dane demo od nowa. |
-| `tools/dev/smoke.sh [adres]` | Test dymny (domyślnie `http://127.0.0.1:5080`): `/` zawiera `<app-root`, skrypt `main*.js` z `index.html` jest serwowany jako skrypt, `GET /api/auth/antiforgery` daje 204, logowanie Anny złym hasłem 401, poprawnym 200 (z nagłówkiem `X-XSRF-TOKEN`), saldo urlopu z wymiarem 20 dni i lista wniosków 200. Każdy krok wypisuje `OK` albo `BŁĄD` z przyczyną; pierwszy błąd kończy skrypt kodem ≠ 0. |
+| `tools/dev/smoke.sh [adres]` | Test dymny (domyślnie `http://127.0.0.1:5080`): `/` zawiera `<app-root`, skrypt `main*.js` z `index.html` jest serwowany jako skrypt (kod 200, typ zawartości `javascript`), `GET /api/auth/antiforgery` daje 204, logowanie Anny złym hasłem 401, poprawnym 200 (z nagłówkiem `X-XSRF-TOKEN`), saldo urlopu z wymiarem 20 dni i lista wniosków 200. Każdy krok wypisuje `OK` albo `BŁĄD` z przyczyną; pierwszy błąd kończy skrypt kodem ≠ 0. |
 
 **Dostęp z innego komputera:** API nasłuchuje wyłącznie na `127.0.0.1`, więc przeglądarka łączy się przez tunel SSH, np. `ssh -N -L 5080:127.0.0.1:5080 azureuser@tepecompute`
 (skrypt wypisuje komendę z bieżącym użytkownikiem i hostem), a potem `http://localhost:5080`. Konta demo są w sekcji 7.2, a lista kroków testu ręcznego w
@@ -110,7 +111,7 @@ Angular zbudowany do `wwwroot`, `Hr.Api` jako proces w tle. Skrypty są w `tools
 **Pliki robocze (poza repozytorium, `.gitignore`):** `.env` (hasło SA), `.run/api.log` (log `Hr.Api`), `.run/api.pid`, zawartość `src/Hr.Api/wwwroot/` poza `.gitkeep`.
 
 **Zastrzeżenia:**
-- Proces `Hr.Api` uruchomiony w sesji SSH może zostać zakończony po jej zamknięciu albo po restarcie maszyny; wystarczy ponownie `run.sh` (zatrzymany kontener jest wznawiany, nieaktualny plik PID usuwany).
+- `Hr.Api` jest uruchamiane przez `setsid` (własna sesja i grupa procesów), więc przeżywa zamknięcie sesji SSH i działa do restartu maszyny albo do `tools/dev/stop.sh`; po restarcie wystarczy ponownie `run.sh` (zatrzymany kontener jest wznawiany, nieaktualny plik PID usuwany).
 - Port bazy (`14330`) i aplikacji (`5080`) są dostępne tylko na `127.0.0.1`.
 - Hasło SA jest ustalane przy pierwszym założeniu wolumenu. Jeśli `.env` zginie lub się zmieni, a wolumen zostanie, `run.sh` wykrywa nieudane logowanie `sa` i każe przywrócić `.env` albo wykonać `tools/dev/stop.sh --reset`.
 - Bez zbudowanego Angulara `/` nie działa (skrypt zawsze buduje przed startem). Fallback SPA obsługuje tylko ścieżki bez rozszerzenia, a pliki statyczne serwuje `UseStaticFiles`.

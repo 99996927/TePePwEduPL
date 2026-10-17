@@ -95,7 +95,13 @@ if command -v docker >/dev/null 2>&1; then
     if [[ -f "$ROOT_DIR/.env" ]]; then
       SQLCMDPASSWORD="$(grep '^HR_DEV_SA_PASSWORD=' "$ROOT_DIR/.env" | tail -n 1 | cut -d= -f2- || true)"
       export SQLCMDPASSWORD
-      docker exec -e SQLCMDPASSWORD "$DB_CONTAINER" /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -Q "SHUTDOWN" -b >/dev/null 2>&1 || true
+      # -t 30: limit czasu zapytania; timeout 60 (jeśli jest) ogranicza całe polecenie; przy błędzie lub braku odpowiedzi zostaje docker stop.
+      shutdown_cmd=(docker exec -e SQLCMDPASSWORD "$DB_CONTAINER" /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -t 30 -Q "SHUTDOWN" -b)
+      if command -v timeout >/dev/null 2>&1; then
+        timeout 60 "${shutdown_cmd[@]}" >/dev/null 2>&1 || true
+      else
+        "${shutdown_cmd[@]}" >/dev/null 2>&1 || true
+      fi
     fi
     docker stop -t 30 "$DB_CONTAINER" >/dev/null
   fi

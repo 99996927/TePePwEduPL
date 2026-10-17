@@ -40,9 +40,8 @@ generate_password() {
   printf 'Hr%sZa7-_' "${raw:0:20}"
 }
 if [[ ! -f "$ENV_FILE" ]] || ! grep -q '^HR_DEV_SA_PASSWORD=' "$ENV_FILE"; then
-  touch "$ENV_FILE"
-  chmod 600 "$ENV_FILE"
-  echo "HR_DEV_SA_PASSWORD=$(generate_password)" >>"$ENV_FILE"
+  # umask 077: plik powstaje od razu z uprawnieniami 600 (bez okna z domyślnymi uprawnieniami).
+  (umask 077 && echo "HR_DEV_SA_PASSWORD=$(generate_password)" >>"$ENV_FILE")
   echo "Utworzono hasło SA w $ENV_FILE."
 fi
 chmod 600 "$ENV_FILE"

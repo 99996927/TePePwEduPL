@@ -15,6 +15,7 @@ WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 JAR="$WORK_DIR/cookies.txt"
 BODY="$WORK_DIR/body"
+CTYPE="$WORK_DIR/content-type"
 
 ok() { echo "OK    $1"; }
 fail() {
@@ -26,9 +27,12 @@ fail() {
 request() {
   local method="$1" path="$2"
   shift 2
-  local code
+  local result code
   # Przy błędzie połączenia curl wypisuje kod 000 i kończy się kodem ≠ 0; tu traktujemy to jak zwykły wynik.
-  code="$(curl -sS -o "$BODY" -w '%{http_code}' -X "$method" -b "$JAR" -c "$JAR" --max-time 15 "$@" "$BASE_URL$path" 2>"$WORK_DIR/curl.err" || true)"
+  result="$(curl -sS -o "$BODY" -w '%{http_code} %{content_type}' -X "$method" -b "$JAR" -c "$JAR" --max-time 15 "$@" "$BASE_URL$path" 2>"$WORK_DIR/curl.err" || true)"
+  code="${result%% *}"
+  # Typ zawartości zapisujemy do pliku, bo funkcja działa w podpowłoce ($(request ...)).
+  printf '%s' "${result#* }" >"$CTYPE"
   echo "${code:-000}"
 }
 
@@ -46,13 +50,14 @@ grep -q '<app-root' "$BODY" || fail "$step" "brak <app-root w odpowiedzi (czy An
 ok "$step"
 
 # 2. Skrypt main-*.js wskazany w index.html (build produkcyjny: main-HASH.js, build development: main.js)
-step="skrypt main-*.js zwraca 200"
+step="skrypt main-*.js zwraca 200 jako javascript"
 main_js="$(grep -oE 'main(-[A-Za-z0-9_]+)?\.js' "$BODY" | head -n 1 || true)"
 [[ -n "$main_js" ]] || fail "$step" "w index.html nie ma odwołania do main-*.js"
 code="$(request GET "/$main_js")"
 [[ "$code" == "200" ]] || fail "$step" "/$main_js zwraca kod $code"
 # Brakujący plik dostałby 200 z index.html (fallback SPA), więc sprawdzamy, że to nie jest strona HTML.
 ! grep -q '<app-root' "$BODY" || fail "$step" "/$main_js zwraca index.html zamiast skryptu"
+grep -qi 'javascript' "$CTYPE" || fail "$step" "/$main_js ma typ zawartości '$(cat "$CTYPE")' zamiast javascript"
 ok "$step ($main_js)"
 
 # 3. Token antyforgery
