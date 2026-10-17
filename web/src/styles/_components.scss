@@ -136,3 +136,9 @@
     background: #eceff1;
   }
 }
+
+// Przyciski „filled” w gradientowym nagłówku: biały przycisk z fioletowym tekstem.
+.page-card__header .mat-mdc-unelevated-button {
+  --mat-button-filled-container-color: #fff;
+  --mat-button-filled-label-text-color: #7b1fa2;
+}

@@ -371,4 +371,12 @@ describe('PayrollChanges', () => {
     http.expectOne('/api/payroll-changes').flush(changes);
     await settle();
   });
+
+  it('status_cells_render_chips_with_matching_tones', async () => {
+    const { row } = await setup('ud', ['HR']);
+    const tone = (id: string) => row(id)!.querySelector('app-status-chip .status-chip')!.getAttribute('data-tone');
+
+    expect([tone('c1'), tone('c2'), tone('c3'), tone('c4')]).toEqual(['warning', 'success', 'danger', 'neutral']);
+    expect(row('c1')!.querySelector('app-status-chip')!.textContent!.trim()).toBe('Oczekuje na zatwierdzenie');
+  });
 });

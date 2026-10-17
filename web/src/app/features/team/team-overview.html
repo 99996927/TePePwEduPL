@@ -1,63 +1,69 @@
-<h1>Przegląd zespołu</h1>
-<div class="toolbar">
-  <app-month-switcher [month]="month()" (monthChange)="setMonth($event)" />
-</div>
+<div class="page-card">
+  <div class="page-card__header">
+    <h1>Przegląd zespołu</h1>
+  </div>
+  <div class="page-card__body">
+    <div class="toolbar">
+      <app-month-switcher [month]="month()" (monthChange)="setMonth($event)" />
+    </div>
 
-@if (directory.employees().length === 0) {
-  <p>Brak pracowników</p>
-} @else {
-  <table mat-table [dataSource]="directory.employees()">
-    <ng-container matColumnDef="name">
-      <th mat-header-cell *matHeaderCellDef>Pracownik</th>
-      <td mat-cell *matCellDef="let e">{{ e.firstName }} {{ e.lastName }}</td>
-    </ng-container>
-    <ng-container matColumnDef="hours">
-      <th mat-header-cell *matHeaderCellDef>Przepracowane / norma</th>
-      <td mat-cell *matCellDef="let e">
-        @let s = stateOf(e.id);
-        @if (s.status === 'ready') {
-          {{ formatHours(s.data.workedHours) }} / {{ formatHours(s.data.normHours) }} h
-        } @else if (s.status === 'error') {
-          <span class="error" role="alert">{{ s.message }}</span>
-        } @else {
-          <mat-progress-bar mode="indeterminate" />
-        }
-      </td>
-    </ng-container>
-    <ng-container matColumnDef="overtime">
-      <th mat-header-cell *matHeaderCellDef>Nadgodziny razem</th>
-      <td mat-cell *matCellDef="let e">
-        @let s = stateOf(e.id);
-        @if (s.status === 'ready') {
-          {{ formatHours(s.data.overtime.total) }} h
-        }
-      </td>
-    </ng-container>
-    <ng-container matColumnDef="badges">
-      <th mat-header-cell *matHeaderCellDef>Alerty</th>
-      <td mat-cell *matCellDef="let e">
-        @let s = stateOf(e.id);
-        @if (s.status === 'ready') {
-          @if (s.data.restViolations.length > 0) {
-            <span class="badge" data-badge="rest">Odpoczynek ({{ s.data.restViolations.length }})</span>
-          }
-          @if (s.data.weeklyAverage.exceedsLimit) {
-            <span class="badge" data-badge="average">Średnia &gt;48 h</span>
-          }
-        } @else if (s.status === 'error') {
-          <button matButton type="button" data-retry (click)="retry($event, e.id)" (keydown.enter)="$event.stopPropagation()">Spróbuj ponownie</button>
-        }
-      </td>
-    </ng-container>
-    <tr mat-header-row *matHeaderRowDef="columns"></tr>
-    <tr
-      mat-row
-      *matRowDef="let e; columns: columns"
-      class="clickable"
-      tabindex="0"
-      [attr.data-row]="e.id"
-      (click)="open(e.id)"
-      (keydown.enter)="open(e.id)"
-    ></tr>
-  </table>
-}
+    @if (directory.employees().length === 0) {
+      <p>Brak pracowników</p>
+    } @else {
+      <table class="data-table" mat-table [dataSource]="directory.employees()">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Pracownik</th>
+          <td mat-cell *matCellDef="let e">{{ e.firstName }} {{ e.lastName }}</td>
+        </ng-container>
+        <ng-container matColumnDef="hours">
+          <th mat-header-cell *matHeaderCellDef>Przepracowane / norma</th>
+          <td mat-cell *matCellDef="let e">
+            @let s = stateOf(e.id);
+            @if (s.status === 'ready') {
+              {{ formatHours(s.data.workedHours) }} / {{ formatHours(s.data.normHours) }} h
+            } @else if (s.status === 'error') {
+              <span class="error" role="alert">{{ s.message }}</span>
+            } @else {
+              <mat-progress-bar mode="indeterminate" />
+            }
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="overtime">
+          <th mat-header-cell *matHeaderCellDef>Nadgodziny razem</th>
+          <td mat-cell *matCellDef="let e">
+            @let s = stateOf(e.id);
+            @if (s.status === 'ready') {
+              {{ formatHours(s.data.overtime.total) }} h
+            }
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="badges">
+          <th mat-header-cell *matHeaderCellDef>Alerty</th>
+          <td mat-cell *matCellDef="let e">
+            @let s = stateOf(e.id);
+            @if (s.status === 'ready') {
+              @if (s.data.restViolations.length > 0) {
+                <span class="badge status-chip status-chip--danger" data-badge="rest">Odpoczynek ({{ s.data.restViolations.length }})</span>
+              }
+              @if (s.data.weeklyAverage.exceedsLimit) {
+                <span class="badge status-chip status-chip--warning" data-badge="average">Średnia &gt;48 h</span>
+              }
+            } @else if (s.status === 'error') {
+              <button matButton type="button" data-retry (click)="retry($event, e.id)" (keydown.enter)="$event.stopPropagation()">Spróbuj ponownie</button>
+            }
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr
+          mat-row
+          *matRowDef="let e; columns: columns"
+          class="clickable"
+          tabindex="0"
+          [attr.data-row]="e.id"
+          (click)="open(e.id)"
+          (keydown.enter)="open(e.id)"
+        ></tr>
+      </table>
+    }
+  </div>
+</div>

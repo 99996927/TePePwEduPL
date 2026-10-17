@@ -263,4 +263,14 @@ describe('CorrectionDrafts', () => {
     expect(row('d1')).toBeNull();
     expect(row('d2')).not.toBeNull();
   });
+
+  it('status_cell_renders_chip_with_tone', async () => {
+    const { row, settle } = await setup([drafts[2]]);
+    http.expectOne('/api/timesheet/entries?from=2026-09-01&to=2026-09-30').flush([]);
+    await settle();
+
+    const chip = row('d3')!.querySelector('app-status-chip .status-chip')!;
+    expect(chip.getAttribute('data-tone')).toBe('success');
+    expect(chip.textContent!.trim()).toBe('Zatwierdzony');
+  });
 });

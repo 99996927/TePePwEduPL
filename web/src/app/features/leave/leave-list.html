@@ -1,66 +1,69 @@
-<div class="header">
-  <h1>Urlopy</h1>
-  <button matButton="filled" type="button" data-new (click)="openNew()">Nowy wniosek</button>
-</div>
-
-@if (balance(); as b) {
-  <dl class="balance" data-balance>
-    <dt>Wymiar</dt><dd data-value="entitlement">{{ b.entitlementDays }}</dd>
-    <dt>Wykorzystane</dt><dd data-value="approved">{{ b.approvedDays }}</dd>
-    <dt>Oczekujące</dt><dd data-value="pending">{{ b.pendingDays }}</dd>
-    <dt>Pozostałe</dt><dd data-value="remaining">{{ b.remainingDays }}</dd>
-  </dl>
-}
-
-<mat-form-field class="filter">
-  <mat-label>Status</mat-label>
-  <mat-select [value]="filter()" (selectionChange)="filter.set($event.value)">
-    <mat-option value="">Wszystkie</mat-option>
-    @for (s of statuses; track s.value) {
-      <mat-option [value]="s.value">{{ s.label }}</mat-option>
+<div class="page-card">
+  <div class="page-card__header">
+    <h1>Urlopy</h1>
+    <button matButton="filled" type="button" data-new (click)="openNew()">Nowy wniosek</button>
+  </div>
+  <div class="page-card__body">
+    @if (balance(); as b) {
+      <dl class="balance" data-balance>
+        <dt>Wymiar</dt><dd data-value="entitlement">{{ b.entitlementDays }}</dd>
+        <dt>Wykorzystane</dt><dd data-value="approved">{{ b.approvedDays }}</dd>
+        <dt>Oczekujące</dt><dd data-value="pending">{{ b.pendingDays }}</dd>
+        <dt>Pozostałe</dt><dd data-value="remaining">{{ b.remainingDays }}</dd>
+      </dl>
     }
-  </mat-select>
-</mat-form-field>
 
-@if (error(); as message) {
-  <p class="error" role="alert">{{ message }}</p>
-} @else if (!loading() && rows().length === 0) {
-  <p>Brak wniosków</p>
-} @else {
-  <table mat-table [dataSource]="rows()">
-    <ng-container matColumnDef="employee">
-      <th mat-header-cell *matHeaderCellDef>Pracownik</th>
-      <td mat-cell *matCellDef="let r">{{ nameOf(r.employeeId) }}</td>
-    </ng-container>
-    <ng-container matColumnDef="from">
-      <th mat-header-cell *matHeaderCellDef>Od</th>
-      <td mat-cell *matCellDef="let r">{{ formatDate(r.from) }}</td>
-    </ng-container>
-    <ng-container matColumnDef="to">
-      <th mat-header-cell *matHeaderCellDef>Do</th>
-      <td mat-cell *matCellDef="let r">{{ formatDate(r.to) }}</td>
-    </ng-container>
-    <ng-container matColumnDef="days">
-      <th mat-header-cell *matHeaderCellDef>Dni</th>
-      <td mat-cell *matCellDef="let r">{{ r.days }}</td>
-    </ng-container>
-    <ng-container matColumnDef="status">
-      <th mat-header-cell *matHeaderCellDef>Status</th>
-      <td mat-cell *matCellDef="let r">{{ statusLabel(r.status) }}</td>
-    </ng-container>
-    <ng-container matColumnDef="reason">
-      <th mat-header-cell *matHeaderCellDef>Powód decyzji</th>
-      <td mat-cell *matCellDef="let r">{{ r.decisionReason }}</td>
-    </ng-container>
-    <ng-container matColumnDef="actions">
-      <th mat-header-cell *matHeaderCellDef></th>
-      <td mat-cell *matCellDef="let r">
-        @if (canCancel(r)) {
-          <button matButton type="button" data-cancel (click)="cancel(r)">Anuluj</button>
+    <mat-form-field class="filter">
+      <mat-label>Status</mat-label>
+      <mat-select [value]="filter()" (selectionChange)="filter.set($event.value)">
+        <mat-option value="">Wszystkie</mat-option>
+        @for (s of statuses; track s.value) {
+          <mat-option [value]="s.value">{{ s.label }}</mat-option>
         }
-      </td>
-    </ng-container>
-    <tr mat-header-row *matHeaderRowDef="columns"></tr>
-    <tr mat-row *matRowDef="let r; columns: columns" [attr.data-row]="r.id"></tr>
-  </table>
-}
+      </mat-select>
+    </mat-form-field>
+
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    } @else if (!loading() && rows().length === 0) {
+      <p>Brak wniosków</p>
+    } @else {
+      <table class="data-table" mat-table [dataSource]="rows()">
+        <ng-container matColumnDef="employee">
+          <th mat-header-cell *matHeaderCellDef>Pracownik</th>
+          <td mat-cell *matCellDef="let r">{{ nameOf(r.employeeId) }}</td>
+        </ng-container>
+        <ng-container matColumnDef="from">
+          <th mat-header-cell *matHeaderCellDef>Od</th>
+          <td mat-cell *matCellDef="let r">{{ formatDate(r.from) }}</td>
+        </ng-container>
+        <ng-container matColumnDef="to">
+          <th mat-header-cell *matHeaderCellDef>Do</th>
+          <td mat-cell *matCellDef="let r">{{ formatDate(r.to) }}</td>
+        </ng-container>
+        <ng-container matColumnDef="days">
+          <th mat-header-cell *matHeaderCellDef>Dni</th>
+          <td mat-cell *matCellDef="let r">{{ r.days }}</td>
+        </ng-container>
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let r"><app-status-chip [status]="r.status" [label]="statusLabel(r.status)" /></td>
+        </ng-container>
+        <ng-container matColumnDef="reason">
+          <th mat-header-cell *matHeaderCellDef>Powód decyzji</th>
+          <td mat-cell *matCellDef="let r">{{ r.decisionReason }}</td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let r">
+            @if (canCancel(r)) {
+              <button matButton type="button" data-cancel (click)="cancel(r)">Anuluj</button>
+            }
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let r; columns: columns" [attr.data-row]="r.id"></tr>
+      </table>
+    }
+  </div>
+</div>
