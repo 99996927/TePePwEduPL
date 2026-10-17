@@ -1,3 +1,5 @@
+using Hr.Core.Domain;
+
 namespace Hr.Core.Seeding.Demo;
 
 public sealed record DemoPerson(
@@ -14,4 +16,5 @@ public sealed record DemoDataSet
 {
     public IReadOnlyList<DemoTeam> Teams { get; init; } = new List<DemoTeam>();
     public IReadOnlyList<DemoPerson> People { get; init; } = new List<DemoPerson>();
+    public IReadOnlyList<LeaveRequest> LeaveRequests { get; init; } = new List<LeaveRequest>();
 }

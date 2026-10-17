@@ -7,4 +7,7 @@ public static class PolishTime
 
     public static DateTime ToLocal(DateTime utc) =>
         TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), Zone);
+
+    public static DateTime ToUtc(DateTime local) =>
+        TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(local, DateTimeKind.Unspecified), Zone);
 }
