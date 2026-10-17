@@ -1,4 +1,4 @@
-import { localDay, workedHours, formatDate, formatHours, formatTime, monthRange, toDateOnly, toLocalDateTime } from './date-format';
+import { toMonthParam, localDay, workedHours, formatDate, formatHours, formatTime, monthRange, toDateOnly, toLocalDateTime } from './date-format';
 
 describe('date-format', () => {
   it('toLocalDateTime_combines_local_day_and_time_without_zone', () => {
@@ -36,5 +36,10 @@ describe('date-format', () => {
     expect(workedHours('2026-10-25T00:00:00', '2026-10-25T08:00:00', 30)).toBe(7.5);
     expect(workedHours('2026-03-29T00:00:00', '2026-03-29T08:00:00', 0)).toBe(8);
     expect(workedHours('2026-10-05T22:00:00', '2026-10-06T06:00:00', 0)).toBe(8);
+  });
+
+  it('toMonthParam_returns_yyyy_mm', () => {
+    expect(toMonthParam(new Date(2026, 8, 17))).toBe('2026-09');
+    expect(toMonthParam(new Date(2026, 11, 1))).toBe('2026-12');
   });
 });

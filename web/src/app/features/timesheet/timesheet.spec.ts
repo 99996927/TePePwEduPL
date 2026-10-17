@@ -177,10 +177,8 @@ describe('Timesheet', () => {
     expect(ids(el)).toEqual(['w1', 'w2']);
   });
 
-  it('invalid_or_future_month_query_falls_back_to_current_month', async () => {
-    await setup(['Employee'], octoberEntries, { miesiac: '2027-01' });
-    TestBed.resetTestingModule();
-    const { el } = await setup(['Employee'], octoberEntries, { miesiac: 'abc' });
+  it.each(['2027-01', 'abc'])('invalid_or_future_month_query_%s_falls_back_to_current_month', async (miesiac) => {
+    const { el } = await setup(['Employee'], octoberEntries, { miesiac });
     expect(ids(el)).toEqual(['w1', 'w2']);
   });
 

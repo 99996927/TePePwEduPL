@@ -45,7 +45,7 @@
             <span class="badge" data-badge="average">Średnia &gt;48 h</span>
           }
         } @else if (s.status === 'error') {
-          <button matButton type="button" data-retry (click)="retry($event, e.id)">Spróbuj ponownie</button>
+          <button matButton type="button" data-retry (click)="retry($event, e.id)" (keydown.enter)="$event.stopPropagation()">Spróbuj ponownie</button>
         }
       </td>
     </ng-container>

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
@@ -7,7 +7,7 @@ import { Subject, Subscription, catchError, map, mergeMap, of } from 'rxjs';
 import { TimesheetAnalysisDto } from '../../api/models/timesheet-analysis-dto';
 import { TimesheetService } from '../../api/services/timesheet.service';
 import { messageOf, problemOf } from '../../core/api-problem';
-import { formatHours, monthRange } from '../../core/date-format';
+import { formatHours, monthRange, toMonthParam } from '../../core/date-format';
 import { EmployeeDirectory } from '../../core/employee-directory';
 import { Notifier } from '../../core/notifier';
 import { MonthSwitcher } from '../../shared/month-switcher';
@@ -41,6 +41,10 @@ export class TeamOverview {
   private subscription: Subscription | null = null;
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      this.subscription?.unsubscribe();
+      this.queue?.complete();
+    });
     this.directory.load().then(
       () => this.start(),
       (e: unknown) => this.notifier.error(problemOf(e)),
@@ -63,8 +67,7 @@ export class TeamOverview {
   }
 
   protected open(id: string): void {
-    const m = this.month();
-    const miesiac = `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}`;
+    const miesiac = toMonthParam(this.month());
     void this.router.navigate(['/czas-pracy'], { queryParams: { pracownik: id, miesiac } });
   }
 

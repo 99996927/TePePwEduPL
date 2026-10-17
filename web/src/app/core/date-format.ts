@@ -45,3 +45,8 @@ function wallClockMinutes(s: string): number {
 export function workedHours(start: string, end: string, breakMinutes: number): number {
   return (wallClockMinutes(end) - wallClockMinutes(start) - breakMinutes) / 60;
 }
+
+/** `yyyy-MM` from local date components. */
+export function toMonthParam(d: Date): string {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+}

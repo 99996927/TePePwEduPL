@@ -188,4 +188,28 @@ describe('TeamOverview', () => {
     await setup([]);
     expect(el.textContent).toContain('Brak pracowników');
   });
+
+  it('destroying_the_component_cancels_pending_requests_and_issues_no_more', async () => {
+    await setup();
+    const inFlight = pending();
+    expect(inFlight).toHaveLength(4);
+    fixture.destroy();
+    expect(inFlight.every((r) => r.cancelled)).toBe(true);
+    await vi.waitFor(() => expect(pending()).toHaveLength(0));
+  });
+
+  it('enter_on_retry_button_retries_instead_of_navigating', async () => {
+    await setup(people.slice(0, 1));
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    pending()[0].flush({ title: 'x', status: 500 }, { status: 500, statusText: 'Error' });
+    await settle();
+    const button = el.querySelector('[data-retry]') as HTMLButtonElement;
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
+    expect(navigate).not.toHaveBeenCalled();
+    // browsers turn Enter on a button into a click; synthetic keydown does not, so emulate it
+    button.click();
+    expect(navigate).not.toHaveBeenCalled();
+    expect(pending()).toHaveLength(1);
+  });
 });
