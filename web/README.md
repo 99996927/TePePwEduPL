@@ -53,6 +53,7 @@ Trasa `/agent` (nowa rozmowa) i `/agent/<id>` (otwarta rozmowa), jeden komponent
 - Status jako chip: `<app-status-chip [status]="r.status" [label]="statusLabel(r.status)" />` (`shared/status-chip.ts`; ton z `statusTone`, nieznany status jest neutralny).
 - Nowa pozycja menu: wpis w stałej `MENU` w `core/layout/shell.ts` z nazwą ikony Material Symbols (`icon`); tytuł ekranu w pasku bierze się z etykiety pozycji.
 - Ikony: `<mat-icon fontIcon="nazwa" />` (zestaw `material-symbols-outlined` z klasą `mat-ligature-font` ustawia `provideIconFont()` z `core/icon-font.ts`); nie wpisuj nazwy ikony jako tekstu.
+- Fonty są hostowane razem z aplikacją (plan Docker, brak CDN): Roboto (`@fontsource/roboto`, wagi 300/400/500, podzbiory `latin` i `latin-ext` dla polskich znaków) i Material Symbols Outlined (`@fontsource/material-symbols-outlined`, statyczny wariant 400, ok. 320 kB; pełny font `material-symbols` ma 4 MB, więc go nie używamy). `@font-face` i klasa `.material-symbols-outlined` są w `src/styles/_fonts.scss`. `npm run fonts:check` (część `npm run verify`) kończy się błędem, jeśli zbudowany `index.html` lub CSS odwołuje się do adresu spoza aplikacji.
 
 ## Uwagi
 

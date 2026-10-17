@@ -34,6 +34,7 @@
 | ADR-30 | `userId` w `EmployeeDto`: UI buduje mapę nazwisk dla zmian płacowych, szkiców i audytu | Przyjęta, zrealizowana w planie 7b |
 | ADR-31 | Ekran agenta: jedna trasa z `UrlMatcher`, odpowiedź w całości, ostrzeżenie o liczbach, cudze rozmowy tylko do odczytu, bez zmian kontraktu | Przyjęta, zrealizowana w planie 7c |
 | ADR-32 | Motyw: Material 3 z nadpisaniem tokenów i wspólne klasy stylów (styl „Material Dashboard”) | Przyjęta, zrealizowana w planie 7d |
+| ADR-33 | Docker Compose lokalnie: obraz wieloetapowy, `Production` z danymi demo, fonty z npm, healthcheck bashem | Przyjęta, zrealizowana w planie Docker |
 
 ## ADR-01 Trzy warstwy, dwa kontenery
 **Kontekst:** wymóg trójwarstwowości i uruchomienia na jednej maszynie.
@@ -346,3 +347,24 @@ spójnego stylu wzorowanego na „Material Dashboard” (Creative Tim); wybrano 
 - Wygląd ocenia właściciel w przeglądarce; agent nie ma przeglądarki, więc testy sprawdzają strukturę (klasy, ikony, tony), nie piksele.
 - Filtry (`mat-form-field`) zostają w ciele karty, bo pola Material na gradiencie nie spełniają kontrastu; w nagłówku są tytuł i przyciski akcji.
 - Fonty i ikony nadal z Google Fonts (samodzielne hostowanie w planie Docker).
+
+## ADR-33 Docker Compose lokalnie: obraz wieloetapowy, `Production` z danymi demo, fonty z npm
+**Kontekst:** do planu 7d system uruchamiał `tools/dev/run.sh` (baza w kontenerze, Angular i API na hoście). Właściciel chciał uruchomienia całości na Docker Engine tego hosta,
+dostępnego tunelem SSH, bez dotnet i node na hoście oraz bez zależności przeglądarki od internetu (fonty z Google Fonts).
+**Decyzja:**
+- **Obraz `hr-app`:** `Dockerfile` w katalogu głównym, trzy etapy (`node:24` → `dotnet/sdk:9.0` → `dotnet/aspnet:9.0`), użytkownik `app` (nie root); `.dockerignore` wyklucza `.env`, `.git`, `tests`, `docs` i artefakty budowania.
+- **`compose.yaml`** (projekt `hr`): `hr-db` bez publikowanego portu, wolumen `hr-db-data`; `hr-app` na `127.0.0.1:5080`; `depends_on` ze `service_healthy`; sekrety z `.env` przez interpolację (`HR_DB_PASSWORD` wymagane, `ANTHROPIC_API_KEY` opcjonalny).
+- **Wolumen `hr-app-keys` na klucze Data Protection:** bez niego każde odtworzenie kontenera aplikacji wylogowywałoby użytkowników.
+- **Środowisko `Production` z `Hr__SeedDemoData=true`:** instancja demonstracyjna z danymi syntetycznymi (R-03); w `Production` nie ma `/openapi`.
+- **Healthcheck aplikacji bashem** (`/dev/tcp`), bo obraz ASP.NET nie ma `curl`; bez doinstalowywania pakietów do obrazu.
+- **Fonty z npm:** `@fontsource/roboto` (wagi 300/400/500, `latin` i `latin-ext`) i `@fontsource/material-symbols-outlined` (statyczny wariant 400, 323 kB zamiast 4 MB pełnego `material-symbols`); `npm run fonts:check` w `verify` pilnuje braku odwołań do zasobów zewnętrznych.
+- **Skrypty `tools/docker/{up,down,verify}.sh`** w stylu `tools/dev`; `tools/dev/*` zostają jako szybka pętla deweloperska. Oba sposoby używają portu 5080, więc nie działają jednocześnie (`up.sh` odmawia przy zajętym porcie).
+**Alternatywy:**
+- Zastąpienie `tools/dev/run.sh` Dockerem: odrzucone (wolniejsza pętla zmian, bo każda zmiana wymaga przebudowania obrazu).
+- Środowisko `Development` w kontenerze: odrzucone (inne zachowanie niż produkt, panel kont demo i `/openapi` w obrazie).
+- Pełny font `material-symbols` (4 MB): odrzucone (kilkunastokrotnie większy bez korzyści; używamy tylko ikon w wariancie podstawowym).
+- Ręcznie wklejone pliki fontów: odrzucone (brak kontroli wersji i licencji; paczki npm są zamrożone w `package-lock.json`).
+**Konsekwencje:**
+- Pierwsze budowanie wymaga internetu hosta (obrazy, npm, NuGet); potem działa offline poza czatem agenta.
+- Hasło SA jest związane z wolumenem: utrata `.env` wymaga `tools/docker/down.sh --reset` (komunikat w `up.sh`).
+- Ruch jest po HTTP na loopbacku; brak TLS i brak wystawienia na świat jest świadomym ograniczeniem wersji lokalnej.
