@@ -1,0 +1,59 @@
+.login {
+  display: flex;
+  justify-content: center;
+  padding: 48px 16px;
+}
+
+mat-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 8px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.notice {
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.form-error {
+  color: var(--mat-sys-error);
+  margin: 0;
+}
+
+.demo {
+  margin-top: 24px;
+
+  h2 {
+    font: var(--mat-sys-title-small);
+  }
+}
+
+.demo-account {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+
+  &:hover {
+    background: var(--mat-sys-surface-container);
+  }
+}
+
+.demo-role {
+  color: var(--mat-sys-on-surface-variant);
+}

@@ -1,0 +1,38 @@
+<main class="login">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Asystent kadrowo-płacowy</mat-card-title>
+      <mat-card-subtitle>Logowanie</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      @if (sessionExpired()) {
+        <p class="notice" role="status">Sesja wygasła. Zaloguj się ponownie.</p>
+      }
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <mat-form-field>
+          <mat-label>Login</mat-label>
+          <input matInput formControlName="userName" autocomplete="username" />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Hasło</mat-label>
+          <input matInput type="password" formControlName="password" autocomplete="current-password" />
+        </mat-form-field>
+        @if (errorMessage(); as message) {
+          <p class="form-error" role="alert">{{ message }}</p>
+        }
+        <button matButton="filled" type="submit" [disabled]="form.invalid || submitting()">Zaloguj</button>
+      </form>
+      @if (devMode) {
+        <section class="demo">
+          <h2>Konta demo</h2>
+          @for (account of demoAccounts; track account.userName) {
+            <button type="button" class="demo-account" (click)="fill(account)">
+              <span class="demo-login">{{ account.userName }}</span>
+              <span class="demo-role">{{ account.role }}</span>
+            </button>
+          }
+        </section>
+      }
+    </mat-card-content>
+  </mat-card>
+</main>
