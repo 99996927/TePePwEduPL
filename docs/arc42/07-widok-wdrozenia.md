@@ -5,9 +5,9 @@ Jedna maszyna Linux (x86_64, 4 vCPU, 32 GB RAM), Docker Engine 24.0.9 i Docker C
 
 ```mermaid
 flowchart LR
-    U[Przeglądarka] -->|HTTP :8080| APP
+    U[Przeglądarka] -->|HTTP 127.0.0.1:5080, tunel SSH| APP
     subgraph HOST[Host: Docker Engine]
-        subgraph NET[sieć Docker: hr-net]
+        subgraph NET[sieć projektu Compose hr]
             APP[kontener hr-app: ASP.NET Core + statyczny Angular]
             SQL[kontener hr-db: MSSQL Server]
         end
@@ -20,12 +20,13 @@ flowchart LR
 
 | Element | Opis |
 |---|---|
-| `hr-app` | Obraz wieloetapowy: build Angulara, publikacja .NET, runtime ASP.NET. Wystawia port aplikacji. |
-| `hr-db` | Obraz Microsoft SQL Server (Linux). Port 1433 tylko w sieci Docker, nie na hoście. Dane w wolumenie. |
-| Sekrety | Klucz Anthropic API i hasło SA bazy z pliku `.env` (poza repozytorium, w `.gitignore`). |
-| Start | `docker compose up`: kontener bazy, potem aplikacja z migracjami i seedem (UC-29). Healthcheck bazy. |
+| `hr-app` | Obraz `hr-app:local` budowany z `Dockerfile` (trzy etapy: `node:24` buduje Angulara, `dotnet/sdk:9.0` publikuje Hr.Api z Angularem w `wwwroot`, `dotnet/aspnet:9.0` uruchamia aplikację jako użytkownik `app`, nie root). Środowisko `Production`, `Hr__SeedDemoData=true`. Port kontenera 8080 jest publikowany wyłącznie jako `127.0.0.1:5080`. Healthcheck: `GET /api/health` wykonany przez bash (obraz nie ma `curl`). |
+| `hr-db` | Obraz Microsoft SQL Server 2022 (Linux). Brak publikacji portu 1433: baza jest dostępna tylko w sieci Compose (`Server=hr-db,1433`). Dane w wolumenie `hr-db-data`, baza `hr`. Healthcheck: `sqlcmd SELECT 1`. |
+| Sekrety | `HR_DB_PASSWORD` (hasło SA, generowane przez `tools/docker/up.sh`) i `ANTHROPIC_API_KEY` z pliku `.env` (poza repozytorium, w `.gitignore` i `.dockerignore`); `compose.yaml` nie zawiera wartości. |
+| Start | `tools/docker/up.sh` (`docker compose up -d --build --wait`): baza, po jej zdrowiu aplikacja z migracjami i seedem (UC-29), potem test dymny i `tools/docker/verify.sh`. |
+| Fonty | Roboto i Material Symbols są hostowane razem z aplikacją (pakiety `@fontsource`), więc przeglądarka nie potrzebuje internetu (ADR-33). |
 
-**Klucz Anthropic API:** aplikacja czyta go z `Anthropic:ApiKey` (konfiguracja) albo ze zmiennej środowiskowej `ANTHROPIC_API_KEY`; model z `Anthropic:Model` (domyślnie `claude-sonnet-5-5`). Lokalnie: `export ANTHROPIC_API_KEY=...` przed `dotnet run`, przy `tools/dev/run.sh` wiersz `ANTHROPIC_API_KEY=...` w `.env` (sekcja 7.4), w Dockerze przez `.env` (plik jest w `.gitignore`; wzorzec `.env.example` nie zawiera wartości). Bez klucza endpointy agenta zwracają `503`, a reszta systemu działa. Opcjonalny test na prawdziwym API (`LiveSmokeTests`) jest domyślnie pomijany: uruchom go zmienną `RUN_LIVE_SMOKE=1` z ustawionym kluczem.
+**Klucz Anthropic API:** aplikacja czyta go z `Anthropic:ApiKey` (konfiguracja) albo ze zmiennej środowiskowej `ANTHROPIC_API_KEY`; model z `Anthropic:Model` (domyślnie `claude-sonnet-5-5`). Lokalnie: `export ANTHROPIC_API_KEY=...` przed `dotnet run`, przy `tools/dev/run.sh` wiersz `ANTHROPIC_API_KEY=...` w `.env` (sekcja 7.4), w Dockerze przez `.env` (zmienna `ANTHROPIC_API_KEY`; plik jest w `.gitignore` i `.dockerignore`; wzorzec `.env.example` nie zawiera wartości). Bez klucza endpointy agenta zwracają `503`, a reszta systemu działa. Opcjonalny test na prawdziwym API (`LiveSmokeTests`) jest domyślnie pomijany: uruchom go zmienną `RUN_LIVE_SMOKE=1` z ustawionym kluczem.
 
 ## 7.2 Konta demo (wyłącznie środowisko demonstracyjne, dane syntetyczne)
 Konta tworzone seedem przy zakładaniu bazy. Hasło ma postać `imięnazwisko123` (małe litery, bez znaków diakrytycznych).
@@ -91,9 +92,9 @@ wnioski urlopowe, zmiany płacowe i naliczenia) mają w `AuditLog` wpisy z pusty
 > **Ostrzeżenie (R-03):** wszystkie konta demo, także wygenerowane, mają jawne i przewidywalne hasła (`imięnazwisko123`), a polityka haseł jest poluzowana (ADR-06).
 > Seed jest domyślnie wyłączony; włączaj go wyłącznie w środowisku demonstracyjnym z danymi syntetycznymi i nie wystawiaj takiej instancji do internetu.
 
-## 7.4 Uruchomienie deweloperskie
-Do testów ręcznych całe rozwiązanie uruchamia się bez Docker Compose (docelowe wdrożenie z sekcji 7.1 powstanie w planie Docker): baza w kontenerze,
-Angular zbudowany do `wwwroot`, `Hr.Api` jako proces w tle. Skrypty są w `tools/dev/` i działają z dowolnego katalogu.
+## 7.4 Uruchomienie deweloperskie i w Dockerze
+System uruchamia się na dwa sposoby, oba na `127.0.0.1:5080` (nie działają jednocześnie): pełny Docker Compose z sekcji 7.1 (`tools/docker/*`, patrz niżej) oraz szybka pętla
+deweloperska bez budowania obrazu (`tools/dev/*`): baza w kontenerze, Angular zbudowany do `wwwroot`, `Hr.Api` jako proces w tle. Skrypty są w `tools/dev/` i działają z dowolnego katalogu.
 
 **Wymagania:** Docker (dostęp bez `sudo`), .NET SDK 9, Node `^24.15.0` z npm, `curl`, `ss` (iproute2), `setsid` (util-linux) i `python3` (test dymny); obraz `mcr.microsoft.com/mssql/server:2022-latest` (pobierany przy pierwszym starcie).
 
@@ -104,6 +105,17 @@ Angular zbudowany do `wwwroot`, `Hr.Api` jako proces w tle. Skrypty są w `tools
 | `tools/dev/stop.sh --api-only` | Kończy tylko `Hr.Api` (kontener bazy zostaje); używane przez `run.sh` przed ponownym startem. |
 | `tools/dev/stop.sh --reset` | Dodatkowo usuwa kontener `hr-dev-db` i wolumen `hr-dev-db-data`; następne `run.sh` zakłada bazę i dane demo od nowa. |
 | `tools/dev/smoke.sh [adres]` | Test dymny (domyślnie `http://127.0.0.1:5080`): `/` zawiera `<app-root`, skrypt `main*.js` z `index.html` jest serwowany jako skrypt (kod 200, typ zawartości `javascript`), `GET /api/auth/antiforgery` daje 204, logowanie Anny złym hasłem 401, poprawnym 200 (z nagłówkiem `X-XSRF-TOKEN`), saldo urlopu z wymiarem 20 dni i lista wniosków 200; jako Anna wyniki naliczenia za wrzesień 2026 (`GET /api/payroll/results?year=2026&month=9`) z polem `gross`; po zalogowaniu `piotr.zielinski` (osobny plik ciasteczek) `GET /api/employees` z polem `userId` (ADR-30) i `GET /api/correction-drafts` ze szkicem `"status":"Pending"`; rozmowy demo z agentem (bez pytań do modelu, klucz niepotrzebny): Piotr widzi co najmniej dwie rozmowy w `GET /api/conversations`, odczyt rozmowy Anny (`Ile dni urlopu mi zostało?`) zawiera wiadomość `"role":"ToolCall"`, a `GET /api/audit?entityType=Conversation` zdarzenie `ConversationRead`; po zalogowaniu `tomasz.lis` (trzeci plik ciasteczek) rozmowa Anny daje 404, a jego lista ma dokładnie jedną rozmowę. Każdy krok wypisuje `OK` albo `BŁĄD` z przyczyną; pierwszy błąd kończy skrypt kodem ≠ 0. |
+
+### Docker Compose (`tools/docker/`)
+Szczegółowa instrukcja i warunki działania: [`README.md`](../../README.md). Plik `compose.yaml` w katalogu głównym, projekt `hr`, kontenery `hr-db` i `hr-app`, wolumen `hr-db-data`.
+
+| Polecenie | Działanie |
+|---|---|
+| `tools/docker/up.sh` | Sprawdza `docker`, `docker compose`, `curl`, `ss`, `python3` i dostęp do demona; odmawia startu, gdy port 5080 zajmuje coś innego niż kontener `hr-app` (np. `tools/dev/run.sh`); tworzy `.env` z losowym `HR_DB_PASSWORD` (`chmod 600`, wartość nigdy nie jest wypisywana; pusta wartość jest traktowana jak brak) i informuje, czy `ANTHROPIC_API_KEY` jest ustawiony; `docker compose up -d --build --wait`; przy niezgodnym haśle SA z istniejącym wolumenem wypisuje wyjaśnienie i `tools/docker/down.sh --reset && tools/docker/up.sh`; uruchamia `tools/dev/smoke.sh` i `tools/docker/verify.sh`; wypisuje adres i komendę tunelu SSH. Można go uruchamiać wielokrotnie. |
+| `tools/docker/down.sh [--reset]` | `docker compose down`; z `--reset` także usuwa wolumen `hr-db-data`. Plik `.env` zostaje. |
+| `tools/docker/verify.sh` | Kontrole: aplikacja działa jako nie-root, w obrazie nie ma `.env`, baza nie publikuje portów na hoście, aplikacja publikuje wyłącznie `127.0.0.1:5080`, strona i style nie odwołują się do zasobów spoza hosta, `/api/health` odpowiada. Każda kontrola wypisuje `OK` albo `BŁĄD`. |
+
+**Którego użyć:** Docker Compose do uruchomienia „jak produkt” i do testów ręcznych; `tools/dev/run.sh` do szybkiej pętli zmian (wymaga .NET SDK i Node na hoście). Różnice: Compose używa środowiska `Production` (brak `/openapi`), bazy `hr` i budowania produkcyjnego Angulara; `run.sh` używa `Development` (panel „Konta demo”, ADR-29), bazy `hr_dev` i `build:dev`.
 
 **Dostęp z innego komputera:** API nasłuchuje wyłącznie na `127.0.0.1`, więc przeglądarka łączy się przez tunel SSH, np. `ssh -N -L 5080:127.0.0.1:5080 azureuser@tepecompute`
 (skrypt wypisuje komendę z bieżącym użytkownikiem i hostem), a potem `http://localhost:5080`. Konta demo są w sekcji 7.2, a lista kroków testu ręcznego w
