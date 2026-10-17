@@ -29,8 +29,8 @@ public class DemoDataInvariantsTests
     {
         var first = JsonSerializer.Serialize(DemoDataGenerator.Build(DemoOptions.Default, Calendar));
         Thread.Sleep(25);
-        var second = JsonSerializer.Serialize(DemoDataGenerator.Build(DemoOptions.Default, Calendar));
         var set = DemoDataGenerator.Build(DemoOptions.Default, Calendar);
+        var second = JsonSerializer.Serialize(set);
 
         Assert.Equal(31, set.People.Count);
         Assert.NotEmpty(set.LeaveRequests);
@@ -91,12 +91,18 @@ public class DemoDataInvariantsTests
         var o = Options(anchor, seed);
         var set = Build(anchor, seed);
         Assert.NotEmpty(set.LeaveRequests);
+        var peopleWithActiveLeave = 0;
 
         foreach (var p in set.People)
         {
             var active = set.LeaveRequests
                 .Where(l => l.EmployeeId == p.EmployeeId && l.Status is LeaveStatus.Approved or LeaveStatus.Pending)
                 .OrderBy(l => l.From).ToList();
+            if (active.Count > 0)
+            {
+                peopleWithActiveLeave++;
+            }
+
             Assert.All(active, l =>
             {
                 Assert.Equal(l.From.Year, l.To.Year);
@@ -114,6 +120,8 @@ public class DemoDataInvariantsTests
                 Assert.True(year.Sum(l => l.Days) <= entitlement, $"{p.Login} {year.Key}");
             }
         }
+
+        Assert.True(peopleWithActiveLeave > 0);
     }
 
     [Theory]
