@@ -24,14 +24,14 @@ die() {
 
 # 1. Wymagane programy
 step "Sprawdzam wymagane programy"
-for tool in docker dotnet node npm curl ss setsid; do
+for tool in docker dotnet node npm curl ss setsid python3; do
   command -v "$tool" >/dev/null 2>&1 || die "brak programu '$tool'. Zainstaluj go i uruchom skrypt ponownie."
 done
 docker info >/dev/null 2>&1 || die "Docker nie odpowiada (czy usługa działa i czy masz uprawnienia do docker?)."
 echo "docker, dotnet $(dotnet --version), node $(node --version): OK"
 
-# 2. Hasło SA w .env (tworzone przy pierwszym uruchomieniu, nigdy nie wypisywane)
-step "Wczytuję hasło bazy z .env"
+# 2. Hasło SA w .env (tworzone przy pierwszym uruchomieniu, nigdy nie wypisywane) i opcjonalny klucz Anthropic
+step "Wczytuję hasło bazy i klucz Anthropic z .env"
 generate_password() {
   local raw
   raw="$(head -c 48 /dev/urandom | base64 -w0)"
@@ -51,6 +51,28 @@ HR_DEV_SA_PASSWORD="$(grep '^HR_DEV_SA_PASSWORD=' "$ENV_FILE" | tail -n 1 | cut 
 export MSSQL_SA_PASSWORD="$HR_DEV_SA_PASSWORD"
 export SQLCMDPASSWORD="$HR_DEV_SA_PASSWORD"
 echo "OK"
+
+# Klucz Anthropic (opcjonalny, dopisywany ręcznie do .env jako ANTHROPIC_API_KEY=...). Wartość nigdy nie jest wypisywana ani
+# przekazywana w argumentach polecenia: trafia tylko do środowiska procesu Hr.Api (eksport w podpowłoce w kroku 5).
+ANTHROPIC_KEY_FROM_ENV="$(grep '^ANTHROPIC_API_KEY=' "$ENV_FILE" | tail -n 1 | cut -d= -f2- || true)"
+# Tolerancja zapisu: końcowe CR (plik z Windows), spacje wokół wartości i jedna para cudzysłowów ("..." albo '...').
+ANTHROPIC_KEY_FROM_ENV="${ANTHROPIC_KEY_FROM_ENV%$'\r'}"
+trim_spaces() {
+  local v="$1"
+  v="${v#"${v%%[![:space:]]*}"}"
+  printf '%s' "${v%"${v##*[![:space:]]}"}"
+}
+ANTHROPIC_KEY_FROM_ENV="$(trim_spaces "$ANTHROPIC_KEY_FROM_ENV")"
+if [[ ${#ANTHROPIC_KEY_FROM_ENV} -ge 2 ]]; then
+  case "$ANTHROPIC_KEY_FROM_ENV" in
+    \"*\" | \'*\') ANTHROPIC_KEY_FROM_ENV="$(trim_spaces "${ANTHROPIC_KEY_FROM_ENV:1:${#ANTHROPIC_KEY_FROM_ENV}-2}")" ;;
+  esac
+fi
+if [[ -n "$ANTHROPIC_KEY_FROM_ENV" ]]; then
+  echo "Klucz Anthropic wczytany z .env (czat korzysta z prawdziwego modelu)."
+else
+  echo "Brak ANTHROPIC_API_KEY w .env: czat agenta zwróci komunikat o niedostępności (503); pozostałe ekrany działają."
+fi
 
 # 3. Kontener SQL Server
 step "Uruchamiam bazę ($DB_CONTAINER na 127.0.0.1:$DB_PORT)"
@@ -113,6 +135,12 @@ mkdir -p "$RUN_DIR"
   export ConnectionStrings__Hr="Server=127.0.0.1,$DB_PORT;Database=hr_dev;User Id=sa;Password=$HR_DEV_SA_PASSWORD;TrustServerCertificate=True"
   export Hr__SeedDemoData=true
   unset MSSQL_SA_PASSWORD SQLCMDPASSWORD
+  # Klucz wyłącznie z .env: bez niego także klucz odziedziczony z powłoki nie trafia do Hr.Api.
+  if [[ -n "$ANTHROPIC_KEY_FROM_ENV" ]]; then
+    export ANTHROPIC_API_KEY="$ANTHROPIC_KEY_FROM_ENV"
+  else
+    unset ANTHROPIC_API_KEY
+  fi
   setsid nohup dotnet run --project "$ROOT_DIR/src/Hr.Api" --no-launch-profile --no-build \
     >"$RUN_DIR/api.log" 2>&1 </dev/null &
   echo $! >"$RUN_DIR/api.pid"

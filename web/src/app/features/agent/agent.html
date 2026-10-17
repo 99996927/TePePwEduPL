@@ -1,0 +1,66 @@
+<h1>Agent</h1>
+
+<div class="layout">
+  <app-conversation-list
+    class="list"
+    [conversations]="conversations()"
+    [selectedId]="selectedId()"
+    [showAuthor]="showAuthor"
+    [loading]="loadingList()"
+    [error]="listError()"
+    [(onlyMine)]="onlyMine"
+    (select)="select($event)"
+    (create)="create()"
+    (retry)="retryList()"
+  />
+
+  <section class="conversation" aria-label="Rozmowa">
+    @if (mode() === 'readonly') {
+      <p class="banner" role="status" data-readonly-banner>
+        Czytasz rozmowę: {{ authorName() }}. Odczyt jest zapisany w audycie.
+      </p>
+    }
+
+    @if (conversationError(); as message) {
+      <div class="error" role="alert" data-conversation-error>
+        <p>{{ message }}</p>
+        <button matButton="outlined" type="button" (click)="retryConversation()">Spróbuj ponownie</button>
+      </div>
+    } @else {
+      <app-conversation-thread
+        [messages]="messages()"
+        [pending]="sending()"
+        [ungroundedNumbers]="ungroundedNumbers()"
+        [loading]="loadingConversation()"
+        [emptyHint]="emptyHint()"
+      />
+    }
+
+    @if (showComposer()) {
+      <p class="note" data-privacy-note>Kadry mogą czytać rozmowy z agentem.</p>
+      <div class="composer" data-composer-slot>
+        <mat-form-field class="field" subscriptSizing="dynamic">
+          <mat-label>Pytanie do agenta</mat-label>
+          <textarea
+            matInput
+            cdkTextareaAutosize
+            cdkAutosizeMinRows="2"
+            cdkAutosizeMaxRows="10"
+            [value]="text()"
+            [disabled]="sending()"
+            [attr.aria-invalid]="tooLong()"
+            (input)="onInput($event)"
+            (keydown)="onKeydown($event)"
+          ></textarea>
+          <mat-hint align="end" data-counter [class.over]="tooLong()">{{ text().length }}/{{ maxLength }}</mat-hint>
+        </mat-form-field>
+        @if (sendError(); as message) {
+          <p class="send-error" role="alert" data-send-error>{{ message }}</p>
+        }
+        <div class="actions">
+          <button matButton="filled" type="button" data-send [disabled]="!canSend()" (click)="send()">Wyślij</button>
+        </div>
+      </div>
+    }
+  </section>
+</div>

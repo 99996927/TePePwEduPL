@@ -1,0 +1,41 @@
+<div class="head">
+  <button mat-flat-button type="button" (click)="create.emit()">Nowa rozmowa</button>
+  @if (showAuthor()) {
+    <mat-slide-toggle [checked]="onlyMine()" (change)="onlyMine.set($event.checked)">Tylko moje</mat-slide-toggle>
+  }
+</div>
+
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Ładowanie rozmów" />
+} @else if (error(); as message) {
+  <div class="state" role="alert">
+    <p>{{ message }}</p>
+    <button mat-stroked-button type="button" (click)="retry.emit()">Spróbuj ponownie</button>
+  </div>
+} @else if (visible().length === 0) {
+  <p class="state">Brak rozmów.</p>
+} @else {
+  <ul class="items">
+    @for (c of visible(); track c.id) {
+      <li>
+        <button
+          type="button"
+          class="row"
+          [attr.data-conversation]="c.id"
+          [attr.aria-current]="selectedId() === c.id ? 'true' : null"
+          [class.selected]="selectedId() === c.id"
+          (click)="select.emit(c.id)"
+        >
+          <span class="preview">{{ c.preview ?? '(bez pytania)' }}</span>
+          <span class="meta">
+            <span>{{ formatDateTime(c.startedAtUtc) }}</span>
+            <span>Wiadomości: {{ c.messageCount }}</span>
+            @if (showAuthor()) {
+              <span class="author">{{ author(c.userId) }}</span>
+            }
+          </span>
+        </button>
+      </li>
+    }
+  </ul>
+}

@@ -38,7 +38,7 @@ Plik testu: `e2e/tests/<grupa>.spec.ts`, nazwa testu zaczyna się od `UC-xx`.
 | UC-05, UC-06, UC-07, UC-08, UC-09 | urlopy | `leave.spec.ts` |
 | UC-10, UC-11, UC-12, UC-13, UC-14, UC-15 | czas pracy | `timesheet.spec.ts` |
 | UC-16, UC-17, UC-18, UC-19, UC-20 | płace | `payroll.spec.ts` |
-| UC-21, UC-22, UC-23, UC-24, UC-25, UC-26, UC-27, UC-30, UC-31 | agent (ze stubem modelu) | `agent.spec.ts` |
+| UC-21, UC-22, UC-23, UC-24, UC-25, UC-26, UC-27, UC-30, UC-31 | agent (ze stubem modelu) | `agent.spec.ts`; do czasu E2E: spec ekranu `web/src/app/features/agent/agent.spec.ts` (Vitest) i kroki 12–15 `tools/dev/smoke.sh` (rozmowy demo, odczyt przez kadry, audyt `ConversationRead`, 404 dla pracownika) |
 | UC-28, UC-29 | audyt, start | `admin.spec.ts` |
 
 Testy agenta w E2E używają stubu modelu, aby były deterministyczne i niezależne od sieci. Osobny, opcjonalny zestaw smoke
