@@ -9,6 +9,7 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { MAT_DATE_LOCALE, provideNativeDateAdapter } from '@angular/material/core';
+import { MAT_ICON_DEFAULT_OPTIONS } from '@angular/material/icon';
 import { provideRouter } from '@angular/router';
 import { provideApiConfiguration } from './api/api-configuration';
 import { routes } from './app.routes';
@@ -28,6 +29,7 @@ export const appConfig: ApplicationConfig = {
     provideApiConfiguration(''),
     provideAppInitializer(() => inject(SessionService).load()),
     provideNativeDateAdapter(),
+    { provide: MAT_ICON_DEFAULT_OPTIONS, useValue: { fontSet: 'material-symbols-outlined' } },
     { provide: MAT_DATE_LOCALE, useValue: 'pl-PL' },
     { provide: LOCALE_ID, useValue: 'pl-PL' },
   ],
