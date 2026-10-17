@@ -1,0 +1,29 @@
+<mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title>{{ name() }}</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <dl>
+      <dt>Pensja zasadnicza</dt>
+      <dd>{{ formatMoney(result().baseSalary) }}</dd>
+      <dt>Dodatek stały</dt>
+      <dd>{{ formatMoney(result().fixedAllowance) }}</dd>
+      <dt>Norma czasu (h)</dt>
+      <dd>{{ formatHours(result().normHours) }}</dd>
+      <dt>Nadgodziny 50% (h)</dt>
+      <dd>{{ formatHours(result().overtime50Hours) }}</dd>
+      <dt>Nadgodziny 100% (h)</dt>
+      <dd>{{ formatHours(result().overtime100Hours) }}</dd>
+      <dt>Wynagrodzenie za nadgodziny</dt>
+      <dd>{{ formatMoney(result().normalOvertimePay) }}</dd>
+      <dt>Dodatek 50%</dt>
+      <dd>{{ formatMoney(result().allowance50) }}</dd>
+      <dt>Dodatek 100%</dt>
+      <dd>{{ formatMoney(result().allowance100) }}</dd>
+      <dt class="gross">Brutto</dt>
+      <dd class="gross">{{ formatMoney(result().gross) }}</dd>
+    </dl>
+    <p class="meta">Reguły: {{ result().ruleIds.join(', ') }}</p>
+    <p class="meta">Obliczono: {{ formatInstantDateTime(result().calculatedAtUtc) }}</p>
+  </mat-card-content>
+</mat-card>

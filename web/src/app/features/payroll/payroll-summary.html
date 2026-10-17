@@ -1,0 +1,56 @@
+@if (employees().length === 0) {
+  <p>Brak pracowników</p>
+} @else {
+  <table mat-table [dataSource]="employees()">
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Pracownik</th>
+      <td mat-cell *matCellDef="let e">{{ e.firstName }} {{ e.lastName }}</td>
+    </ng-container>
+    <ng-container matColumnDef="team">
+      <th mat-header-cell *matHeaderCellDef>Zespół</th>
+      <td mat-cell *matCellDef="let e">{{ e.teamName }}</td>
+    </ng-container>
+    <ng-container matColumnDef="gross">
+      <th mat-header-cell *matHeaderCellDef>Brutto</th>
+      <td mat-cell *matCellDef="let e">
+        @let s = stateOf(e.id);
+        @switch (s.status) {
+          @case ('ready') {
+            {{ formatMoney(s.data.gross) }}
+          }
+          @case ('notFound') {
+            —
+          }
+          @case ('error') {
+            <span class="error">{{ s.message }}</span>
+            <button matButton type="button" data-retry (click)="retry($event, e.id)" (keydown.enter)="$event.stopPropagation()">Spróbuj ponownie</button>
+          }
+          @default {
+            <mat-progress-bar mode="indeterminate" />
+          }
+        }
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="overtime">
+      <th mat-header-cell *matHeaderCellDef>Nadgodziny razem</th>
+      <td mat-cell *matCellDef="let e">
+        @let s = stateOf(e.id);
+        @if (s.status === 'ready') {
+          {{ formatHours(overtimeOf(s.data)) }} h
+        } @else if (s.status === 'notFound') {
+          —
+        }
+      </td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr
+      mat-row
+      *matRowDef="let e; columns: columns"
+      class="clickable"
+      tabindex="0"
+      [attr.data-row]="e.id"
+      (click)="selected.emit(e.id)"
+      (keydown.enter)="selected.emit(e.id)"
+    ></tr>
+  </table>
+}

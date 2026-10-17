@@ -1,0 +1,24 @@
+<h2 mat-dialog-title>{{ data.approve ? 'Zatwierdzenie szkicu korekty' : 'Odrzucenie szkicu korekty' }}</h2>
+<mat-dialog-content>
+  <p>
+    {{ employeeName }}, {{ formatDate(data.draft.proposedStart) }}: {{ formatTime(data.draft.proposedStart) }}–{{
+      formatTime(data.draft.proposedEnd)
+    }}, przerwa {{ data.draft.proposedBreakMinutes }} min
+  </p>
+  <mat-form-field>
+    <mat-label>Notatka</mat-label>
+    <textarea matInput rows="3" [formControl]="note"></textarea>
+    @if (data.approve) {
+      <mat-hint>Opcjonalna</mat-hint>
+    }
+  </mat-form-field>
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button matButton type="button" mat-dialog-close [disabled]="sending()">Anuluj</button>
+  <button matButton="filled" type="button" data-save [disabled]="sending()" (click)="save()">
+    {{ data.approve ? 'Zatwierdź' : 'Odrzuć' }}
+  </button>
+</mat-dialog-actions>

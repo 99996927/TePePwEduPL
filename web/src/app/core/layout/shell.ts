@@ -10,7 +10,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { map } from 'rxjs';
 import { problemOf } from '../api-problem';
 import { Notifier } from '../notifier';
-import { APPROVER_ROLES } from '../roles';
+import { APPROVER_ROLES, HR_ROLES } from '../roles';
 import { SessionService } from '../session';
 
 interface MenuItem {
@@ -18,6 +18,7 @@ interface MenuItem {
   path: string;
   exact: boolean;
   approversOnly: boolean;
+  hrOnly: boolean;
 }
 
 const ROLE_LABELS: Readonly<Record<string, string>> = {
@@ -28,11 +29,15 @@ const ROLE_LABELS: Readonly<Record<string, string>> = {
 };
 
 const MENU: readonly MenuItem[] = [
-  { label: 'Pulpit', path: '/', exact: true, approversOnly: false },
-  { label: 'Urlopy', path: '/urlopy', exact: true, approversOnly: false },
-  { label: 'Czas pracy', path: '/czas-pracy', exact: false, approversOnly: false },
-  { label: 'Zatwierdzanie urlopów', path: '/urlopy/zatwierdzanie', exact: false, approversOnly: true },
-  { label: 'Przegląd zespołu', path: '/zespol', exact: false, approversOnly: true },
+  { label: 'Pulpit', path: '/', exact: true, approversOnly: false, hrOnly: false },
+  { label: 'Urlopy', path: '/urlopy', exact: true, approversOnly: false, hrOnly: false },
+  { label: 'Czas pracy', path: '/czas-pracy', exact: false, approversOnly: false, hrOnly: false },
+  { label: 'Naliczenia', path: '/naliczenia', exact: false, approversOnly: false, hrOnly: false },
+  { label: 'Zatwierdzanie urlopów', path: '/urlopy/zatwierdzanie', exact: false, approversOnly: true, hrOnly: false },
+  { label: 'Przegląd zespołu', path: '/zespol', exact: false, approversOnly: true, hrOnly: false },
+  { label: 'Zmiany płacowe', path: '/zmiany-platowe', exact: false, approversOnly: false, hrOnly: true },
+  { label: 'Szkice korekt', path: '/szkice-korekt', exact: false, approversOnly: false, hrOnly: true },
+  { label: 'Audyt', path: '/audyt', exact: false, approversOnly: false, hrOnly: true },
 ];
 
 @Component({
@@ -64,7 +69,10 @@ export class Shell {
   );
   protected readonly roleLabel = computed(() => this.user()?.roles.map((r) => ROLE_LABELS[r] ?? r).join(', ') ?? '');
   protected readonly items = computed(() =>
-    MENU.filter((item) => !item.approversOnly || this.session.hasRole(...APPROVER_ROLES)),
+    MENU.filter(
+      (item) =>
+        (!item.approversOnly || this.session.hasRole(...APPROVER_ROLES)) && (!item.hrOnly || this.session.hasRole(...HR_ROLES)),
+    ),
   );
 
   protected closeIfNarrow(sidenav: MatSidenav): void {

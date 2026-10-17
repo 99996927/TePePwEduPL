@@ -15,6 +15,7 @@ const people: EmployeeDto[] = Array.from({ length: 7 }, (_, i) => ({
   hireDate: '2020-01-01',
   teamId: 't1',
   teamName: 'Platforma',
+  userId: null,
 }));
 
 function analysis(patch: Partial<TimesheetAnalysisDto> = {}): TimesheetAnalysisDto {

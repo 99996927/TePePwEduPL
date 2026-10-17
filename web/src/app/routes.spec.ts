@@ -1,6 +1,7 @@
 import { provideHttpClient, withXsrfConfiguration } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideApiConfiguration } from './api/api-configuration';
@@ -24,6 +25,7 @@ describe('routes', () => {
         provideHttpClient(withXsrfConfiguration({ cookieName: 'XSRF-TOKEN', headerName: 'X-XSRF-TOKEN' })),
         provideHttpClientTesting(),
         provideApiConfiguration(''),
+        provideNativeDateAdapter(),
         { provide: Notifier, useValue: { info, error: vi.fn() } },
       ],
     });
@@ -53,6 +55,33 @@ describe('routes', () => {
 
     expect(TestBed.inject(Router).url).toBe(url);
     expect(info).not.toHaveBeenCalled();
+  });
+
+  it.each(['/zmiany-platowe', '/szkice-korekt', '/audyt'])('%s_redirects_employee_and_manager_and_admits_hr', async (url) => {
+    for (const role of ['Employee', 'Manager']) {
+      info.mockReset();
+      TestBed.resetTestingModule();
+      const harness = await start(userWith(role));
+      await harness.navigateByUrl(url);
+      expect(TestBed.inject(Router).url).toBe('/');
+      expect(info).toHaveBeenCalledWith('Brak dostępu do tej strony.');
+    }
+    for (const role of ['HR', 'HRApprover']) {
+      info.mockReset();
+      TestBed.resetTestingModule();
+      const harness = await start(userWith(role));
+      await harness.navigateByUrl(url);
+      expect(TestBed.inject(Router).url).toBe(url);
+      expect(info).not.toHaveBeenCalled();
+    }
+  });
+
+  it('employee_on_payroll_stays', async () => {
+    const harness = await start(userWith('Employee'));
+
+    await harness.navigateByUrl('/naliczenia');
+
+    expect(TestBed.inject(Router).url).toBe('/naliczenia');
   });
 
   it('anonymous_on_leave_list_lands_on_login', async () => {

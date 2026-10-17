@@ -186,6 +186,7 @@ public class DemoDataInvariantsTests
         ids.AddRange(set.LeaveRequests.Select(l => l.Id));
         ids.AddRange(set.WorkEntries.Select(w => w.Id));
         ids.AddRange(set.PayrollChanges.Select(c => c.Id));
+        ids.AddRange(set.CorrectionDrafts.Select(d => d.Id));
         ids.AddRange(set.Conversations.Select(c => c.Id));
         ids.AddRange(set.Conversations.SelectMany(c => c.Messages).Select(m => m.Id));
 
@@ -201,6 +202,7 @@ public class DemoDataInvariantsTests
         var set = Build(anchor, seed);
         var created = set.LeaveRequests.Select(l => l.CreatedAtUtc)
             .Concat(set.PayrollChanges.Select(c => c.CreatedAtUtc))
+            .Concat(set.CorrectionDrafts.Select(d => d.CreatedAtUtc))
             .Concat(set.Conversations.SelectMany(c => c.Messages).Select(m => m.CreatedAtUtc))
             .ToList();
 
@@ -230,6 +232,39 @@ public class DemoDataInvariantsTests
 
     [Theory]
     [MemberData(nameof(Cases))]
+    public void Correction_draft_removes_the_daily_rest_violation_without_overlaps(string anchor, int seed)
+    {
+        var set = Build(anchor, seed);
+        var draft = Assert.Single(set.CorrectionDrafts);
+        var anna = set.People.Single(p => p.Login == "anna.nowak");
+        var entries = set.WorkEntries.Where(e => e.EmployeeId == anna.EmployeeId).OrderBy(e => e.Start).ToList();
+        var target = entries.Single(e => e.Id == draft.WorkEntryId);
+        Assert.Equal(DemoScenarios.AnnaDailyRestTuesday(Options(anchor, seed).AnchorDate), DateOnly.FromDateTime(target.Start));
+
+        var corrected = entries
+            .Select(e => e.Id == target.Id
+                ? new Hr.Rules.Time.WorkEntry(draft.ProposedStart, draft.ProposedEnd, draft.ProposedBreak)
+                : e.ToRulesEntry())
+            .OrderBy(e => e.Start).ToList();
+
+        Assert.DoesNotContain(RestRules.Check(corrected), v => v.RuleId == "KP-132-1");
+        for (var i = 1; i < corrected.Count; i++)
+        {
+            Assert.True(corrected[i - 1].End <= corrected[i].Start, $"{corrected[i - 1].End:o} nakłada się na {corrected[i].Start:o}");
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Cases))]
+    public void Correction_draft_is_created_no_later_than_the_anchor(string anchor, int seed)
+    {
+        var draft = Assert.Single(Build(anchor, seed).CorrectionDrafts);
+
+        Assert.True(DateOnly.FromDateTime(PolishTime.ToLocal(draft.CreatedAtUtc)) <= Options(anchor, seed).AnchorDate);
+    }
+
+    [Theory]
+    [MemberData(nameof(Cases))]
     public void Accounts_profile_returns_six_people_without_data(string anchor, int seed)
     {
         var set = DemoDataGenerator.Build(Options(anchor, seed) with { Profile = DemoProfile.Accounts }, Calendar);
@@ -240,5 +275,6 @@ public class DemoDataInvariantsTests
         Assert.Empty(set.WorkEntries);
         Assert.Empty(set.PayrollChanges);
         Assert.Empty(set.Conversations);
+        Assert.Empty(set.CorrectionDrafts);
     }
 }

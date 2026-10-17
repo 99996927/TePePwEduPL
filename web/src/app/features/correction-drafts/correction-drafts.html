@@ -1,0 +1,77 @@
+<h1>Szkice korekt</h1>
+
+<div class="toolbar">
+  <mat-form-field>
+    <mat-label>Status</mat-label>
+    <mat-select [value]="status()" (selectionChange)="selectStatus($event.value)">
+      @for (f of filters; track f.label) {
+        <mat-option [value]="f.status">{{ f.label }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</div>
+
+@if (error(); as message) {
+  <p class="error" role="alert">{{ message }}</p>
+  <button matButton type="button" data-retry (click)="retry()">Spróbuj ponownie</button>
+} @else if (!loading() && rows().length === 0) {
+  <p>Brak szkiców korekt</p>
+} @else {
+  <table mat-table [dataSource]="rows()">
+    <ng-container matColumnDef="employee">
+      <th mat-header-cell *matHeaderCellDef>Pracownik</th>
+      <td mat-cell *matCellDef="let d">{{ nameOf(d.employeeId) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="date">
+      <th mat-header-cell *matHeaderCellDef>Data wpisu</th>
+      <td mat-cell *matCellDef="let d">{{ formatDate(d.proposedStart) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="current">
+      <th mat-header-cell *matHeaderCellDef>Obecny wpis</th>
+      <td mat-cell *matCellDef="let d">{{ currentHours(d) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="proposed">
+      <th mat-header-cell *matHeaderCellDef>Proponowane godziny</th>
+      <td mat-cell *matCellDef="let d">
+        {{ proposedHours(d) }}
+        @if (nextDay(d)) {
+          <span class="hint">+1 dzień</span>
+        }
+        <div class="hint">przerwa {{ d.proposedBreakMinutes }} min</div>
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="reason">
+      <th mat-header-cell *matHeaderCellDef>Powód</th>
+      <td mat-cell *matCellDef="let d">{{ d.reason }}</td>
+    </ng-container>
+    <ng-container matColumnDef="author">
+      <th mat-header-cell *matHeaderCellDef>Utworzył</th>
+      <td mat-cell *matCellDef="let d">{{ userLabel(d.createdByUserId) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let d">{{ statusLabel(d.status) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="note">
+      <th mat-header-cell *matHeaderCellDef>Notatka decyzji</th>
+      <td mat-cell *matCellDef="let d">
+        @if (d.decisionNote) {
+          <div class="decision">{{ d.decisionNote }}</div>
+        }
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let d">
+        @if (canDecide && d.status === 'Pending') {
+          <button matButton="filled" type="button" data-approve [disabled]="busyId() === d.id" (click)="decide(d, true)">
+            Zatwierdź
+          </button>
+          <button matButton type="button" data-reject [disabled]="busyId() === d.id" (click)="decide(d, false)">Odrzuć</button>
+        }
+      </td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let d; columns: columns" [attr.data-row]="d.id"></tr>
+  </table>
+}

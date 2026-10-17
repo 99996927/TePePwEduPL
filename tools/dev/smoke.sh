@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test dymny działającego rozwiązania: SPA, antyforgery, logowanie i urlopy Anny.
+# Test dymny działającego rozwiązania: SPA, antyforgery, logowanie, urlopy Anny, naliczenia, pracownicy i szkice korekt kadr.
 # Użycie: tools/dev/smoke.sh [adres]   (domyślnie http://127.0.0.1:5080)
 set -euo pipefail
 
@@ -69,20 +69,20 @@ token="$(xsrf_token)"
 ok "$step"
 
 login() {
-  local password="$1"
+  local user_name="$1" password="$2"
   request POST /api/auth/login -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $(xsrf_token)" \
-    --data "{\"userName\":\"anna.nowak\",\"password\":\"$password\"}"
+    --data "{\"userName\":\"$user_name\",\"password\":\"$password\"}"
 }
 
 # 4. Złe hasło (przed poprawnym logowaniem, które zeruje licznik nieudanych prób)
 step="logowanie ze złym hasłem zwraca 401"
-code="$(login 'zlehaslo123')"
+code="$(login anna.nowak 'zlehaslo123')"
 [[ "$code" == "401" ]] || fail "$step" "kod HTTP $code"
 ok "$step"
 
 # 5. Poprawne logowanie
 step="POST /api/auth/login jako anna.nowak zwraca 200"
-code="$(login 'annanowak123')"
+code="$(login anna.nowak 'annanowak123')"
 [[ "$code" == "200" ]] || fail "$step" "kod HTTP $code: $(head -c 300 "$BODY")"
 ok "$step"
 
@@ -97,6 +97,39 @@ ok "$step"
 step="GET /api/leave/requests zwraca 200"
 code="$(request GET /api/leave/requests)"
 [[ "$code" == "200" ]] || fail "$step" "kod HTTP $code"
+ok "$step"
+
+# 8. Wyniki naliczenia za wrzesień (plan 7b: ekran Naliczenia)
+step="GET /api/payroll/results?year=2026&month=9 jako anna.nowak zawiera gross"
+code="$(request GET '/api/payroll/results?year=2026&month=9')"
+[[ "$code" == "200" ]] || fail "$step" "kod HTTP $code"
+grep -q '"gross"' "$BODY" || fail "$step" "brak pola gross: $(head -c 300 "$BODY")"
+ok "$step"
+
+# 9. Drugi użytkownik (kadry) w osobnym pliku ciasteczek
+JAR="$WORK_DIR/cookies-hr.txt"
+step="GET /api/auth/antiforgery (piotr.zielinski) zwraca 204"
+code="$(request GET /api/auth/antiforgery)"
+[[ "$code" == "204" ]] || fail "$step" "kod HTTP $code"
+ok "$step"
+
+step="POST /api/auth/login jako piotr.zielinski zwraca 200"
+code="$(login piotr.zielinski 'piotrzielinski123')"
+[[ "$code" == "200" ]] || fail "$step" "kod HTTP $code: $(head -c 300 "$BODY")"
+ok "$step"
+
+# 10. Kontrakt pracowników z userId (ADR-30)
+step="GET /api/employees jako piotr.zielinski zawiera userId"
+code="$(request GET /api/employees)"
+[[ "$code" == "200" ]] || fail "$step" "kod HTTP $code"
+grep -q '"userId"' "$BODY" || fail "$step" "brak pola userId: $(head -c 300 "$BODY")"
+ok "$step"
+
+# 11. Szkice korekt ewidencji (UC-26)
+step="GET /api/correction-drafts jako piotr.zielinski zawiera szkic ze statusem Pending"
+code="$(request GET /api/correction-drafts)"
+[[ "$code" == "200" ]] || fail "$step" "kod HTTP $code"
+tr -d ' \n' <"$BODY" | grep -q '^\[.*"status":"Pending"' || fail "$step" "brak szkicu Pending: $(head -c 300 "$BODY")"
 ok "$step"
 
 echo "Test dymny zakończony powodzeniem."

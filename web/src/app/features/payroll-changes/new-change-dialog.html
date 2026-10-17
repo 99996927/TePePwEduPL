@@ -1,0 +1,48 @@
+<h2 mat-dialog-title>Nowa zmiana płacowa</h2>
+<mat-dialog-content [formGroup]="form">
+  <mat-form-field>
+    <mat-label>Pracownik</mat-label>
+    <mat-select formControlName="employeeId" data-field="employee">
+      @for (e of directory.employees(); track e.id) {
+        <mat-option [value]="e.id">{{ e.firstName }} {{ e.lastName }} ({{ e.teamName }})</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>Składnik</mat-label>
+    <mat-select formControlName="component" data-field="component">
+      @for (c of components; track c) {
+        <mat-option [value]="c">{{ componentLabel(c) }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>Wartość (zł)</mat-label>
+    <input matInput type="text" inputmode="decimal" autocomplete="off" formControlName="value" data-field="value" />
+    @if (form.controls.value.invalid) {
+      <mat-error>{{ moneyMessage }}</mat-error>
+    }
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>Obowiązuje od</mat-label>
+    <input matInput [matDatepicker]="picker" formControlName="date" data-field="date" />
+    <mat-datepicker-toggle matIconSuffix [for]="picker" />
+    <mat-datepicker #picker />
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>Uzasadnienie</mat-label>
+    <textarea matInput rows="3" formControlName="reason" data-field="reason"></textarea>
+    @if (form.controls.reason.invalid) {
+      <mat-error>Podaj uzasadnienie.</mat-error>
+    }
+  </mat-form-field>
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button matButton type="button" mat-dialog-close [disabled]="sending()">Anuluj</button>
+  <button matButton="filled" type="button" data-save [disabled]="sending() || form.invalid" (click)="save()">
+    Zapisz
+  </button>
+</mat-dialog-actions>

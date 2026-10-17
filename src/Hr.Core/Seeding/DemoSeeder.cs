@@ -56,9 +56,9 @@ public static class DemoSeeder
                 await SeedDataAsync(db, users, data, ct);
                 logger.LogInformation(
                     "Seed danych demo: zapisano {Teams} zespołów, {People} osób i kont, {Leave} wniosków urlopowych, "
-                    + "{Entries} wpisów czasu, {Changes} zmian płacowych, {Conversations} rozmów.",
+                    + "{Entries} wpisów czasu, {Changes} zmian płacowych, {Conversations} rozmów, {Drafts} szkiców korekt.",
                     data.Teams.Count, data.People.Count, data.LeaveRequests.Count, data.WorkEntries.Count,
-                    data.PayrollChanges.Count, data.Conversations.Count);
+                    data.PayrollChanges.Count, data.Conversations.Count, data.CorrectionDrafts.Count);
             }
             else
             {
@@ -101,6 +101,7 @@ public static class DemoSeeder
         db.WorkEntries.AddRange(data.WorkEntries);
         db.PayrollChanges.AddRange(data.PayrollChanges);
         db.Conversations.AddRange(data.Conversations);
+        db.CorrectionDrafts.AddRange(data.CorrectionDrafts);
         await db.SaveChangesAsync(ct);
 
         // Konta zapisuje UserManager na tym samym kontekście (ta sama transakcja); tysiące śledzonych wpisów tylko by go spowalniały.

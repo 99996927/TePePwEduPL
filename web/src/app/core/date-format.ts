@@ -55,3 +55,9 @@ export function workedHours(start: string, end: string, breakMinutes: number): n
 export function toMonthParam(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
 }
+
+/** Local `dd.MM.yyyy HH:mm` of an instant. */
+export function formatInstantDateTime(iso: string): string {
+  const d = new Date(iso);
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

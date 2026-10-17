@@ -95,6 +95,21 @@ public class DemoDataApiTests(MsSqlFixture fixture)
     }
 
     [Fact]
+    public async Task UC26_Piotr_sees_one_pending_correction_draft_for_Anna()
+    {
+        await using var factory = await FullAsync();
+        var anna = await ApiSession.LoginAsAsync(factory, "anna.nowak");
+        var piotr = await ApiSession.LoginAsAsync(factory, "piotr.zielinski");
+        var annaId = (await MeOf(anna)).GetProperty("employeeId").GetGuid();
+
+        var drafts = await JsonOf(await piotr.GetAsync("/api/correction-drafts"));
+
+        var draft = Assert.Single(drafts.EnumerateArray());
+        Assert.Equal("Pending", draft.GetProperty("status").GetString());
+        Assert.Equal(annaId, draft.GetProperty("employeeId").GetGuid());
+    }
+
+    [Fact]
     public async Task Startup_fails_with_polish_message_for_non_working_day_anchor()
     {
         await using var factory = await FullAsync();

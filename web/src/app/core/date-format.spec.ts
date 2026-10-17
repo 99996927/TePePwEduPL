@@ -1,4 +1,4 @@
-import { toMonthParam, localDay, workedHours, formatDate, formatInstantDate, formatHours, formatTime, monthRange, toDateOnly, toLocalDateTime } from './date-format';
+import { toMonthParam, localDay, workedHours, formatDate, formatInstantDate, formatInstantDateTime, formatHours, formatTime, monthRange, toDateOnly, toLocalDateTime } from './date-format';
 
 describe('date-format', () => {
   it('toLocalDateTime_combines_local_day_and_time_without_zone', () => {
@@ -46,5 +46,9 @@ describe('date-format', () => {
   it('formatInstantDate_shows_the_local_calendar_date_of_the_instant', () => {
     const instant = new Date(2026, 9, 1, 0, 30); // local 00:30, a different UTC date in zones ahead of UTC
     expect(formatInstantDate(instant.toISOString())).toBe('01.10.2026');
+  });
+
+  it('formatInstantDateTime_uses_local_components', () => {
+    expect(formatInstantDateTime(new Date(2026, 9, 1, 9, 5).toISOString())).toBe('01.10.2026 09:05');
   });
 });

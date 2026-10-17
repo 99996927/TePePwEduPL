@@ -2,7 +2,7 @@ using Hr.Rules.Calendar;
 
 namespace Hr.Core.Seeding.Demo;
 
-/// <summary>Składa moduły danych demo w jeden <see cref="DemoDataSet"/>: osoby, urlopy, wpisy, zmiany płacowe, rozmowy.</summary>
+/// <summary>Składa moduły danych demo w jeden <see cref="DemoDataSet"/>: osoby, urlopy, wpisy, zmiany płacowe, rozmowy, szkice korekt.</summary>
 public static class DemoDataGenerator
 {
     public static DemoDataSet Build(DemoOptions options, WorkCalendar calendar)
@@ -15,6 +15,7 @@ public static class DemoDataGenerator
 
         var leave = DemoLeave.Build(options, people, calendar);
         var entries = DemoTimesheets.Build(options, people, leave, calendar);
+        var drafts = DemoCorrectionDrafts.Build(options, people, entries);
         var changes = DemoPayrollChanges.Build(options, people);
         var conversations = DemoConversations.Build(options, people, leave);
 
@@ -26,6 +27,7 @@ public static class DemoDataGenerator
             WorkEntries = entries,
             PayrollChanges = changes,
             Conversations = conversations,
+            CorrectionDrafts = drafts,
         };
     }
 }

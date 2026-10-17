@@ -14,8 +14,8 @@ import { SessionService } from '../../core/session';
 import { Timesheet } from './timesheet';
 
 const employees: EmployeeDto[] = [
-  { id: 'e1', firstName: 'Anna', lastName: 'Nowak', hireDate: '2020-01-01', teamId: 't1', teamName: 'Platforma' },
-  { id: 'e2', firstName: 'Jan', lastName: 'Kowalski', hireDate: '2021-01-01', teamId: 't1', teamName: 'Platforma' },
+  { id: 'e1', firstName: 'Anna', lastName: 'Nowak', hireDate: '2020-01-01', teamId: 't1', teamName: 'Platforma', userId: null },
+  { id: 'e2', firstName: 'Jan', lastName: 'Kowalski', hireDate: '2021-01-01', teamId: 't1', teamName: 'Platforma', userId: null },
 ];
 
 function entry(id: string, employeeId: string, start: string, end: string, breakMinutes = 30): WorkEntryDto {

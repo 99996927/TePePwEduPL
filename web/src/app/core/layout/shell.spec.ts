@@ -48,16 +48,15 @@ describe('Shell', () => {
     error.mockReset();
   });
 
-  it('employee_sees_three_menu_items', async () => {
-    const { el } = await open('Employee');
-
-    expect(labels(el)).toEqual(['Pulpit', 'Urlopy', 'Czas pracy']);
-  });
-
-  it.each(['Manager', 'HR'])('%s_sees_five_menu_items', async (role) => {
+  it.each([
+    ['Employee', ['Pulpit', 'Urlopy', 'Czas pracy', 'Naliczenia']],
+    ['Manager', ['Pulpit', 'Urlopy', 'Czas pracy', 'Naliczenia', 'Zatwierdzanie urlopów', 'Przegląd zespołu']],
+    ['HR', ['Pulpit', 'Urlopy', 'Czas pracy', 'Naliczenia', 'Zatwierdzanie urlopów', 'Przegląd zespołu', 'Zmiany płacowe', 'Szkice korekt', 'Audyt']],
+    ['HRApprover', ['Pulpit', 'Urlopy', 'Czas pracy', 'Naliczenia', 'Zatwierdzanie urlopów', 'Przegląd zespołu', 'Zmiany płacowe', 'Szkice korekt', 'Audyt']],
+  ])('%s_sees_expected_menu_items', async (role, expected) => {
     const { el } = await open(role);
 
-    expect(labels(el)).toEqual(['Pulpit', 'Urlopy', 'Czas pracy', 'Zatwierdzanie urlopów', 'Przegląd zespołu']);
+    expect(labels(el)).toEqual(expected);
   });
 
   it('toolbar_shows_title_name_and_role', async () => {

@@ -1,4 +1,4 @@
-import { Component, input, model } from '@angular/core';
+import { Component, computed, input, model } from '@angular/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { EmployeeDto } from '../api/models/employee-dto';
@@ -10,7 +10,10 @@ import { EmployeeDto } from '../api/models/employee-dto';
   template: `
     <mat-form-field>
       <mat-label>Pracownik</mat-label>
-      <mat-select [value]="selectedId()" (selectionChange)="selectedId.set($event.value)">
+      <mat-select [value]="value()" (selectionChange)="selectedId.set($event.value === ALL ? null : $event.value)">
+        @if (allLabel() !== null) {
+          <mat-option [value]="ALL">{{ allLabel() }}</mat-option>
+        }
         @for (e of employees(); track e.id) {
           <mat-option [value]="e.id">{{ e.firstName }} {{ e.lastName }} ({{ e.teamName }})</mat-option>
         }
@@ -21,4 +24,9 @@ import { EmployeeDto } from '../api/models/employee-dto';
 export class EmployeePicker {
   readonly employees = input<EmployeeDto[]>([]);
   readonly selectedId = model<string | null>(null);
+  /** Label of an extra option meaning "everyone" (`selectedId` null); `null` hides it. */
+  readonly allLabel = input<string | null>(null);
+
+  protected readonly ALL = '';
+  protected readonly value = computed(() => this.selectedId() ?? (this.allLabel() !== null ? this.ALL : null));
 }

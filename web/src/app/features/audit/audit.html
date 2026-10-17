@@ -1,0 +1,111 @@
+<h1>Dziennik audytu</h1>
+
+<form class="filters" (submit)="$event.preventDefault(); search()">
+  <mat-form-field>
+    <mat-label>Typ encji</mat-label>
+    <mat-select [formControl]="entityType" data-entity-type>
+      <mat-option value="">Wszystkie</mat-option>
+      @for (t of entityTypes; track t) {
+        <mat-option [value]="t">{{ entityLabel(t) }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Identyfikator encji</mat-label>
+    <input matInput [formControl]="entityId" data-entity-id autocomplete="off" />
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Użytkownik</mat-label>
+    <mat-select [formControl]="actor" data-actor>
+      <mat-option value="">Wszyscy</mat-option>
+      @for (u of users(); track u.userId) {
+        <mat-option [value]="u.userId">{{ u.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Zakres dat</mat-label>
+    <mat-date-range-input [formGroup]="range" [rangePicker]="picker">
+      <input matStartDate formControlName="start" placeholder="Od" />
+      <input matEndDate formControlName="end" placeholder="Do" />
+    </mat-date-range-input>
+    <mat-datepicker-toggle matIconSuffix [for]="picker" />
+    <mat-date-range-picker #picker />
+  </mat-form-field>
+
+  <div class="actions">
+    <button matButton="filled" type="submit" data-search>Szukaj</button>
+    <button matButton type="button" data-clear (click)="clear()">Wyczyść</button>
+  </div>
+</form>
+
+@if (invalidId()) {
+  <p class="error" role="alert" data-id-error>Podaj poprawny identyfikator (GUID).</p>
+}
+
+@if (error(); as message) {
+  <p class="error" role="alert">{{ message }}</p>
+  <button matButton type="button" data-retry (click)="retry()">Spróbuj ponownie</button>
+} @else {
+  @if (!loading() && items().length === 0) {
+    <p>Brak wpisów dla wybranych filtrów</p>
+  } @else {
+    <table mat-table multiTemplateDataRows [dataSource]="rows()">
+      <ng-container matColumnDef="toggle">
+        <th mat-header-cell *matHeaderCellDef>Szczegóły</th>
+        <td mat-cell *matCellDef="let r">
+          <button matButton type="button" data-toggle [attr.aria-expanded]="isOpen(r)" (click)="toggle(r)">
+            {{ isOpen(r) ? 'Ukryj' : 'Szczegóły' }}
+          </button>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="time">
+        <th mat-header-cell *matHeaderCellDef>Czas</th>
+        <td mat-cell *matCellDef="let r">{{ formatTime(r.atUtc) }}</td>
+      </ng-container>
+      <ng-container matColumnDef="actor">
+        <th mat-header-cell *matHeaderCellDef>Użytkownik</th>
+        <td mat-cell *matCellDef="let r">{{ actorLabel(r.actorUserId) }}</td>
+      </ng-container>
+      <ng-container matColumnDef="event">
+        <th mat-header-cell *matHeaderCellDef>Zdarzenie</th>
+        <td mat-cell *matCellDef="let r">{{ eventLabel(r.eventType) }}</td>
+      </ng-container>
+      <ng-container matColumnDef="entityType">
+        <th mat-header-cell *matHeaderCellDef>Typ encji</th>
+        <td mat-cell *matCellDef="let r">{{ entityLabel(r.entityType) }}</td>
+      </ng-container>
+      <ng-container matColumnDef="entityId">
+        <th mat-header-cell *matHeaderCellDef>Identyfikator</th>
+        <td mat-cell *matCellDef="let r"><span [attr.title]="r.entityId">{{ shortId(r.entityId) }}</span></td>
+      </ng-container>
+      <ng-container matColumnDef="detail">
+        <td mat-cell *matCellDef="let r" [attr.colspan]="columns.length" data-detail>
+          <div class="detail">
+            <div>
+              <h2>Przed</h2>
+              <pre data-before>{{ pretty(r.beforeJson) }}</pre>
+            </div>
+            <div>
+              <h2>Po</h2>
+              <pre data-after>{{ pretty(r.afterJson) }}</pre>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let r; columns: columns" [attr.data-row]="r.id"></tr>
+      <tr mat-row *matRowDef="let r; columns: ['detail']; when: isExpanded" [attr.data-detail-row]="r.id"></tr>
+    </table>
+  }
+  <mat-paginator
+    [length]="total()"
+    [pageIndex]="pageIndex()"
+    [pageSize]="pageSize()"
+    [pageSizeOptions]="pageSizes"
+    (page)="page($event)"
+  />
+}

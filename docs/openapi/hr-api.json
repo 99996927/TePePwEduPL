@@ -431,6 +431,11 @@
           },
           "teamName": {
             "type": "string"
+          },
+          "userId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
           }
         },
         "required": [
@@ -439,7 +444,8 @@
           "lastName",
           "teamId",
           "teamName",
-          "hireDate"
+          "hireDate",
+          "userId"
         ],
         "type": "object"
       },
