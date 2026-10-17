@@ -1,0 +1,41 @@
+<h2 mat-dialog-title>{{ correcting ? 'Korekta wpisu' : 'Dodaj wpis' }}</h2>
+<mat-dialog-content>
+  <form [formGroup]="form" class="fields">
+    <mat-form-field>
+      <mat-label>Data</mat-label>
+      <input matInput [matDatepicker]="picker" formControlName="date" data-field="date" />
+      <mat-datepicker-toggle matIconSuffix [for]="picker" />
+      <mat-datepicker #picker />
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Start</mat-label>
+      <input matInput type="time" formControlName="start" data-field="start" />
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Koniec</mat-label>
+      <input matInput type="time" formControlName="end" data-field="end" />
+      @if (endsNextDay()) {
+        <mat-hint data-next-day>Wpis zakończy się następnego dnia</mat-hint>
+      }
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Przerwa (minuty)</mat-label>
+      <input matInput type="number" min="0" formControlName="breakMinutes" data-field="breakMinutes" />
+    </mat-form-field>
+    @if (correcting) {
+      <mat-form-field>
+        <mat-label>Powód</mat-label>
+        <textarea matInput rows="2" formControlName="reason" data-reason data-field="reason"></textarea>
+      </mat-form-field>
+    }
+  </form>
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button matButton type="button" mat-dialog-close [disabled]="sending()">Anuluj</button>
+  <button matButton="filled" type="button" data-save [disabled]="sending() || !canSave" (click)="save()">
+    Zapisz
+  </button>
+</mat-dialog-actions>

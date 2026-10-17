@@ -1,0 +1,58 @@
+<div class="header">
+  <h1>Czas pracy</h1>
+  @if (isOwn()) {
+    <button matButton="filled" type="button" data-add (click)="openAdd()">Dodaj wpis</button>
+  }
+</div>
+
+<div class="toolbar">
+  <app-month-switcher [month]="month()" (monthChange)="setMonth($event)" />
+  @if (isApprover) {
+    <app-employee-picker [employees]="directory.employees()" [(selectedId)]="selectedId" />
+  }
+</div>
+
+@if (error(); as message) {
+  <p class="error" role="alert">{{ message }}</p>
+  <button matButton type="button" data-retry (click)="refresh()">Spróbuj ponownie</button>
+} @else if (!loading() && rows().length === 0) {
+  <p>Brak wpisów w tym miesiącu</p>
+} @else {
+  <table mat-table [dataSource]="rows()">
+    <ng-container matColumnDef="day">
+      <th mat-header-cell *matHeaderCellDef>Dzień</th>
+      <td mat-cell *matCellDef="let e">{{ dayLabel(e) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="start">
+      <th mat-header-cell *matHeaderCellDef>Start</th>
+      <td mat-cell *matCellDef="let e">{{ formatTime(e.start) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="end">
+      <th mat-header-cell *matHeaderCellDef>Koniec</th>
+      <td mat-cell *matCellDef="let e">
+        {{ formatTime(e.end) }}
+        @if (endsNextDay(e)) {
+          <span class="next-day">+1 dzień</span>
+        }
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="break">
+      <th mat-header-cell *matHeaderCellDef>Przerwa (min)</th>
+      <td mat-cell *matCellDef="let e">{{ e.breakMinutes }}</td>
+    </ng-container>
+    <ng-container matColumnDef="worked">
+      <th mat-header-cell *matHeaderCellDef>Przepracowane (h)</th>
+      <td mat-cell *matCellDef="let e">{{ formatHours(workedHours(e)) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let e">
+        @if (canCorrect(e)) {
+          <button matButton type="button" data-correct (click)="openCorrect(e)">Koryguj</button>
+        }
+      </td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let e; columns: columns" [attr.data-row]="e.id"></tr>
+  </table>
+}
