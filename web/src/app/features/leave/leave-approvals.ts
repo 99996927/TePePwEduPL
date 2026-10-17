@@ -6,7 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { LeaveRequestDto } from '../../api/models/leave-request-dto';
 import { LeaveService } from '../../api/services/leave.service';
 import { messageOf, problemOf } from '../../core/api-problem';
-import { formatDate } from '../../core/date-format';
+import { formatDate, formatInstantDate } from '../../core/date-format';
 import { EmployeeDirectory } from '../../core/employee-directory';
 import { Notifier } from '../../core/notifier';
 import { SessionService } from '../../core/session';
@@ -27,6 +27,7 @@ export class LeaveApprovals {
 
   protected readonly columns = ['employee', 'team', 'from', 'to', 'days', 'created', 'actions'];
   protected readonly formatDate = formatDate;
+  protected readonly formatInstantDate = formatInstantDate;
   protected readonly nameOf = (id: string): string => this.directory.nameOf(id);
 
   protected readonly requests = signal<LeaveRequestDto[]>([]);

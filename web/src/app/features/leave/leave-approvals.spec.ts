@@ -2,6 +2,8 @@ import { provideHttpClient, withXsrfConfiguration } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
+import { MatDialog } from '@angular/material/dialog';
 import { provideApiConfiguration } from '../../api/api-configuration';
 import { CurrentUserDto } from '../../api/models/current-user-dto';
 import { LeaveRequestDto } from '../../api/models/leave-request-dto';
@@ -47,6 +49,7 @@ describe('LeaveApprovals', () => {
         provideHttpClient(withXsrfConfiguration({ cookieName: 'XSRF-TOKEN', headerName: 'X-XSRF-TOKEN' })),
         provideHttpClientTesting(),
         provideApiConfiguration(''),
+        { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
         { provide: SessionService, useValue: { user: user.asReadonly(), hasRole: () => true } },
       ],
     });
@@ -59,12 +62,7 @@ describe('LeaveApprovals', () => {
     http.expectOne('/api/leave/requests').flush(list);
     await flush(fixture);
     const el = fixture.nativeElement as HTMLElement;
-    // The dialog's afterClosed emits after its exit animation, so poll until it settles.
-    const settle = async () => {
-      await flush(fixture);
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      await flush(fixture);
-    };
+    const settle = () => flush(fixture);
     const row = (id: string) => el.querySelector(`tr[data-row="${id}"]`) as HTMLElement | null;
     const rowIds = () => Array.from(el.querySelectorAll('tr[data-row]')).map((x) => x.getAttribute('data-row'));
     const dialogEl = () => document.querySelector('app-decision-dialog') as HTMLElement | null;
@@ -166,6 +164,8 @@ describe('LeaveApprovals', () => {
     save().click();
     await settle();
     expect(save().disabled).toBe(true);
+    const dialog = TestBed.inject(MatDialog).openDialogs[0];
+    expect(dialog.disableClose).toBe(true);
     http.expectOne('/api/leave/requests/r1/decision').flush(
       { title: 'Błąd walidacji', status: 422, detail: 'Niewystarczające saldo urlopu: brakuje 2 dni.' },
       { status: 422, statusText: 'Unprocessable Entity' },
@@ -175,6 +175,7 @@ describe('LeaveApprovals', () => {
       'Niewystarczające saldo urlopu: brakuje 2 dni.',
     );
     expect(save().disabled).toBe(false);
+    expect(dialog.disableClose).toBe(false);
     expect(rowIds()).toEqual(['r1', 'r3']);
   });
 

@@ -1,16 +1,30 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
+import { CurrentUserDto } from '../api/models/current-user-dto';
 import { provideApiConfiguration } from '../api/api-configuration';
 import { TestBed } from '@angular/core/testing';
 import { EmployeeDirectory } from './employee-directory';
+import { SessionService } from './session';
+
+const userOf = (userId: string): CurrentUserDto => ({
+  userId, employeeId: 'e', userName: 'x', displayName: 'X', roles: ['Employee'],
+});
 
 describe('EmployeeDirectory', () => {
   let http: HttpTestingController;
   let directory: EmployeeDirectory;
+  const current = signal<CurrentUserDto | null>(null);
 
   beforeEach(() => {
+    current.set(userOf('u1'));
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideApiConfiguration('')],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideApiConfiguration(''),
+        { provide: SessionService, useValue: { user: current.asReadonly() } },
+      ],
     });
     http = TestBed.inject(HttpTestingController);
     directory = TestBed.inject(EmployeeDirectory);
@@ -52,5 +66,34 @@ describe('EmployeeDirectory', () => {
     await retry;
 
     expect(directory.nameOf('e1')).toBe('Anna Nowak');
+  });
+
+  it('load_for_another_user_after_relogin_fetches_again_and_replaces_the_list', async () => {
+    const other = { ...employee, id: 'e2', firstName: 'Jan', lastName: 'Kowalski' };
+    const first = directory.load();
+    http.expectOne('/api/employees').flush([employee, other]);
+    await first;
+    expect(directory.employees().length).toBe(2);
+
+    current.set(null);
+    current.set(userOf('u2'));
+    const second = directory.load();
+    expect(directory.employees()).toEqual([]);
+    http.expectOne('/api/employees').flush([other]);
+    await second;
+
+    expect(directory.employees()).toEqual([other]);
+    expect(directory.nameOf('e1')).toBe('—');
+  });
+
+  it('load_for_the_same_user_stays_cached', async () => {
+    const first = directory.load();
+    http.expectOne('/api/employees').flush([employee]);
+    await first;
+
+    current.set(userOf('u1'));
+    await directory.load();
+
+    http.expectNone('/api/employees');
   });
 });

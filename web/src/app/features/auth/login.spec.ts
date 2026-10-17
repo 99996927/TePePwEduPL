@@ -71,6 +71,20 @@ describe('Login', () => {
     expect(navigate).toHaveBeenCalledWith('/urlopy');
   });
 
+  it.each([
+    ['//evil', '%2F%2Fevil'],
+    ['/\\evil', '%2F%5Cevil'],
+  ])('submit_return_url_%s_is_rejected', async (_label, encoded) => {
+    const { harness, el } = await open(`/logowanie?returnUrl=${encoded}`);
+    type(el, 'a', 'b');
+    harness.detectChanges();
+
+    submit(el).click();
+    await harness.fixture.whenStable();
+
+    expect(navigate).toHaveBeenCalledWith('/');
+  });
+
   it('submit_external_return_url_is_ignored', async () => {
     const { harness, el } = await open('/logowanie?returnUrl=%2F%2Fevil.example');
     type(el, 'a', 'b');

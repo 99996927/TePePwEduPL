@@ -16,9 +16,11 @@ const created: LeaveRequestDto = {
 describe('NewLeaveDialog', () => {
   let http: HttpTestingController;
   const close = vi.fn();
+  const ref = { close, disableClose: false };
 
   function setup() {
     close.mockReset();
+    ref.disableClose = false;
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withXsrfConfiguration({ cookieName: 'XSRF-TOKEN', headerName: 'X-XSRF-TOKEN' })),
@@ -26,7 +28,7 @@ describe('NewLeaveDialog', () => {
         provideApiConfiguration(''),
         provideNativeDateAdapter(),
         { provide: MAT_DATE_LOCALE, useValue: 'pl-PL' },
-        { provide: MatDialogRef, useValue: { close } },
+        { provide: MatDialogRef, useValue: ref },
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -84,6 +86,7 @@ describe('NewLeaveDialog', () => {
     save().click();
     await settle();
     expect(save().disabled).toBe(true);
+    expect(ref.disableClose).toBe(true);
     const post = http.expectOne('/api/leave/requests');
     post.flush(
       { title: 'Błąd walidacji', status: 422, detail: 'Niewystarczające saldo urlopu: brakuje 3 dni.' },
@@ -92,6 +95,7 @@ describe('NewLeaveDialog', () => {
     await settle();
     expect(el.querySelector('[role="alert"]')!.textContent).toContain('Niewystarczające saldo urlopu: brakuje 3 dni.');
     expect(close).not.toHaveBeenCalled();
+    expect(ref.disableClose).toBe(false);
     expect(save().disabled).toBe(false);
   });
 

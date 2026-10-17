@@ -21,6 +21,11 @@ export function formatDate(s: string): string {
   return new Date(y, m - 1, d).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+/** Local calendar date of an instant (e.g. `createdAtUtc`), unlike `formatDate`, which reads the date part as written. */
+export function formatInstantDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 export function formatTime(s: string): string {
   return s.slice(11, 16);
 }

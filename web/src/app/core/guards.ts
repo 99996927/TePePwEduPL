@@ -4,9 +4,9 @@ import { Notifier } from './notifier';
 import { Role } from './roles';
 import { SessionService } from './session';
 
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = (_route, state) => {
   const session = inject(SessionService);
-  return session.isAuthenticated() ? true : inject(Router).createUrlTree(['/logowanie']);
+  return session.isAuthenticated() ? true : inject(Router).createUrlTree(['/logowanie'], { queryParams: { returnUrl: state.url } });
 };
 
 export function roleGuard(...roles: Role[]): CanActivateFn {

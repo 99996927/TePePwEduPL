@@ -60,7 +60,7 @@ describe('routes', () => {
 
     await harness.navigateByUrl('/urlopy');
 
-    expect(TestBed.inject(Router).url).toBe('/logowanie');
+    expect(TestBed.inject(Router).url).toBe('/logowanie?returnUrl=%2Furlopy');
   });
 
   it('reload_on_timesheet_with_valid_session_stays', async () => {

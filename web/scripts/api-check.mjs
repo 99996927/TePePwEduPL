@@ -42,6 +42,10 @@ try {
 
   const expected = listFiles(generated);
   const actual = listFiles(committed);
+  if (expected.length === 0) {
+    console.error('api:check: the generator produced no files.');
+    process.exit(1);
+  }
   const problems = [];
   for (const file of expected) {
     if (!actual.includes(file)) problems.push(`missing: ${file}`);

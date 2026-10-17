@@ -18,14 +18,18 @@ interface DemoAccount {
 }
 
 // Demo accounts from docs/arc42/07-widok-wdrozenia.md, section 7.2.
-const DEMO_ACCOUNTS: readonly DemoAccount[] = [
-  { userName: 'anna.nowak', password: 'annanowak123', role: 'Employee' },
-  { userName: 'jan.kowalski', password: 'jankowalski123', role: 'Employee' },
-  { userName: 'tomasz.lis', password: 'tomaszlis123', role: 'Employee' },
-  { userName: 'ewa.wisniewska', password: 'ewawisniewska123', role: 'Manager' },
-  { userName: 'piotr.zielinski', password: 'piotrzielinski123', role: 'HR' },
-  { userName: 'maria.kaminska', password: 'mariakaminska123', role: 'HRApprover' },
-];
+// Empty in production builds (ngDevMode is false there), so the literals are tree-shaken out of the bundle.
+const DEMO_ACCOUNTS: readonly DemoAccount[] =
+  typeof ngDevMode === 'undefined' || ngDevMode
+    ? [
+        { userName: 'anna.nowak', password: 'annanowak123', role: 'Employee' },
+        { userName: 'jan.kowalski', password: 'jankowalski123', role: 'Employee' },
+        { userName: 'tomasz.lis', password: 'tomaszlis123', role: 'Employee' },
+        { userName: 'ewa.wisniewska', password: 'ewawisniewska123', role: 'Manager' },
+        { userName: 'piotr.zielinski', password: 'piotrzielinski123', role: 'HR' },
+        { userName: 'maria.kaminska', password: 'mariakaminska123', role: 'HRApprover' },
+      ]
+    : [];
 
 @Component({
   selector: 'app-login',
@@ -79,6 +83,7 @@ export class Login {
   /** Only same-origin absolute paths are accepted, to avoid open redirects. */
   private returnUrl(): string {
     const value = this.query()?.get('returnUrl') ?? null;
-    return value !== null && value.startsWith('/') && !value.startsWith('//') ? value : '/';
+    const safe = value !== null && value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\');
+    return safe ? value : '/';
   }
 }

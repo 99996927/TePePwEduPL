@@ -20,6 +20,13 @@ interface MenuItem {
   approversOnly: boolean;
 }
 
+const ROLE_LABELS: Readonly<Record<string, string>> = {
+  Employee: 'Pracownik',
+  Manager: 'Kierownik',
+  HR: 'Kadry',
+  HRApprover: 'Zatwierdzający kadr',
+};
+
 const MENU: readonly MenuItem[] = [
   { label: 'Pulpit', path: '/', exact: true, approversOnly: false },
   { label: 'Urlopy', path: '/urlopy', exact: true, approversOnly: false },
@@ -55,7 +62,7 @@ export class Shell {
       .pipe(map((state) => state.matches)),
     { initialValue: false },
   );
-  protected readonly roleLabel = computed(() => this.user()?.roles.join(', ') ?? '');
+  protected readonly roleLabel = computed(() => this.user()?.roles.map((r) => ROLE_LABELS[r] ?? r).join(', ') ?? '');
   protected readonly items = computed(() =>
     MENU.filter((item) => !item.approversOnly || this.session.hasRole(...APPROVER_ROLES)),
   );

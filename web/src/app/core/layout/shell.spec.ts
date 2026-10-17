@@ -66,7 +66,7 @@ describe('Shell', () => {
 
     expect(toolbar).toContain('Asystent kadrowo-płacowy');
     expect(toolbar).toContain('Ewa Wiśniewska');
-    expect(toolbar).toContain('Manager');
+    expect(toolbar).toContain('Kierownik');
     expect(el.textContent).toContain('content');
   });
 
@@ -102,5 +102,17 @@ describe('Shell', () => {
 
     expect(TestBed.inject(Router).url).toBe('/logowanie');
     expect(error).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [['Employee'], 'Pracownik'],
+    [['Manager'], 'Kierownik'],
+    [['HR'], 'Kadry'],
+    [['HRApprover'], 'Zatwierdzający kadr'],
+    [['Manager', 'Auditor'], 'Kierownik, Auditor'],
+  ])('toolbar_shows_polish_role_label_for_%j', async (roles, label) => {
+    const { el } = await open(...roles);
+
+    expect(el.querySelector('.role')!.textContent!.trim()).toBe(label);
   });
 });

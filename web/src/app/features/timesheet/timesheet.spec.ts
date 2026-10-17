@@ -246,7 +246,7 @@ describe('Timesheet', () => {
     expect(ids(el)).toEqual(['w1', 'w2']);
   });
 
-  it('forward_navigation_requests_the_following_month', async () => {
+  it('next_button_is_disabled_on_current_month_and_enabled_after_going_back', async () => {
     const { el, fixture } = await setup(['Employee']);
     // current month is the maximum: the next button is disabled
     expect((el.querySelector('[aria-label="Następny miesiąc"]') as HTMLButtonElement).disabled).toBe(true);

@@ -35,6 +35,7 @@ export class NewLeaveDialog {
     const { start, end } = this.range.value;
     if (this.sending() || !start || !end) return;
     this.sending.set(true);
+    this.dialogRef.disableClose = true;
     this.error.set(null);
     try {
       const created = await firstValueFrom(
@@ -45,6 +46,7 @@ export class NewLeaveDialog {
     } catch (e) {
       this.error.set(messageOf(problemOf(e)));
       this.sending.set(false);
+      this.dialogRef.disableClose = false;
     }
   }
 }

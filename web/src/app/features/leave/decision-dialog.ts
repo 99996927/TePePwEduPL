@@ -46,6 +46,7 @@ export class DecisionDialog {
       return;
     }
     this.sending.set(true);
+    this.dialogRef.disableClose = true;
     this.error.set(null);
     try {
       const decided = await firstValueFrom(
@@ -63,6 +64,7 @@ export class DecisionDialog {
       }
       this.error.set(messageOf(problem));
       this.sending.set(false);
+      this.dialogRef.disableClose = false;
     }
   }
 }

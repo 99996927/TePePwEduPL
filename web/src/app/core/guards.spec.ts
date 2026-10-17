@@ -31,14 +31,20 @@ describe('guards', () => {
     });
   });
 
-  const run = (guard: CanActivateFn) =>
-    TestBed.runInInjectionContext(() => guard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot));
+  const run = (guard: CanActivateFn, url = '/') =>
+    TestBed.runInInjectionContext(() => guard({} as ActivatedRouteSnapshot, { url } as RouterStateSnapshot));
 
   it('authGuard_unauthenticated_redirects_to_login', () => {
     const result = run(authGuard);
 
     expect(result instanceof UrlTree).toBe(true);
-    expect(TestBed.inject(Router).serializeUrl(result as UrlTree)).toBe('/logowanie');
+    expect(TestBed.inject(Router).serializeUrl(result as UrlTree)).toBe('/logowanie?returnUrl=%2F');
+  });
+
+  it('authGuard_unauthenticated_passes_the_requested_url_as_return_url', () => {
+    const result = run(authGuard, '/urlopy?x=1');
+
+    expect(TestBed.inject(Router).serializeUrl(result as UrlTree)).toBe('/logowanie?returnUrl=%2Furlopy%3Fx%3D1');
   });
 
   it('authGuard_authenticated_allows', () => {
