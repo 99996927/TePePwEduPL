@@ -1,7 +1,9 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { of } from 'rxjs';
 import { CurrentUserDto } from '../../api/models/current-user-dto';
 import { Notifier } from '../notifier';
 import { SessionService } from '../session';
@@ -114,4 +116,106 @@ describe('Shell', () => {
 
     expect(el.querySelector('.role')!.textContent!.trim()).toBe(label);
   });
+});
+
+describe('Shell look', () => {
+  const user = signal<CurrentUserDto | null>(null);
+  const FULL_MENU_ICONS = [
+    'dashboard',
+    'beach_access',
+    'schedule',
+    'payments',
+    'smart_toy',
+    'task_alt',
+    'groups',
+    'request_quote',
+    'edit_note',
+    'fact_check',
+  ];
+
+  async function openAt(url: string, ...roles: string[]) {
+    user.set({ userId: 'u', employeeId: 'e', userName: 'x', displayName: 'Ewa Wiśniewska', roles });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: '', component: Shell, children: [{ path: '**', component: Blank }] }]),
+        {
+          provide: SessionService,
+          useValue: {
+            user: user.asReadonly(),
+            hasRole: (...r: string[]) => r.some((x) => roles.includes(x)),
+            logout: vi.fn(),
+          },
+        },
+        { provide: Notifier, useValue: { error: vi.fn() } },
+      ],
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(url);
+    harness.detectChanges();
+    return harness.fixture.nativeElement as HTMLElement;
+  }
+
+  it.each([
+    ['Employee', 5],
+    ['Manager', 7],
+    ['HR', 10],
+  ])('%s_menu_items_have_icons_in_menu_order', async (role, count) => {
+    const el = await openAt('/', role);
+    const icons = Array.from(el.querySelectorAll('nav a mat-icon')).map((i) => i.getAttribute('fonticon'));
+
+    expect(icons).toEqual(FULL_MENU_ICONS.slice(0, 5).concat(FULL_MENU_ICONS.slice(5, count)));
+  });
+
+  it.each([
+    ['/', 'Pulpit'],
+    ['/urlopy', 'Urlopy'],
+    ['/urlopy/zatwierdzanie', 'Zatwierdzanie urlopów'],
+    ['/agent/abc', 'Agent'],
+    ['/nieznana', 'Asystent kadrowo-płacowy'],
+  ])('title_for_%s_is_%s', async (url, title) => {
+    const el = await openAt(url, 'Manager');
+
+    expect(el.querySelector('.title')!.textContent!.trim()).toBe(title);
+  });
+
+  it('toolbar_exposes_user_name_and_role_for_the_current_user', async () => {
+    const el = await openAt('/', 'HR');
+
+    expect(el.querySelector('[data-user-name]')!.textContent!.trim()).toBe('Ewa Wiśniewska');
+    expect(el.querySelector('[data-user-role]')!.textContent!.trim()).toBe('Kadry');
+  });
+
+describe('Shell narrow', () => {
+  async function openNarrow() {
+    const user = signal<CurrentUserDto | null>({ userId: 'u', employeeId: 'e', userName: 'x', displayName: 'X', roles: ['Employee'] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: '', component: Shell, children: [{ path: '**', component: Blank }] }]),
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: true, breakpoints: {} }) } },
+        { provide: SessionService, useValue: { user: user.asReadonly(), hasRole: () => false, logout: vi.fn() } },
+        { provide: Notifier, useValue: { error: vi.fn() } },
+      ],
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/');
+    harness.detectChanges();
+    return { harness, el: harness.fixture.nativeElement as HTMLElement };
+  }
+
+  it('menu_is_closed_opens_with_menu_button_and_closes_after_choosing_an_item', async () => {
+    const { harness, el } = await openNarrow();
+    const drawer = el.querySelector('mat-sidenav')!;
+
+    expect(drawer.classList).not.toContain('mat-drawer-opened');
+    el.querySelector<HTMLButtonElement>('button[aria-label="Menu"]')!.click();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(drawer.classList).toContain('mat-drawer-opened');
+
+    el.querySelector<HTMLAnchorElement>('nav a')!.click();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(drawer.classList).not.toContain('mat-drawer-opened');
+  });
+});
 });

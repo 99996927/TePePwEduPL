@@ -1,8 +1,6 @@
-<mat-card appearance="outlined">
-  <mat-card-header>
-    <mat-card-title>{{ name() }}</mat-card-title>
-  </mat-card-header>
-  <mat-card-content>
+<section class="page-card">
+  <div class="page-card__header page-card__header--info"><h2>{{ name() }}</h2></div>
+  <div class="page-card__body">
     <dl>
       <dt>Pensja zasadnicza</dt>
       <dd>{{ formatMoney(result().baseSalary) }}</dd>
@@ -25,5 +23,5 @@
     </dl>
     <p class="meta">Reguły: {{ result().ruleIds.join(', ') }}</p>
     <p class="meta">Obliczono: {{ formatInstantDateTime(result().calculatedAtUtc) }}</p>
-  </mat-card-content>
-</mat-card>
+  </div>
+</section>

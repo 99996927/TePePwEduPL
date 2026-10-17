@@ -86,4 +86,11 @@ describe('ConversationThread', () => {
     const filled = setup({ messages: [msg(1, 'User', 'Q')] });
     expect(filled.el.textContent).not.toContain('Zadaj pytanie.');
   });
+
+  it('bubbles_carry_bem_role_modifiers', () => {
+    const { bubble } = setup({ messages: [msg(1, 'User', 'Q'), msg(2, 'Assistant', 'A')] });
+    expect(bubble(1)!.classList).toContain('bubble--user');
+    expect(bubble(1)!.classList).not.toContain('bubble--assistant');
+    expect(bubble(2)!.classList).toContain('bubble--assistant');
+  });
 });

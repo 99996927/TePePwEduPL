@@ -15,6 +15,7 @@ import { Notifier } from '../../core/notifier';
 import { SessionService } from '../../core/session';
 import { ConfirmDialog, ConfirmDialogData } from '../../shared/confirm-dialog';
 import { NewLeaveDialog } from './new-leave-dialog';
+import { StatusChip } from '../../shared/status-chip';
 
 const STATUS_LABELS: Record<string, string> = {
   Pending: 'Oczekuje',
@@ -25,7 +26,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 @Component({
   selector: 'app-leave-list',
-  imports: [MatButtonModule, MatFormFieldModule, MatSelectModule, MatTableModule],
+  imports: [StatusChip, MatButtonModule, MatFormFieldModule, MatSelectModule, MatTableModule],
   templateUrl: './leave-list.html',
   styleUrl: './leave-list.scss',
 })

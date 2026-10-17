@@ -180,4 +180,9 @@ describe('Login', () => {
     expect(input(el, 'userName').value).toBe('ewa.wisniewska');
     expect(input(el, 'password').value).toBe('ewawisniewska123');
   });
+
+  it('card_header_shows_application_name', async () => {
+    const { el } = await open();
+    expect(el.querySelector('.page-card__header')!.textContent).toContain('Asystent kadrowo-płacowy');
+  });
 });

@@ -18,6 +18,7 @@ import { Notifier } from '../../core/notifier';
 import { HR_ROLES } from '../../core/roles';
 import { SessionService } from '../../core/session';
 import { DraftDecisionDialog, DraftDecisionDialogData, DraftDecisionDialogResult } from './draft-decision-dialog';
+import { StatusChip } from '../../shared/status-chip';
 
 const FILTERS: { label: string; status: string | null }[] = [
   { label: 'Oczekujące', status: 'Pending' },
@@ -28,7 +29,7 @@ const FILTERS: { label: string; status: string | null }[] = [
 
 @Component({
   selector: 'app-correction-drafts',
-  imports: [MatButtonModule, MatFormFieldModule, MatSelectModule, MatTableModule],
+  imports: [StatusChip, MatButtonModule, MatFormFieldModule, MatSelectModule, MatTableModule],
   templateUrl: './correction-drafts.html',
   styleUrl: './correction-drafts.scss',
 })

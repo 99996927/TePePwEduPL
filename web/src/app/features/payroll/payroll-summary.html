@@ -1,7 +1,7 @@
 @if (employees().length === 0) {
   <p>Brak pracowników</p>
 } @else {
-  <table mat-table [dataSource]="employees()">
+  <table class="data-table" mat-table [dataSource]="employees()">
     <ng-container matColumnDef="name">
       <th mat-header-cell *matHeaderCellDef>Pracownik</th>
       <td mat-cell *matCellDef="let e">{{ e.firstName }} {{ e.lastName }}</td>
@@ -11,8 +11,8 @@
       <td mat-cell *matCellDef="let e">{{ e.teamName }}</td>
     </ng-container>
     <ng-container matColumnDef="gross">
-      <th mat-header-cell *matHeaderCellDef>Brutto</th>
-      <td mat-cell *matCellDef="let e">
+      <th mat-header-cell *matHeaderCellDef class="num">Brutto</th>
+      <td mat-cell *matCellDef="let e" class="num">
         @let s = stateOf(e.id);
         @switch (s.status) {
           @case ('ready') {

@@ -156,4 +156,12 @@ describe('LeaveList', () => {
     expect(await loader.getAllHarnesses(MatDialogHarness)).toHaveLength(1);
     expect(document.querySelector('app-new-leave-dialog')).toBeTruthy();
   });
+
+  it('status_cells_render_chips_with_matching_tones', async () => {
+    const { el } = await setup();
+    const tones = rows(el).map((x) => x.querySelector('app-status-chip .status-chip')!.getAttribute('data-tone'));
+
+    expect(tones).toEqual(['success', 'warning', expect.any(String), 'danger', 'neutral']);
+    expect(rows(el)[0].querySelector('app-status-chip')!.textContent!.trim()).toBe('Zatwierdzony');
+  });
 });

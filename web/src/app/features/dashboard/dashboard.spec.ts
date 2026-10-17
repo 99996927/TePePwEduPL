@@ -172,4 +172,35 @@ describe('Dashboard', () => {
     expect(el.querySelector('[data-value="remaining"]')!.textContent!.trim()).toBe('5');
     expect(el.querySelector('[data-tile="balance"] button')).toBeNull();
   });
+
+  it.each([
+    ['balance', 'beach_access'],
+    ['month', 'schedule'],
+    ['alerts', 'warning'],
+    ['approvals', 'task_alt'],
+  ])('tile_%s_has_icon_%s', async (tile, icon) => {
+    const { el, settle } = setup('Manager');
+    http.expectOne('/api/leave/balance').flush(balance);
+    analysisReq().flush(analysis());
+    http.expectOne((r) => r.url === '/api/leave/requests').flush([]);
+    await settle();
+
+    const found = el.querySelector(`[data-tile="${tile}"] .page-card__icon mat-icon`)!;
+    expect(found.getAttribute('fonticon')).toBe(icon);
+  });
+
+  it('alerts_icon_is_green_without_alerts_and_red_with_them', async () => {
+    const quiet = setup('Employee');
+    http.expectOne('/api/leave/balance').flush(balance);
+    analysisReq().flush(analysis());
+    await quiet.settle();
+    expect(quiet.el.querySelector('[data-tile="alerts"] .page-card__icon')!.classList).toContain('page-card__icon--success');
+    TestBed.resetTestingModule();
+
+    const noisy = setup('Employee');
+    http.expectOne('/api/leave/balance').flush(balance);
+    analysisReq().flush(analysis({ annualOvertimeLimitExceeded: true }));
+    await noisy.settle();
+    expect(noisy.el.querySelector('[data-tile="alerts"] .page-card__icon')!.classList).toContain('page-card__icon--danger');
+  });
 });

@@ -20,6 +20,7 @@ import { ConfirmDialog, ConfirmDialogData } from '../../shared/confirm-dialog';
 import { EmployeePicker } from '../../shared/employee-picker';
 import { NewChangeDialog } from './new-change-dialog';
 import { RejectDialog, RejectDialogData, RejectDialogResult } from './reject-dialog';
+import { StatusChip } from '../../shared/status-chip';
 
 /** The change was decided, removed or is no longer permitted meanwhile, so the list is out of date. */
 const isStale = (status: number | undefined): boolean => status === 404 || status === 403 || status === 409;
@@ -28,7 +29,7 @@ const STATUSES = ['Draft', 'Pending', 'Approved', 'Rejected'] as const;
 
 @Component({
   selector: 'app-payroll-changes',
-  imports: [MatButtonModule, MatFormFieldModule, MatSelectModule, MatTableModule, EmployeePicker],
+  imports: [StatusChip, MatButtonModule, MatFormFieldModule, MatSelectModule, MatTableModule, EmployeePicker],
   templateUrl: './payroll-changes.html',
   styleUrl: './payroll-changes.scss',
 })

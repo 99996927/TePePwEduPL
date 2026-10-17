@@ -1,8 +1,9 @@
 <h1>Pulpit</h1>
 <div class="tiles">
-  <mat-card data-tile="balance">
-    <mat-card-header><mat-card-title>Saldo urlopu</mat-card-title></mat-card-header>
-    <mat-card-content>
+  <section class="page-card page-card--tile" data-tile="balance">
+<span class="page-card__icon page-card__icon--info"><mat-icon fontIcon="beach_access" /></span>
+    <h2 class="tile-title">Saldo urlopu</h2>
+    <div class="tile-body">
       @let b = balance();
       @if (b.status === 'loading') {
         <mat-progress-bar mode="indeterminate" />
@@ -17,12 +18,13 @@
           <dt>Pozostałe</dt><dd data-value="remaining">{{ b.data.remainingDays }}</dd>
         </dl>
       }
-    </mat-card-content>
-  </mat-card>
+    </div>
+  </section>
 
-  <mat-card data-tile="month">
-    <mat-card-header><mat-card-title>Bieżący miesiąc</mat-card-title></mat-card-header>
-    <mat-card-content>
+  <section class="page-card page-card--tile" data-tile="month">
+<span class="page-card__icon"><mat-icon fontIcon="schedule" /></span>
+    <h2 class="tile-title">Bieżący miesiąc</h2>
+    <div class="tile-body">
       @let a = analysis();
       @if (a.status === 'loading') {
         <mat-progress-bar mode="indeterminate" />
@@ -37,12 +39,13 @@
           <dt>Nadgodziny 100%</dt><dd data-value="overtime100">{{ formatHours(a.data.overtime.hours100) }} h</dd>
         </dl>
       }
-    </mat-card-content>
-  </mat-card>
+    </div>
+  </section>
 
-  <mat-card data-tile="alerts">
-    <mat-card-header><mat-card-title>Alerty</mat-card-title></mat-card-header>
-    <mat-card-content>
+  <section class="page-card page-card--tile" data-tile="alerts">
+<span class="page-card__icon" [class.page-card__icon--success]="alerts()?.none === true" [class.page-card__icon--danger]="alerts()?.none === false"><mat-icon fontIcon="warning" /></span>
+    <h2 class="tile-title">Alerty</h2>
+    <div class="tile-body">
       @let s = analysis();
       @let al = alerts();
       @if (s.status === 'loading') {
@@ -67,13 +70,14 @@
           </ul>
         }
       }
-    </mat-card-content>
-  </mat-card>
+    </div>
+  </section>
 
   @if (isApprover) {
-    <mat-card data-tile="approvals">
-      <mat-card-header><mat-card-title>Zatwierdzanie</mat-card-title></mat-card-header>
-      <mat-card-content>
+    <section class="page-card page-card--tile" data-tile="approvals">
+<span class="page-card__icon page-card__icon--warning"><mat-icon fontIcon="task_alt" /></span>
+      <h2 class="tile-title">Zatwierdzanie</h2>
+      <div class="tile-body">
         @let p = approvals();
         @if (p.status === 'loading') {
           <mat-progress-bar mode="indeterminate" />
@@ -84,7 +88,7 @@
           <p>Do zatwierdzenia: {{ p.data }}</p>
           <a mat-button routerLink="/urlopy/zatwierdzanie">Przejdź do zatwierdzania</a>
         }
-      </mat-card-content>
-    </mat-card>
+      </div>
+    </section>
   }
 </div>

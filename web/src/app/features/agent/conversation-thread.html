@@ -24,6 +24,8 @@
           class="bubble"
           [class.user]="m.role === 'User'"
           [class.assistant]="m.role === 'Assistant'"
+          [class.bubble--user]="m.role === 'User'"
+          [class.bubble--assistant]="m.role === 'Assistant'"
           [attr.data-message]="m.seq"
           [attr.data-role]="m.role"
         >{{ m.content }}</div>

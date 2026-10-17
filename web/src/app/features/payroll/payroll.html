@@ -1,35 +1,40 @@
-<h1>Naliczenia</h1>
+<div class="page-card">
+  <div class="page-card__header">
+    <h1>Naliczenia</h1>
+  </div>
+  <div class="page-card__body">
+    <div class="toolbar">
+      <app-month-switcher [month]="month()" (monthChange)="setMonth($event)" />
+      @if (isHr) {
+        <app-employee-picker [employees]="directory.employees()" [selectedId]="selectedId()" (selectedIdChange)="select($event)" />
+      }
+      @if (isHr) {
+        <button matButton="filled" type="button" data-run [disabled]="running()" (click)="run()">Uruchom naliczenie</button>
+      }
+    </div>
 
-<div class="toolbar">
-  <app-month-switcher [month]="month()" (monthChange)="setMonth($event)" />
-  @if (isHr) {
-    <app-employee-picker [employees]="directory.employees()" [selectedId]="selectedId()" (selectedIdChange)="select($event)" />
-  }
-  @if (isHr) {
-    <button matButton="filled" type="button" data-run [disabled]="running()" (click)="run()">Uruchom naliczenie</button>
-  }
+    @if (runError(); as message) {
+      <p class="error" role="alert" data-run-error>{{ message }}</p>
+    }
+
+    @if (isHr) {
+      <app-payroll-summary
+        [month]="month()"
+        [employees]="directory.employees()"
+        [runResult]="runResult()"
+        (selected)="select($event)"
+      />
+    }
+
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+      <button matButton type="button" data-retry (click)="retry()">Spróbuj ponownie</button>
+    } @else if (notFound()) {
+      <p>Brak naliczenia za ten miesiąc.</p>
+    } @else if (result(); as r) {
+      <app-payroll-card [result]="r" [name]="name()" />
+    }
+
+    <p class="disclaimer">Naliczenie ma charakter wstępny i demonstracyjny.</p>
+  </div>
 </div>
-
-@if (runError(); as message) {
-  <p class="error" role="alert" data-run-error>{{ message }}</p>
-}
-
-@if (isHr) {
-  <app-payroll-summary
-    [month]="month()"
-    [employees]="directory.employees()"
-    [runResult]="runResult()"
-    (selected)="select($event)"
-  />
-}
-
-@if (error(); as message) {
-  <p class="error" role="alert">{{ message }}</p>
-  <button matButton type="button" data-retry (click)="retry()">Spróbuj ponownie</button>
-} @else if (notFound()) {
-  <p>Brak naliczenia za ten miesiąc.</p>
-} @else if (result(); as r) {
-  <app-payroll-card [result]="r" [name]="name()" />
-}
-
-<p class="disclaimer">Naliczenie ma charakter wstępny i demonstracyjny.</p>

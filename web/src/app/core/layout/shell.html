@@ -1,5 +1,9 @@
 <mat-sidenav-container class="shell">
   <mat-sidenav #sidenav [mode]="narrow() ? 'over' : 'side'" [opened]="!narrow()">
+    <div class="brand">
+      <mat-icon class="brand-icon" fontIcon="badge" />
+      <span>Asystent HR</span>
+    </div>
     <nav>
       <mat-nav-list>
         @for (item of items(); track item.path) {
@@ -11,23 +15,27 @@
             [routerLinkActiveOptions]="{ exact: item.exact }"
             [activated]="active.isActive"
             (click)="closeIfNarrow(sidenav)"
-            >{{ item.label }}</a
+            ><mat-icon matListItemIcon [fontIcon]="item.icon" />{{ item.label }}</a
           >
         }
       </mat-nav-list>
     </nav>
   </mat-sidenav>
   <mat-sidenav-content>
-    <mat-toolbar color="primary" class="toolbar">
+    <mat-toolbar class="toolbar">
       @if (narrow()) {
         <button matIconButton type="button" aria-label="Menu" (click)="sidenav.toggle()">
-          <mat-icon>menu</mat-icon>
+          <mat-icon fontIcon="menu" />
         </button>
       }
-      <span class="title">Asystent kadrowo-płacowy</span>
+      <span class="breadcrumb">
+        <span class="app-name">{{ appName }}</span>
+        <span class="separator" aria-hidden="true">/</span>
+        <span class="title">{{ title() }}</span>
+      </span>
       <span class="spacer"></span>
-      <span class="user">{{ user()?.displayName }}</span>
-      <span class="role">{{ roleLabel() }}</span>
+      <span class="user" data-user-name>{{ user()?.displayName }}</span>
+      <span class="role" data-user-role>{{ roleLabel() }}</span>
       <button matButton type="button" class="logout" (click)="logout()">Wyloguj</button>
     </mat-toolbar>
     <main class="content">

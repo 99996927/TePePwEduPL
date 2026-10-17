@@ -6,8 +6,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { map } from 'rxjs';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { problemOf } from '../api-problem';
 import { Notifier } from '../notifier';
 import { APPROVER_ROLES, HR_ROLES } from '../roles';
@@ -15,6 +15,7 @@ import { SessionService } from '../session';
 
 interface MenuItem {
   label: string;
+  icon: string;
   path: string;
   exact: boolean;
   approversOnly: boolean;
@@ -28,17 +29,19 @@ const ROLE_LABELS: Readonly<Record<string, string>> = {
   HRApprover: 'Zatwierdzający kadr',
 };
 
+const APP_NAME = 'Asystent kadrowo-płacowy';
+
 const MENU: readonly MenuItem[] = [
-  { label: 'Pulpit', path: '/', exact: true, approversOnly: false, hrOnly: false },
-  { label: 'Urlopy', path: '/urlopy', exact: true, approversOnly: false, hrOnly: false },
-  { label: 'Czas pracy', path: '/czas-pracy', exact: false, approversOnly: false, hrOnly: false },
-  { label: 'Naliczenia', path: '/naliczenia', exact: false, approversOnly: false, hrOnly: false },
-  { label: 'Agent', path: '/agent', exact: false, approversOnly: false, hrOnly: false },
-  { label: 'Zatwierdzanie urlopów', path: '/urlopy/zatwierdzanie', exact: false, approversOnly: true, hrOnly: false },
-  { label: 'Przegląd zespołu', path: '/zespol', exact: false, approversOnly: true, hrOnly: false },
-  { label: 'Zmiany płacowe', path: '/zmiany-platowe', exact: false, approversOnly: false, hrOnly: true },
-  { label: 'Szkice korekt', path: '/szkice-korekt', exact: false, approversOnly: false, hrOnly: true },
-  { label: 'Audyt', path: '/audyt', exact: false, approversOnly: false, hrOnly: true },
+  { label: 'Pulpit', icon: 'dashboard', path: '/', exact: true, approversOnly: false, hrOnly: false },
+  { label: 'Urlopy', icon: 'beach_access', path: '/urlopy', exact: true, approversOnly: false, hrOnly: false },
+  { label: 'Czas pracy', icon: 'schedule', path: '/czas-pracy', exact: false, approversOnly: false, hrOnly: false },
+  { label: 'Naliczenia', icon: 'payments', path: '/naliczenia', exact: false, approversOnly: false, hrOnly: false },
+  { label: 'Agent', icon: 'smart_toy', path: '/agent', exact: false, approversOnly: false, hrOnly: false },
+  { label: 'Zatwierdzanie urlopów', icon: 'task_alt', path: '/urlopy/zatwierdzanie', exact: false, approversOnly: true, hrOnly: false },
+  { label: 'Przegląd zespołu', icon: 'groups', path: '/zespol', exact: false, approversOnly: true, hrOnly: false },
+  { label: 'Zmiany płacowe', icon: 'request_quote', path: '/zmiany-platowe', exact: false, approversOnly: false, hrOnly: true },
+  { label: 'Szkice korekt', icon: 'edit_note', path: '/szkice-korekt', exact: false, approversOnly: false, hrOnly: true },
+  { label: 'Audyt', icon: 'fact_check', path: '/audyt', exact: false, approversOnly: false, hrOnly: true },
 ];
 
 @Component({
@@ -69,6 +72,25 @@ export class Shell {
     { initialValue: false },
   );
   protected readonly roleLabel = computed(() => this.user()?.roles.map((r) => ROLE_LABELS[r] ?? r).join(', ') ?? '');
+  private readonly url = toSignal(
+    this.router.events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+      map(() => this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
+  protected readonly title = computed(() => {
+    const path = this.url().split(/[?#]/)[0];
+    const matching = MENU.filter((item) =>
+      item.path === '/' ? path === '/' : path === item.path || path.startsWith(`${item.path}/`),
+    );
+    const best = matching.reduce<MenuItem | null>(
+      (acc, item) => (acc === null || item.path.length > acc.path.length ? item : acc),
+      null,
+    );
+    return best?.label ?? APP_NAME;
+  });
+  protected readonly appName = APP_NAME;
   protected readonly items = computed(() =>
     MENU.filter(
       (item) =>

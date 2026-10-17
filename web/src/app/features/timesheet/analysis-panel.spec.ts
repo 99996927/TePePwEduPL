@@ -194,4 +194,25 @@ describe('AnalysisPanel', () => {
     expect(el.querySelector('[role="alert"]')).toBeNull();
     expect(el.querySelector('[data-value="worked"]')).toBeTruthy();
   });
+
+  it('violations_use_danger_tone_and_no_violations_success_tone', async () => {
+    setup();
+    analysisReq().flush(
+      analysis({
+        restViolations: [
+          { ruleId: 'KP-132-1', from: '2026-10-05T22:00:00', to: '2026-10-06T07:00:00', restHours: 9, requiredHours: 11 },
+        ],
+      }),
+    );
+    await settle();
+    expect(el.querySelector('[data-violation] .status-chip--danger')).not.toBeNull();
+    expect(el.querySelector('.status-chip--success')).toBeNull();
+  });
+
+  it('empty_violations_shows_success_chip', async () => {
+    setup();
+    analysisReq().flush(analysis());
+    await settle();
+    expect(el.querySelector('.status-chip--success')!.textContent).toContain('Brak naruszeń');
+  });
 });

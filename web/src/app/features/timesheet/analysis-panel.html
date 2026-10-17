@@ -1,5 +1,6 @@
-<section class="panel">
-  <h2>Analiza czasu pracy</h2>
+<section class="panel page-card">
+  <div class="page-card__header page-card__header--info"><h2>Analiza czasu pracy</h2></div>
+  <div class="page-card__body">
   @let s = state();
   @if (s.status === 'loading') {
     <mat-progress-bar mode="indeterminate" />
@@ -30,12 +31,12 @@
 
     <h3>Naruszenia odpoczynku</h3>
     @if (s.data.restViolations.length === 0) {
-      <p>Brak naruszeń</p>
+      <p><span class="status-chip status-chip--success">Brak naruszeń</span></p>
     } @else {
       <ul class="violations">
         @for (v of s.data.restViolations; track $index) {
           <li data-violation>
-            <strong>{{ label(v.ruleId) }}</strong>
+            <strong class="status-chip status-chip--danger">{{ label(v.ruleId) }}</strong>
             {{ formatDate(v.from) }} {{ formatTime(v.from) }} – {{ formatDate(v.to) }} {{ formatTime(v.to) }}:
             {{ formatHours(v.restHours) }} h wobec wymaganych {{ formatHours(v.requiredHours) }} h
             <span class="rule">({{ v.ruleId }})</span>
@@ -44,4 +45,5 @@
       </ul>
     }
   }
+  </div>
 </section>

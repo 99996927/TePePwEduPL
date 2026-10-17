@@ -32,12 +32,17 @@ flowchart TB
 
 | Blok | Odpowiedzialność |
 |---|---|
-| Angular | Panel pracownika (wnioski, czas, agent, naliczenia) i panel kadr (naliczenia, zmiany płacowe, audyt). Zbudowany do plików statycznych (ADR-29). Stan po planie 7c: logowanie, pulpit, urlopy, zatwierdzanie urlopów, czas pracy z analizą, przegląd zespołu, naliczenia, zmiany płacowe, szkice korekt, dziennik audytu i ekran agenta (czat z historią rozmów, odczyt rozmów przez kadry). |
+| Angular | Panel pracownika (wnioski, czas, agent, naliczenia) i panel kadr (naliczenia, zmiany płacowe, audyt). Zbudowany do plików statycznych (ADR-29). Wygląd (plan 7d): styl „Material Dashboard” (ADR-32). Stan po planie 7c: logowanie, pulpit, urlopy, zatwierdzanie urlopów, czas pracy z analizą, przegląd zespołu, naliczenia, zmiany płacowe, szkice korekt, dziennik audytu i ekran agenta (czat z historią rozmów, odczyt rozmów przez kadry). |
 | Kontrolery REST API | Uwierzytelnianie, autoryzacja po rolach, walidacja żądań, mapowanie DTO. |
 | Serwisy aplikacyjne | Przypadki użycia (wnioski, ewidencja, naliczenia, zmiany płacowe), sprawdzanie zakresu danych (własne, zespół, wszystkie). |
 | Silnik reguł płacowych | Czyste, deterministyczne reguły: dni robocze, saldo urlopu, nadgodziny, normy czasu pracy, dodatki, naliczenie. Bez I/O. |
 | Moduł agenta | Pętla tool use z Anthropic API, definicje narzędzi, ograniczenie do uprawnień użytkownika, zapis wywołań w audycie. |
 | Warstwa danych | Encje, EF Core, migracje, seed kont i danych demo. |
+
+**Układ i style Angulara (`web/src/styles/`, `web/src/app/core/layout/`, plan 7d, ADR-32):** motyw Material 3 (fiolet) z tokenami `--app-*` (`_tokens.scss`) i wspólnymi klasami
+(`_components.scss`): `page-card`, `page-card__header`, `page-card__body`, `page-card--tile`, `data-table`, `status-chip`. `Shell` ma jasnoszare menu z ikonami (mapowanie ikon w stałej `MENU`
+w `shell.ts`) i pasek z okruszkami (tytuł ekranu = pozycja menu o najdłuższej ścieżce będącej prefiksem adresu). `StatusChip` (`shared/status-chip.ts`) pokazuje status jako chip w tonie
+`success|warning|danger|info|neutral` (`statusTone`, nieznany status = neutralny).
 
 **Ekran agenta w Angularze (`web/src/app/features/agent/`, plan 7c, ADR-31):**
 

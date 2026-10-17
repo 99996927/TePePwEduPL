@@ -20,16 +20,18 @@
   overflow-wrap: anywhere;
   word-break: break-word;
 
-  &.user {
+  &.bubble--user {
     align-self: flex-end;
-    background: var(--mat-sys-primary-container);
-    color: var(--mat-sys-on-primary-container);
+    background: var(--app-grad-primary);
+    color: #fff;
+    box-shadow: var(--app-card-shadow);
   }
 
-  &.assistant {
+  &.bubble--assistant {
     align-self: flex-start;
-    background: var(--mat-sys-surface-container-high);
+    background: #fff;
     color: var(--mat-sys-on-surface);
+    box-shadow: var(--app-card-shadow);
   }
 
   &.pending {
@@ -39,8 +41,8 @@
 
 .tool {
   align-self: stretch;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 8px;
+  background: var(--app-menu-bg);
+  border-radius: var(--app-card-radius);
   padding: 4px 12px;
   font-size: 13px;
 
@@ -61,7 +63,7 @@
   align-self: flex-start;
   padding: 8px 12px;
   border-radius: 8px;
-  background: var(--mat-sys-error-container);
-  color: var(--mat-sys-on-error-container);
+  background: #fff3e0;
+  color: #8a4b00;
   overflow-wrap: anywhere;
 }
