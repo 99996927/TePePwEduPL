@@ -1,0 +1,15 @@
+table {
+  width: 100%;
+}
+
+.clickable {
+  cursor: pointer;
+
+  &:hover {
+    background: var(--mat-sys-surface-container-high);
+  }
+}
+
+.error {
+  color: var(--mat-sys-error);
+}

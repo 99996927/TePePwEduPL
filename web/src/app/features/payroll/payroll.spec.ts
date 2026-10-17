@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
+import { MatDialogHarness } from '@angular/material/dialog/testing';
 import { MatSelectHarness } from '@angular/material/select/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { provideApiConfiguration } from '../../api/api-configuration';
@@ -58,10 +59,16 @@ describe('Payroll', () => {
     http = TestBed.inject(HttpTestingController);
     const fixture = TestBed.createComponent(Payroll);
     fixture.detectChanges();
-    if (roles.includes('HR')) http.expectOne('/api/employees').flush(employees);
+    if (roles.includes('HR')) {
+      http.expectOne('/api/employees').flush(employees);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      drainSummary();
+    }
     const el = fixture.nativeElement as HTMLElement;
     const loader = TestbedHarnessEnvironment.loader(fixture);
-    return { fixture, el, loader };
+    const rootLoader = TestbedHarnessEnvironment.documentRootLoader(fixture);
+    return { fixture, el, loader, rootLoader };
   }
 
   async function settle(fixture: ComponentFixture<unknown>): Promise<void> {
@@ -79,6 +86,12 @@ describe('Payroll', () => {
         r.params.get('month') === String(month) &&
         r.params.get('employeeId') === (employeeId ?? null),
     );
+
+  /** HR page also loads one summary row per person; answer those with 404 so they stay out of the way. */
+  const drainSummary = () =>
+    http
+      .match((r) => r.url === '/api/payroll/results' && r.params.has('employeeId'))
+      .forEach((r) => r.flush({ title: 'Nie znaleziono' }, { status: 404, statusText: 'Not Found' }));
 
   afterEach(() => {
     http.verify();
@@ -164,5 +177,133 @@ describe('Payroll', () => {
     payrollReq(10).flush({ title: 'x' }, { status: 404, statusText: 'Not Found' });
     await settle(fixture);
     expect(el.textContent).toContain('Naliczenie ma charakter wstępny i demonstracyjny.');
+  });
+
+  describe('hr summary and run', () => {
+    const runReq = () => http.match((r) => r.url === '/api/payroll/runs');
+
+    async function hrSetup() {
+      const ctx = await setup(['HR']);
+      payrollReq(10).flush(result('e1', 10, 9000));
+      drainSummary();
+      await settle(ctx.fixture);
+      return ctx;
+    }
+
+    async function clickRun(ctx: Awaited<ReturnType<typeof hrSetup>>) {
+      ctx.el.querySelector<HTMLButtonElement>('[data-run]')!.click();
+      ctx.fixture.detectChanges();
+      return ctx.rootLoader.getHarness(MatDialogHarness);
+    }
+
+    it('hr_sees_summary_and_run_button_but_employee_does_not', async () => {
+      const hr = await hrSetup();
+      expect(hr.el.querySelector('app-payroll-summary')).not.toBeNull();
+      expect(hr.el.querySelector('[data-run]')?.textContent).toContain('Uruchom naliczenie');
+      TestBed.resetTestingModule();
+      const emp = await setup(['Employee']);
+      payrollReq(10).flush(result('e1', 10, 9000));
+      await settle(emp.fixture);
+      expect(emp.el.querySelector('app-payroll-summary')).toBeNull();
+      expect(emp.el.querySelector('[data-run]')).toBeNull();
+    });
+
+    it('decline_sends_nothing_and_current_month_dialog_shows_warning', async () => {
+      const ctx = await hrSetup();
+      const dialog = await clickRun(ctx);
+      expect(await dialog.getText()).toContain('Miesiąc jeszcze trwa. Naliczenie będzie wstępne i można je powtórzyć.');
+      await (await ctx.rootLoader.getHarness(MatDialogHarness)).close();
+      await settle(ctx.fixture);
+      expect(runReq()).toHaveLength(0);
+      expect(ctx.el.querySelector<HTMLButtonElement>('[data-run]')!.disabled).toBe(false);
+    });
+
+    it('past_month_dialog_has_no_warning', async () => {
+      const ctx = await hrSetup();
+      ctx.el.querySelector<HTMLButtonElement>('[aria-label="Poprzedni miesiąc"]')!.click();
+      ctx.fixture.detectChanges();
+      payrollReq(9).flush(result('e1', 9, 8500));
+      drainSummary();
+      await settle(ctx.fixture);
+      const dialog = await clickRun(ctx);
+      expect(await dialog.getText()).not.toContain('Miesiąc jeszcze trwa');
+      await dialog.close();
+    });
+
+    async function confirm(ctx: Awaited<ReturnType<typeof hrSetup>>) {
+      const dialog = await clickRun(ctx);
+      const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('app-confirm-dialog button'));
+      buttons.find((b) => b.textContent?.includes('Uruchom'))!.click();
+      await dialog.getText().catch(() => '');
+    }
+
+    it('confirm_posts_year_month_and_success_shows_info_and_refreshes_card', async () => {
+      const ctx = await hrSetup();
+      await confirm(ctx);
+      const [req] = await vi.waitFor(() => {
+        const r = runReq();
+        expect(r).toHaveLength(1);
+        return r;
+      });
+      expect(req.request.body).toEqual({ year: 2026, month: 10 });
+      ctx.fixture.detectChanges();
+      expect(ctx.el.querySelector<HTMLButtonElement>('[data-run]')!.disabled).toBe(true);
+      req.flush(Array.from({ length: 31 }, (_, i) => result(i === 0 ? 'e1' : `x${i}`, 10, 9500)));
+      await settle(ctx.fixture);
+      expect(document.body.textContent).toContain('Naliczono 31 pracowników.');
+      payrollReq(10).flush(result('e1', 10, 9500));
+      await settle(ctx.fixture);
+      expect(ctx.el.querySelector('[data-row="e1"]')!.textContent).toContain(formatMoney(9500));
+    });
+
+    it('422_shows_persistent_alert_and_button_is_active_again', async () => {
+      const ctx = await hrSetup();
+      await confirm(ctx);
+      const [req] = await vi.waitFor(() => {
+        const r = runReq();
+        expect(r).toHaveLength(1);
+        return r;
+      });
+      ctx.fixture.detectChanges();
+      expect(ctx.el.querySelector<HTMLButtonElement>('[data-run]')!.disabled).toBe(true);
+      req.flush(
+        { title: 'Błąd', status: 422, detail: 'Nieprawidłowa ewidencja pracownika Jan Kowalski: brak wyjścia.' },
+        { status: 422, statusText: 'Unprocessable' },
+      );
+      await settle(ctx.fixture);
+      const alert = ctx.el.querySelector('[data-run-error][role="alert"]');
+      expect(alert?.textContent).toContain('Nieprawidłowa ewidencja pracownika Jan Kowalski');
+      expect(ctx.el.querySelector<HTMLButtonElement>('[data-run]')!.disabled).toBe(false);
+    });
+
+    it('403_shows_persistent_alert', async () => {
+      const ctx = await hrSetup();
+      await confirm(ctx);
+      const [req] = await vi.waitFor(() => {
+        const r = runReq();
+        expect(r).toHaveLength(1);
+        return r;
+      });
+      req.flush({ title: 'Brak uprawnień', status: 403 }, { status: 403, statusText: 'Forbidden' });
+      await settle(ctx.fixture);
+      expect(ctx.el.querySelector('[data-run-error][role="alert"]')?.textContent).toContain('Brak uprawnień');
+      expect(ctx.el.querySelector<HTMLButtonElement>('[data-run]')!.disabled).toBe(false);
+    });
+
+    it('double_click_sends_one_request', async () => {
+      const ctx = await hrSetup();
+      const button = ctx.el.querySelector<HTMLButtonElement>('[data-run]')!;
+      button.click();
+      button.click();
+      ctx.fixture.detectChanges();
+      const dialogs = await ctx.rootLoader.getAllHarnesses(MatDialogHarness);
+      expect(dialogs).toHaveLength(1);
+      const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('app-confirm-dialog button'));
+      buttons.find((b) => b.textContent?.includes('Uruchom'))!.click();
+      button.click();
+      await vi.waitFor(() => expect(runReq().length).toBe(1));
+      await settle(ctx.fixture);
+      expect(runReq()).toHaveLength(0);
+    });
   });
 });

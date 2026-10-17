@@ -5,7 +5,23 @@
   @if (isHr) {
     <app-employee-picker [employees]="directory.employees()" [selectedId]="selectedId()" (selectedIdChange)="select($event)" />
   }
+  @if (isHr) {
+    <button matButton="filled" type="button" data-run [disabled]="running()" (click)="run()">Uruchom naliczenie</button>
+  }
 </div>
+
+@if (runError(); as message) {
+  <p class="error" role="alert" data-run-error>{{ message }}</p>
+}
+
+@if (isHr) {
+  <app-payroll-summary
+    [month]="month()"
+    [employees]="directory.employees()"
+    [runResult]="runResult()"
+    (selected)="select($event)"
+  />
+}
 
 @if (error(); as message) {
   <p class="error" role="alert">{{ message }}</p>
