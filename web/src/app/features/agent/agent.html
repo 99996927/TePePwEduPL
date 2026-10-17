@@ -29,14 +29,38 @@
     } @else {
       <app-conversation-thread
         [messages]="messages()"
+        [pending]="sending()"
+        [ungroundedNumbers]="ungroundedNumbers()"
         [loading]="loadingConversation()"
         [emptyHint]="emptyHint()"
       />
     }
 
-    @if (mode() === 'new' || mode() === 'own') {
+    @if (showComposer()) {
       <p class="note" data-privacy-note>Kadry mogą czytać rozmowy z agentem.</p>
-      <div class="composer" data-composer-slot></div>
+      <div class="composer" data-composer-slot>
+        <mat-form-field class="field" subscriptSizing="dynamic">
+          <mat-label>Pytanie do agenta</mat-label>
+          <textarea
+            matInput
+            cdkTextareaAutosize
+            cdkAutosizeMinRows="2"
+            cdkAutosizeMaxRows="10"
+            [value]="text()"
+            [disabled]="sending()"
+            [attr.aria-invalid]="tooLong()"
+            (input)="onInput($event)"
+            (keydown)="onKeydown($event)"
+          ></textarea>
+          <mat-hint align="end" data-counter [class.over]="tooLong()">{{ text().length }}/{{ maxLength }}</mat-hint>
+        </mat-form-field>
+        @if (sendError(); as message) {
+          <p class="send-error" role="alert" data-send-error>{{ message }}</p>
+        }
+        <div class="actions">
+          <button matButton="filled" type="button" data-send [disabled]="!canSend()" (click)="send()">Wyślij</button>
+        </div>
+      </div>
     }
   </section>
 </div>

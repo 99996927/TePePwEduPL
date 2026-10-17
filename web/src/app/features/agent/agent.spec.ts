@@ -13,7 +13,8 @@ import { CurrentUserDto } from '../../api/models/current-user-dto';
 import { MessageDto } from '../../api/models/message-dto';
 import { Notifier } from '../../core/notifier';
 import { SessionService } from '../../core/session';
-import { Agent } from './agent';
+import { AskResponse } from '../../api/models/ask-response';
+import { Agent, MAX_QUESTION_LENGTH } from './agent';
 
 // Same shape as the app matcher: /agent and /agent/<id> share one route entry (one component instance).
 const matcher: UrlMatcher = (segments: UrlSegment[]) =>
@@ -77,7 +78,23 @@ describe('Agent', () => {
       await harness.navigateByUrl(target);
       await settle();
     };
-    return { harness, el, settle, row, agent, go, error, router };
+    const textarea = () => el.querySelector<HTMLTextAreaElement>('textarea');
+    const sendButton = () => el.querySelector<HTMLButtonElement>('[data-send]');
+    const type = async (text: string) => {
+      const t = textarea()!;
+      t.value = text;
+      t.dispatchEvent(new Event('input'));
+      await settle();
+    };
+    const key = async (shiftKey = false) => {
+      textarea()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey, bubbles: true, cancelable: true }));
+      await settle();
+    };
+    const click = async () => {
+      sendButton()!.click();
+      await settle();
+    };
+    return { harness, el, settle, row, agent, go, error, router, textarea, sendButton, type, key, click };
   }
 
   afterEach(() => {
@@ -208,5 +225,260 @@ describe('Agent', () => {
     http.expectNone('/api/conversations/c9');
     expect(el.textContent).toContain('Lokalna odpowiedź');
     expect(el.querySelector('[data-privacy-note]')).not.toBeNull();
+  });
+
+  describe('sending', () => {
+    const ask = { method: 'POST', url: '/api/conversations/messages' };
+
+    function answer(conversationId: string, messages: MessageDto[], ungroundedNumbers: string[] = []): AskResponse {
+      return { conversationId, text: messages[messages.length - 1].content, messages, ungroundedNumbers };
+    }
+
+    async function openOwn(c = 'c1') {
+      const ctx = await setup(['Employee'], `/agent/${c}`);
+      http.expectOne(`/api/conversations/${c}`).flush(detail(c, 'ume'));
+      await ctx.settle();
+      return ctx;
+    }
+
+    const userBubbles = (el: HTMLElement) => [...el.querySelectorAll('[data-role="User"]')].map((b) => b.textContent);
+    const sendError = (el: HTMLElement) => el.querySelector('[data-send-error]');
+
+    it('exports_the_question_limit', () => {
+      expect(MAX_QUESTION_LENGTH).toBe(4000);
+    });
+
+    it('first_question_of_a_new_conversation_shows_pending_then_answer_and_switches_url_without_refetch', async () => {
+      const { el, settle, router, agent, textarea, sendButton, type, key, click } = await setup();
+      const instance = agent();
+      expect(el.querySelector('mat-label')!.textContent).toContain('Pytanie do agenta');
+      await type('  Ile mam dni urlopu?  ');
+      await click();
+      expect(userBubbles(el)).toEqual(['Ile mam dni urlopu?']);
+      expect(el.querySelector('[data-role="User"]')!.getAttribute('data-message')).toBe('1');
+      expect(el.textContent).toContain('Agent pisze…');
+      expect(textarea()!.disabled).toBe(true);
+      expect(sendButton()!.disabled).toBe(true);
+      await click();
+      await key();
+      const request = http.expectOne(ask);
+      expect(request.request.body).toEqual({ conversationId: null, text: 'Ile mam dni urlopu?' });
+      request.flush(answer('n1', [msg(1, 'User', 'Ile mam dni urlopu?'), msg(2, 'Assistant', 'Masz 20 dni.')], ['20']));
+      await settle();
+      http.expectOne('/api/conversations').flush([summary('n1', 'ume'), ...list]);
+      await settle();
+      expect(router.url).toBe('/agent/n1');
+      http.expectNone('/api/conversations/n1');
+      expect(agent()).toBe(instance);
+      expect(userBubbles(el)).toEqual(['Ile mam dni urlopu?']);
+      expect(el.textContent).toContain('Masz 20 dni.');
+      expect(el.textContent).not.toContain('Agent pisze…');
+      expect(textarea()!.value).toBe('');
+      expect(textarea()!.disabled).toBe(false);
+      expect(el.querySelector('[data-conversation="n1"]')!.getAttribute('aria-current')).toBe('true');
+      expect(el.textContent).toContain('Liczby nie pochodzą z danych systemu: 20.');
+      expect(el.querySelector('[data-privacy-note]')).not.toBeNull();
+    });
+
+    it('follow_up_in_own_conversation_sends_its_id_and_appends_messages', async () => {
+      const { el, settle, router, type, click } = await openOwn();
+      await type('Dopytanie');
+      await click();
+      expect(el.querySelector('[data-message="3"]')!.textContent).toContain('Dopytanie');
+      const request = http.expectOne(ask);
+      expect(request.request.body).toEqual({ conversationId: 'c1', text: 'Dopytanie' });
+      request.flush(answer('c1', [msg(3, 'User', 'Dopytanie'), msg(4, 'Assistant', 'Odpowiedź 2')]));
+      await settle();
+      http.expectNone('/api/conversations');
+      http.expectNone('/api/conversations/c1');
+      expect(router.url).toBe('/agent/c1');
+      expect(el.querySelectorAll('[data-message]').length).toBe(4);
+      expect(userBubbles(el)).toEqual(['Treść c1', 'Dopytanie']);
+      expect(el.textContent).toContain('Odpowiedź 2');
+    });
+
+    it('enter_sends_and_shift_enter_does_not', async () => {
+      const { settle, type, key } = await openOwn();
+      await type('Pytanie');
+      await key(true);
+      http.expectNone(ask);
+      await key();
+      http.expectOne(ask).flush(answer('c1', [msg(3, 'User', 'Pytanie'), msg(4, 'Assistant', 'Ok')]));
+      await settle();
+    });
+
+    it('empty_or_whitespace_text_does_not_send', async () => {
+      const { sendButton, type, key, click } = await openOwn();
+      expect(sendButton()!.disabled).toBe(true);
+      await key();
+      await type('   \n  ');
+      expect(sendButton()!.disabled).toBe(true);
+      await click();
+      await key();
+      http.expectNone(ask);
+    });
+
+    it('text_over_the_limit_blocks_sending_and_the_limit_itself_passes', async () => {
+      const { el, settle, sendButton, type, key, click } = await openOwn();
+      await type('a'.repeat(4001));
+      const counter = el.querySelector('[data-counter]')!;
+      expect(counter.textContent).toContain('4001/4000');
+      expect(counter.classList).toContain('over');
+      expect(sendButton()!.disabled).toBe(true);
+      await click();
+      await key();
+      http.expectNone(ask);
+      await type('a'.repeat(4000));
+      expect(el.querySelector('[data-counter]')!.textContent).toContain('4000/4000');
+      expect(el.querySelector('[data-counter]')!.classList).not.toContain('over');
+      await click();
+      const request = http.expectOne(ask);
+      expect((request.request.body as { text: string }).text.length).toBe(4000);
+      request.flush(answer('c1', [msg(3, 'User', 'a'.repeat(4000)), msg(4, 'Assistant', 'Ok')]));
+      await settle();
+    });
+
+    it('ungrounded_numbers_warning_shows_after_answer_and_disappears_on_next_send', async () => {
+      const { el, settle, type, click } = await openOwn();
+      await type('Ile?');
+      await click();
+      http.expectOne(ask).flush(answer('c1', [msg(3, 'User', 'Ile?'), msg(4, 'Assistant', 'Masz 12 dni.')], ['12']));
+      await settle();
+      expect(el.textContent).toContain('Liczby nie pochodzą z danych systemu: 12.');
+      await type('A teraz?');
+      await click();
+      expect(el.textContent).not.toContain('Liczby nie pochodzą z danych systemu');
+      http.expectOne(ask).flush(answer('c1', [msg(5, 'User', 'A teraz?'), msg(6, 'Assistant', 'Dobrze.')]));
+      await settle();
+      expect(el.textContent).not.toContain('Liczby nie pochodzą z danych systemu');
+    });
+
+    it('validation_error_keeps_text_and_removes_local_bubble', async () => {
+      const { el, settle, textarea, type, click } = await openOwn();
+      await type('Pytanie');
+      await click();
+      http.expectOne(ask).flush({ title: 'Błąd walidacji', detail: 'Pytanie jest nieprawidłowe.', status: 422 }, { status: 422, statusText: 'x' });
+      await settle();
+      expect(sendError(el)!.textContent).toContain('Pytanie jest nieprawidłowe.');
+      expect(textarea()!.value).toBe('Pytanie');
+      expect(textarea()!.disabled).toBe(false);
+      expect(el.querySelector('[data-message="3"]')).toBeNull();
+      expect(el.textContent).not.toContain('Agent pisze…');
+    });
+
+    it('conflict_keeps_text_and_reloads_the_conversation', async () => {
+      const { el, settle, textarea, type, click } = await openOwn();
+      await type('Pytanie');
+      await click();
+      http.expectOne(ask).flush({ title: 'Rozmowa została zmieniona.', status: 409, conversationId: 'c1' }, { status: 409, statusText: 'x' });
+      await settle();
+      http.expectOne('/api/conversations/c1').flush({
+        ...detail('c1', 'ume'),
+        messages: [...detail('c1', 'ume').messages, msg(3, 'User', 'Inne pytanie'), msg(4, 'Assistant', 'Inna odpowiedź')],
+      });
+      await settle();
+      expect(el.textContent).toContain('Inna odpowiedź');
+      expect(sendError(el)!.textContent).toContain('Rozmowa została zmieniona.');
+      expect(textarea()!.value).toBe('Pytanie');
+      expect(textarea()!.disabled).toBe(false);
+    });
+
+    it('unavailable_agent_in_new_conversation_reloads_it_switches_url_and_next_send_uses_its_id', async () => {
+      const { el, settle, router, textarea, type, click } = await setup();
+      await type('Pytanie');
+      await click();
+      http.expectOne(ask).flush({ title: 'Agent jest chwilowo niedostępny.', status: 503, conversationId: 'n2' }, { status: 503, statusText: 'x' });
+      await settle();
+      http.expectOne('/api/conversations/n2').flush({ id: 'n2', userId: 'ume', startedAtUtc: '2026-10-05T10:30:00Z', messages: [msg(1, 'User', 'Pytanie')] });
+      await settle();
+      http.expectOne('/api/conversations').flush([summary('n2', 'ume'), ...list]);
+      await settle();
+      expect(router.url).toBe('/agent/n2');
+      http.expectNone('/api/conversations/n2');
+      expect(userBubbles(el)).toEqual(['Pytanie']);
+      expect(sendError(el)!.textContent).toContain('Agent jest chwilowo niedostępny.');
+      expect(textarea()!.value).toBe('Pytanie');
+      expect(textarea()!.disabled).toBe(false);
+      await click();
+      const retry = http.expectOne(ask);
+      expect(retry.request.body).toEqual({ conversationId: 'n2', text: 'Pytanie' });
+      retry.flush(answer('n2', [msg(2, 'User', 'Pytanie'), msg(3, 'Assistant', 'Odpowiedź')]));
+      await settle();
+      expect(sendError(el)).toBeNull();
+      expect(textarea()!.value).toBe('');
+      expect(el.textContent).toContain('Odpowiedź');
+    });
+
+    it('not_found_shows_snackbar_and_navigates_to_agent', async () => {
+      const { settle, router, error, type, click } = await openOwn();
+      await type('Pytanie');
+      await click();
+      http.expectOne(ask).flush({ title: 'Nie znaleziono', status: 404 }, { status: 404, statusText: 'x' });
+      await settle();
+      expect(error).toHaveBeenCalledWith('Nie znaleziono rozmowy.');
+      expect(router.url).toBe('/agent');
+    });
+
+    it('network_error_keeps_text_and_shows_message', async () => {
+      const { el, settle, textarea, type, click } = await openOwn();
+      await type('Pytanie');
+      await click();
+      http.expectOne(ask).error(new ProgressEvent('error'));
+      await settle();
+      expect(sendError(el)!.textContent).toContain('Brak połączenia z serwerem');
+      expect(textarea()!.value).toBe('Pytanie');
+      expect(textarea()!.disabled).toBe(false);
+      expect(el.querySelector('[data-message="3"]')).toBeNull();
+    });
+
+    it('switching_conversation_while_sending_ignores_the_late_answer', async () => {
+      const { el, settle, router, row, textarea, type, click } = await setup();
+      await type('Pytanie');
+      await click();
+      const request = http.expectOne(ask);
+      row('c1')!.click();
+      await settle();
+      http.expectOne('/api/conversations/c1').flush(detail('c1', 'ume'));
+      await settle();
+      expect(textarea()!.disabled).toBe(false);
+      expect(el.textContent).not.toContain('Agent pisze…');
+      request.flush(answer('n1', [msg(1, 'User', 'Pytanie'), msg(2, 'Assistant', 'Spóźniona odpowiedź')]));
+      await settle();
+      http.expectNone('/api/conversations');
+      expect(router.url).toBe('/agent/c1');
+      expect(el.textContent).toContain('Treść c1');
+      expect(el.textContent).not.toContain('Spóźniona odpowiedź');
+    });
+
+    it('leaving_the_screen_while_sending_ignores_the_late_answer', async () => {
+      const { settle, router, go, type, click } = await setup();
+      await type('Pytanie');
+      await click();
+      const request = http.expectOne(ask);
+      await go('/inne');
+      request.flush(answer('n1', [msg(1, 'User', 'Pytanie'), msg(2, 'Assistant', 'Odpowiedź')]));
+      await settle();
+      http.expectNone('/api/conversations');
+      expect(router.url).toBe('/inne');
+    });
+
+    it('new_conversation_while_sending_ignores_the_late_error', async () => {
+      const { el, settle, router, textarea, type, click } = await openOwn();
+      await type('Pytanie');
+      await click();
+      const request = http.expectOne(ask);
+      const create = [...el.querySelectorAll('button')].find((b) => b.textContent!.trim() === 'Nowa rozmowa')!;
+      create.click();
+      await settle();
+      expect(router.url).toBe('/agent');
+      expect(textarea()!.disabled).toBe(false);
+      expect(el.textContent).not.toContain('Agent pisze…');
+      expect(userBubbles(el)).toEqual([]);
+      request.flush({ title: 'Agent jest chwilowo niedostępny.', status: 503, conversationId: 'c1' }, { status: 503, statusText: 'x' });
+      await settle();
+      http.expectNone('/api/conversations/c1');
+      expect(sendError(el)).toBeNull();
+      expect(router.url).toBe('/agent');
+    });
   });
 });
