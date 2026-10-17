@@ -4,6 +4,7 @@ using System.Text.Json;
 using Hr.Core.Domain;
 using Hr.Core.Services;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Routing;
@@ -40,13 +41,38 @@ public class SkeletonTests(MsSqlFixture fixture)
     }
 
     [Fact]
-    public async Task UC29_Static_index_is_served_at_root()
+    public async Task UC29_Static_index_and_assets_are_served_and_only_spa_routes_fall_back_to_index()
     {
-        await using var factory = await HrApiFactory.CreateAsync(fixture);
-        var response = await factory.CreateApiClient().GetAsync("/");
+        string webRoot = Directory.CreateTempSubdirectory("hr-webroot-").FullName;
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(webRoot, "index.html"), "<!doctype html><app-root></app-root>");
+            await File.WriteAllTextAsync(Path.Combine(webRoot, "main-TEST.js"), "console.log('hr');");
+            await using var baseFactory = await HrApiFactory.CreateAsync(fixture);
+            await using var factory = baseFactory.WithWebHostBuilder(builder => builder.UseWebRoot(webRoot));
+            var client = factory.CreateClient();
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("text/html", response.Content.Headers.ContentType!.MediaType);
+            var root = await client.GetAsync("/");
+            Assert.Equal(HttpStatusCode.OK, root.StatusCode);
+            Assert.Equal("text/html", root.Content.Headers.ContentType!.MediaType);
+
+            var script = await client.GetAsync("/main-TEST.js");
+            Assert.Equal(HttpStatusCode.OK, script.StatusCode);
+            Assert.Equal("text/javascript", script.Content.Headers.ContentType!.MediaType);
+            Assert.Equal("console.log('hr');", await script.Content.ReadAsStringAsync());
+
+            var spaRoute = await client.GetAsync("/urlopy");
+            Assert.Equal(HttpStatusCode.OK, spaRoute.StatusCode);
+            Assert.Contains("<app-root", await spaRoute.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+
+            // Brakujący plik nie dostaje index.html; bez endpointu działa polityka domyślna autoryzacji (401 dla anonimowego).
+            var missingFile = await client.GetAsync("/brak-pliku.js");
+            Assert.NotEqual(HttpStatusCode.OK, missingFile.StatusCode);
+        }
+        finally
+        {
+            Directory.Delete(webRoot, recursive: true);
+        }
     }
 
     [Fact]

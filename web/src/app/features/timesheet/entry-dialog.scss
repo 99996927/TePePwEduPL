@@ -1,0 +1,9 @@
+.fields {
+  display: flex;
+  flex-direction: column;
+  min-width: 300px;
+}
+
+.error {
+  color: var(--mat-sys-error);
+}

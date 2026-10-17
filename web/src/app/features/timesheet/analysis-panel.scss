@@ -1,0 +1,26 @@
+.panel {
+  margin-top: 24px;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+}
+
+dd {
+  margin: 0;
+}
+
+.exceeded {
+  color: var(--mat-sys-error);
+  font-weight: 500;
+}
+
+.error {
+  color: var(--mat-sys-error);
+}
+
+.rule {
+  color: var(--mat-sys-on-surface-variant);
+}

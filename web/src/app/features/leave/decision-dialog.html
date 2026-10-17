@@ -1,0 +1,20 @@
+<h2 mat-dialog-title>{{ data.approve ? 'Zatwierdzenie wniosku' : 'Odrzucenie wniosku' }}</h2>
+<mat-dialog-content>
+  <p>Okres: {{ formatDate(data.request.from) }} – {{ formatDate(data.request.to) }} ({{ data.request.days }} dni)</p>
+  <mat-form-field>
+    <mat-label>Uzasadnienie</mat-label>
+    <textarea matInput rows="3" [formControl]="reason"></textarea>
+    @if (data.approve) {
+      <mat-hint>Opcjonalne</mat-hint>
+    }
+  </mat-form-field>
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button matButton type="button" mat-dialog-close [disabled]="sending()">Anuluj</button>
+  <button matButton="filled" type="button" data-save [disabled]="sending()" (click)="save()">
+    {{ data.approve ? 'Zatwierdź' : 'Odrzuć' }}
+  </button>
+</mat-dialog-actions>

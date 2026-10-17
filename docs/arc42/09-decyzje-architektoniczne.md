@@ -30,6 +30,7 @@
 | ADR-26 | Agent: SDK Anthropic dla C#, narzędzia, historia i osłona liczb | Do przeglądu |
 | ADR-27 | Dane demo: dane wejściowe wprost do bazy, naliczenia z `PayrollService` | Przyjęta, zrealizowana w planie 6 |
 | ADR-28 | Stała kotwica demo i profile `Full`/`Accounts` | Przyjęta, zrealizowana w planie 6 |
+| ADR-29 | Frontend: Angular 22, Angular Material, `ng-openapi-gen`, standalone i signals | Przyjęta, zrealizowana w planie 7a |
 
 ## ADR-01 Trzy warstwy, dwa kontenery
 **Kontekst:** wymóg trójwarstwowości i uruchomienia na jednej maszynie.
@@ -251,3 +252,30 @@ do pełnego zbioru (wolniejsze testy i krucha zależność od danych generatora)
 **Konsekwencje:** pełna deterministyczność danych i testów. Z upływem czasu dane demo się „starzeją” (np. urlop „na przyszłość” jest przyszły względem kotwicy, a nie
 faktycznej daty uruchomienia, a zegar aplikacji nie jest przesuwany), co można zmienić, przesuwając kotwicę w konfiguracji, ale tylko na pustej bazie.
 Zmiana kotwicy lub ziarna działa wyłącznie na pustej bazie: w istniejącej bazie seed danych jest pomijany (znacznik `anna.nowak`), a naliczenia powstają tylko dla miesięcy, które mają wpisy czasu pracy. Testy API na profilu `Full` (`DemoDataApiTests`) sprawdzają scenariusze i czas startu.
+
+## ADR-29 Frontend: Angular 22, Angular Material, `ng-openapi-gen`, standalone i signals
+**Kontekst:** ADR-02 i ADR-16 zakładają Angulara serwowanego statycznie przez `Hr.Api` i klienta TypeScript generowanego z OpenAPI. Plan 7a dostarcza pierwsze ekrany
+(logowanie, pulpit, urlopy, zatwierdzanie, czas pracy z analizą, przegląd zespołu) dla czterech ról. Potrzebny jest stos, który jeden zespół utrzyma bez osobnej
+warstwy stanu i bez ręcznego pisania wywołań API, a interfejs ma być spójny, dostępny i po polsku (`pl-PL`).
+**Decyzja:**
+- **Angular 22** (projekt `web/`, nazwa `hr-app`): komponenty standalone, tryb zoneless (bez `zone.js`), SCSS, bez SSR, trasy ładowane leniwie i chronione guardami
+  (`authGuard`, `roleGuard`). Wszystkie zależności w dokładnych wersjach z `package-lock.json` w repozytorium, Node `^24.15.0`.
+- **Stan:** `signal`/`computed` w komponentach i małych serwisach (`SessionService`, `EmployeeDirectory`); formularze reaktywne. Bez biblioteki stanu globalnego.
+- **Komponenty UI:** Angular Material 22 (motyw M3), daty, liczby i godziny w `pl-PL`, błędy z `title`/`detail` odpowiedzi `ProblemDetails`.
+- **Klient API:** `ng-openapi-gen` 1.1.0 generuje serwisy i modele do `web/src/app/api/` z `docs/openapi/hr-api.json` (ADR-16). Pliki są w repozytorium i nie są
+  edytowane ręcznie; `npm run api:check` generuje klienta ponownie i kończy się błędem przy różnicy. Adresy względne (`provideApiConfiguration('')`), jeden origin, bez CORS.
+- **Sesja (ADR-10, ADR-25):** cookie `HttpOnly`, Angular dokłada `X-XSRF-TOKEN` z ciasteczka `XSRF-TOKEN` do żądań zapisu; `401` czyści sesję i prowadzi na `/logowanie`.
+- **Testy:** Vitest z jsdom (`ng test`), uruchamiane w `npm run verify` razem z `api:check` i buildem produkcyjnym.
+**Alternatywy:**
+- NgRx (Store lub SignalStore): odrzucone, bo stan jest lokalny dla ekranów, a sygnały wystarczają; NgRx dodałby warstwę akcji i efektów bez korzyści przy tej skali.
+- PrimeNG: bogatszy zestaw komponentów, ale odrzucony na rzecz Material (spójność z Angular CDK, dostępność, jednolita linia wersji z Angularem).
+- Własny CSS bez biblioteki komponentów: odrzucone (koszt dostępności i komponentów złożonych: tabele, okna dialogowe, wybór zakresu dat).
+- `openapi-typescript` (same typy) oraz `@hey-api/openapi-ts`: odrzucone, bo `ng-openapi-gen` tworzy serwisy Angulara na `HttpClient`, więc działają interceptory
+  (XSRF, `401`) i `Observable` bez własnej warstwy fetch.
+**Konsekwencje:**
+- Wygenerowany klient jest w repozytorium, więc zmiana kontraktu jest widoczna w diffie; po zmianie OpenAPI trzeba uruchomić `npm run api:gen` (inaczej `api:check` w `verify` zawodzi).
+- Build trafia do `src/Hr.Api/wwwroot/` (`npm run build:wwwroot`), poza repozytorium (`.gitignore`); bez zbudowanego Angulara `/` nie działa. Fallback SPA w `Program.cs`
+  obsługuje tylko ścieżki bez rozszerzenia (`nonfile`), a pliki (`main.js`, `chunk-*.js`) serwuje `UseStaticFiles`.
+- Panel „Konta demo” na ekranie logowania jest tylko w buildzie `development` (`isDevMode()`); `tools/dev/run.sh` używa `npm run build:dev`, a build produkcyjny go nie zawiera.
+- Budżet `initial` w `angular.json` podniesiony do 900 kB (ostrzeżenie) i 1,5 MB (błąd) z powodu Angular Material.
+- Ekrany agenta, naliczeń, zmian płacowych i audytu powstaną w planach 7b i 7c na tym samym stosie.

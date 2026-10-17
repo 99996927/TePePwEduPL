@@ -1,0 +1,21 @@
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+  margin: 0;
+}
+
+dd {
+  margin: 0;
+  text-align: right;
+}
+
+.error {
+  color: var(--mat-sys-error);
+}

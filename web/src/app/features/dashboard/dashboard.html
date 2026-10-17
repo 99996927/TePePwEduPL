@@ -1,0 +1,90 @@
+<h1>Pulpit</h1>
+<div class="tiles">
+  <mat-card data-tile="balance">
+    <mat-card-header><mat-card-title>Saldo urlopu</mat-card-title></mat-card-header>
+    <mat-card-content>
+      @let b = balance();
+      @if (b.status === 'loading') {
+        <mat-progress-bar mode="indeterminate" />
+      } @else if (b.status === 'error') {
+        <p class="error" role="alert">{{ b.message }}</p>
+        <button mat-button type="button" (click)="loadBalance()">Spróbuj ponownie</button>
+      } @else {
+        <dl>
+          <dt>Wymiar</dt><dd data-value="entitlement">{{ b.data.entitlementDays }}</dd>
+          <dt>Wykorzystane</dt><dd data-value="approved">{{ b.data.approvedDays }}</dd>
+          <dt>Oczekujące</dt><dd data-value="pending">{{ b.data.pendingDays }}</dd>
+          <dt>Pozostałe</dt><dd data-value="remaining">{{ b.data.remainingDays }}</dd>
+        </dl>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card data-tile="month">
+    <mat-card-header><mat-card-title>Bieżący miesiąc</mat-card-title></mat-card-header>
+    <mat-card-content>
+      @let a = analysis();
+      @if (a.status === 'loading') {
+        <mat-progress-bar mode="indeterminate" />
+      } @else if (a.status === 'error') {
+        <p class="error" role="alert">{{ a.message }}</p>
+        <button mat-button type="button" (click)="loadAnalysis()">Spróbuj ponownie</button>
+      } @else {
+        <dl>
+          <dt>Przepracowane</dt>
+          <dd data-value="worked">{{ formatHours(a.data.workedHours) }} h z {{ formatHours(a.data.normHours) }} h normy</dd>
+          <dt>Nadgodziny 50%</dt><dd data-value="overtime50">{{ formatHours(a.data.overtime.hours50) }} h</dd>
+          <dt>Nadgodziny 100%</dt><dd data-value="overtime100">{{ formatHours(a.data.overtime.hours100) }} h</dd>
+        </dl>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card data-tile="alerts">
+    <mat-card-header><mat-card-title>Alerty</mat-card-title></mat-card-header>
+    <mat-card-content>
+      @let s = analysis();
+      @let al = alerts();
+      @if (s.status === 'loading') {
+        <mat-progress-bar mode="indeterminate" />
+      } @else if (s.status === 'error') {
+        <p class="error" role="alert">{{ s.message }}</p>
+        <button mat-button type="button" (click)="loadAnalysis()">Spróbuj ponownie</button>
+      } @else if (al) {
+        @if (al.none) {
+          <p>Brak alertów</p>
+        } @else {
+          <ul>
+            @if (al.restViolations > 0) {
+              <li>Naruszenia odpoczynku: <strong data-value="rest-violations">{{ al.restViolations }}</strong></li>
+            }
+            @if (al.weeklyExceeded) {
+              <li>Przekroczona średnia 48 h tygodniowo</li>
+            }
+            @if (al.annualExceeded) {
+              <li>Przekroczony roczny limit 150 h nadgodzin</li>
+            }
+          </ul>
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+
+  @if (isApprover) {
+    <mat-card data-tile="approvals">
+      <mat-card-header><mat-card-title>Zatwierdzanie</mat-card-title></mat-card-header>
+      <mat-card-content>
+        @let p = approvals();
+        @if (p.status === 'loading') {
+          <mat-progress-bar mode="indeterminate" />
+        } @else if (p.status === 'error') {
+          <p class="error" role="alert">{{ p.message }}</p>
+          <button mat-button type="button" (click)="loadApprovals()">Spróbuj ponownie</button>
+        } @else {
+          <p>Do zatwierdzenia: {{ p.data }}</p>
+          <a mat-button routerLink="/urlopy/zatwierdzanie">Przejdź do zatwierdzania</a>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

@@ -1,0 +1,27 @@
+<h2 mat-dialog-title>Nowy wniosek urlopowy</h2>
+<mat-dialog-content>
+  <mat-form-field>
+    <mat-label>Zakres dat</mat-label>
+    <mat-date-range-input [formGroup]="range" [rangePicker]="picker">
+      <input matStartDate formControlName="start" placeholder="Od" />
+      <input matEndDate formControlName="end" placeholder="Do" />
+    </mat-date-range-input>
+    <mat-datepicker-toggle matIconSuffix [for]="picker" />
+    <mat-date-range-picker #picker />
+  </mat-form-field>
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button matButton type="button" mat-dialog-close [disabled]="sending()">Anuluj</button>
+  <button
+    matButton="filled"
+    type="button"
+    data-save
+    [disabled]="sending() || !range.value.start || !range.value.end"
+    (click)="save()"
+  >
+    Zapisz
+  </button>
+</mat-dialog-actions>
