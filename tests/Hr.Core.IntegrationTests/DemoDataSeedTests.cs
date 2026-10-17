@@ -32,7 +32,7 @@ public class DemoDataSeedTests(MsSqlFixture fixture)
         return services.BuildServiceProvider();
     }
 
-    private sealed record Counts(int Employees, int WorkEntries, int LeaveRequests, int PayrollChanges, int Conversations, int Messages, int PayrollResults, int Users);
+    private sealed record Counts(int Employees, int WorkEntries, int LeaveRequests, int PayrollChanges, int CorrectionDrafts, int Conversations, int Messages, int PayrollResults, int Users);
 
     private static async Task<Counts> CountAsync(ServiceProvider provider)
     {
@@ -40,7 +40,7 @@ public class DemoDataSeedTests(MsSqlFixture fixture)
         var db = scope.ServiceProvider.GetRequiredService<HrDbContext>();
         return new Counts(
             await db.Employees.CountAsync(), await db.WorkEntries.CountAsync(), await db.LeaveRequests.CountAsync(),
-            await db.PayrollChanges.CountAsync(), await db.Conversations.CountAsync(), await db.Messages.CountAsync(),
+            await db.PayrollChanges.CountAsync(), await db.CorrectionDrafts.CountAsync(), await db.Conversations.CountAsync(), await db.Messages.CountAsync(),
             await db.PayrollResults.CountAsync(), await db.Users.CountAsync());
     }
 
@@ -73,6 +73,22 @@ public class DemoDataSeedTests(MsSqlFixture fixture)
 
         Assert.Equal(first, await CountAsync(provider));
         Assert.Equal(31 * 6, first.PayrollResults);
+        Assert.Equal(1, first.CorrectionDrafts);
+    }
+
+    [Fact]
+    public async Task Full_seed_creates_exactly_one_pending_correction_draft_for_anna()
+    {
+        await using var provider = await BuildAsync();
+        await DemoSeeder.SeedAsync(provider, Full);
+
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<HrDbContext>();
+        var anna = await db.Employees.SingleAsync(e => e.LastName == "Nowak");
+        var draft = await db.CorrectionDrafts.SingleAsync();
+        Assert.Equal(CorrectionDraftStatus.Pending, draft.Status);
+        Assert.Equal(anna.Id, draft.EmployeeId);
+        Assert.True(await db.WorkEntries.AnyAsync(w => w.Id == draft.WorkEntryId && w.EmployeeId == anna.Id));
     }
 
     [Fact]

@@ -11,7 +11,7 @@ public sealed record DemoPerson(
 
 public sealed record DemoTeam(Guid Id, string Name, Guid? ManagerEmployeeId);
 
-/// <summary>Wynik generatora danych demo. Zawiera osoby i zespoły oraz wnioski urlopowe, ewidencję czasu pracy, zmiany płacowe i rozmowy; listy są domyślnie puste (profil Accounts).</summary>
+/// <summary>Wynik generatora danych demo. Zawiera osoby i zespoły oraz wnioski urlopowe, ewidencję czasu pracy, zmiany płacowe, rozmowy i szkice korekt; listy są domyślnie puste (profil Accounts).</summary>
 public sealed record DemoDataSet
 {
     public IReadOnlyList<DemoTeam> Teams { get; init; } = new List<DemoTeam>();
@@ -20,4 +20,5 @@ public sealed record DemoDataSet
     public IReadOnlyList<WorkEntryRecord> WorkEntries { get; init; } = new List<WorkEntryRecord>();
     public IReadOnlyList<PayrollChange> PayrollChanges { get; init; } = new List<PayrollChange>();
     public IReadOnlyList<Conversation> Conversations { get; init; } = new List<Conversation>();
+    public IReadOnlyList<CorrectionDraft> CorrectionDrafts { get; init; } = new List<CorrectionDraft>();
 }
