@@ -18,6 +18,7 @@ import { Roles } from '../../core/roles';
 import { SessionService } from '../../core/session';
 import { ConfirmDialog, ConfirmDialogData } from '../../shared/confirm-dialog';
 import { EmployeePicker } from '../../shared/employee-picker';
+import { NewChangeDialog } from './new-change-dialog';
 import { RejectDialog, RejectDialogData, RejectDialogResult } from './reject-dialog';
 
 const STATUSES = ['Draft', 'Pending', 'Approved', 'Rejected'] as const;
@@ -46,7 +47,7 @@ export class PayrollChanges {
   protected readonly nameOf = (id: string): string => this.directory.nameOf(id);
   protected readonly userLabel = (id: string | null): string => this.directory.userLabel(id);
 
-  private readonly isHr = this.session.hasRole(Roles.HR);
+  protected readonly isHr = this.session.hasRole(Roles.HR);
   private readonly isApprover = this.session.hasRole(Roles.HRApprover);
   private readonly ownUserId = this.session.user()?.userId ?? null;
 
@@ -75,6 +76,16 @@ export class PayrollChanges {
   protected selectEmployee(id: string | null): void {
     this.employeeId.set(id);
     void this.refresh();
+  }
+
+  protected newChange(): void {
+    this.dialog
+      .open<NewChangeDialog, void, PayrollChangeDto>(NewChangeDialog)
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((created) => {
+        if (created) void this.refresh();
+      });
   }
 
   protected canSubmit(c: PayrollChangeDto): boolean {

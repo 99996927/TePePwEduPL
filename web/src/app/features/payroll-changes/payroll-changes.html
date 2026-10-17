@@ -16,6 +16,9 @@
     [selectedId]="employeeId()"
     (selectedIdChange)="selectEmployee($event)"
   />
+  @if (isHr) {
+    <button matButton="filled" type="button" data-new (click)="newChange()">Nowa zmiana</button>
+  }
 </div>
 
 @if (error(); as message) {

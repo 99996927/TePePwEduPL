@@ -2,7 +2,7 @@ import { provideHttpClient, withXsrfConfiguration } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MATERIAL_ANIMATIONS } from '@angular/material/core';
+import { MATERIAL_ANIMATIONS, provideNativeDateAdapter } from '@angular/material/core';
 import { MatDialog } from '@angular/material/dialog';
 import { provideApiConfiguration } from '../../api/api-configuration';
 import { CurrentUserDto } from '../../api/models/current-user-dto';
@@ -48,6 +48,7 @@ describe('PayrollChanges', () => {
         provideHttpClient(withXsrfConfiguration({ cookieName: 'XSRF-TOKEN', headerName: 'X-XSRF-TOKEN' })),
         provideHttpClientTesting(),
         provideApiConfiguration(''),
+        provideNativeDateAdapter(),
         { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
         {
           provide: SessionService,
@@ -274,5 +275,25 @@ describe('PayrollChanges', () => {
     await settle();
     expect(rowIds().length).toBe(4);
     expect(btn('c1', 'reject')!.disabled).toBe(false);
+  });
+
+  it('new_change_button_only_for_hr', async () => {
+    const hr = await setup('uh', ['HR']);
+    expect(hr.el.querySelector('[data-new]')).not.toBeNull();
+    TestBed.resetTestingModule();
+    const approver = await setup('ud', ['HRApprover']);
+    expect(approver.el.querySelector('[data-new]')).toBeNull();
+  });
+
+  it('new_change_dialog_success_refreshes_list_and_is_single_instance', async () => {
+    const { el, settle } = await setup('uh', ['HR']);
+    (el.querySelector('[data-new]') as HTMLButtonElement).click();
+    await settle();
+    expect(document.querySelectorAll('app-new-change-dialog').length).toBe(1);
+    const dialog = TestBed.inject(MatDialog).openDialogs[0];
+    dialog.close(changes[3]);
+    await settle();
+    http.expectOne('/api/payroll-changes').flush(changes);
+    await settle();
   });
 });
