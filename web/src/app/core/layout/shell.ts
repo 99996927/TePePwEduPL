@@ -33,6 +33,7 @@ const MENU: readonly MenuItem[] = [
   { label: 'Urlopy', path: '/urlopy', exact: true, approversOnly: false, hrOnly: false },
   { label: 'Czas pracy', path: '/czas-pracy', exact: false, approversOnly: false, hrOnly: false },
   { label: 'Naliczenia', path: '/naliczenia', exact: false, approversOnly: false, hrOnly: false },
+  { label: 'Agent', path: '/agent', exact: false, approversOnly: false, hrOnly: false },
   { label: 'Zatwierdzanie urlopów', path: '/urlopy/zatwierdzanie', exact: false, approversOnly: true, hrOnly: false },
   { label: 'Przegląd zespołu', path: '/zespol', exact: false, approversOnly: true, hrOnly: false },
   { label: 'Zmiany płacowe', path: '/zmiany-platowe', exact: false, approversOnly: false, hrOnly: true },

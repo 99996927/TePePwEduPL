@@ -1,5 +1,5 @@
 import {
-  AUDIT_ENTITY_TYPES, auditEntityLabel, auditEventLabel, draftStatusLabel, payrollChangeStatusLabel, payrollComponentLabel,
+  AUDIT_ENTITY_TYPES, auditEntityLabel, auditEventLabel, draftStatusLabel, messageRoleLabel, payrollChangeStatusLabel, payrollComponentLabel,
 } from './labels';
 
 describe('labels', () => {
@@ -21,10 +21,16 @@ describe('labels', () => {
     ['Conversation', 'Rozmowa'], ['X', 'X'],
   ])('auditEntityLabel_%s', (k, v) => expect(auditEntityLabel(k)).toBe(v));
 
+  it.each([
+    ['User', 'Ty'], ['Assistant', 'Agent'], ['ToolCall', 'Wywołanie narzędzia'], ['ToolResult', 'Wynik narzędzia'], ['X', 'X'],
+  ])('messageRoleLabel_%s', (k, v) => expect(messageRoleLabel(k)).toBe(v));
+
   it('inherited_object_keys_are_returned_unchanged', () => {
     expect(draftStatusLabel('constructor')).toBe('constructor');
     expect(payrollChangeStatusLabel('toString')).toBe('toString');
     expect(auditEntityLabel('__proto__')).toBe('__proto__');
+    expect(messageRoleLabel('constructor')).toBe('constructor');
+    expect(messageRoleLabel('toString')).toBe('toString');
   });
 
   it('AUDIT_ENTITY_TYPES_has_eight_types_in_order', () => {

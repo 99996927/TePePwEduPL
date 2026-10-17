@@ -6,6 +6,7 @@ export interface ApiProblem {
   detail?: string;
   code?: string;
   ruleId?: string;
+  conversationId?: string;
 }
 
 function isApiProblem(value: unknown): value is ApiProblem {
@@ -38,9 +39,11 @@ export function problemOf(error: unknown): ApiProblem {
       const detail = text(raw['detail']);
       const code = text(raw['code']);
       const ruleId = text(raw['ruleId']);
+      const conversationId = text(raw['conversationId']);
       if (detail !== undefined) problem.detail = detail;
       if (code !== undefined) problem.code = code;
       if (ruleId !== undefined) problem.ruleId = ruleId;
+      if (conversationId !== undefined) problem.conversationId = conversationId;
       return problem;
     }
   }

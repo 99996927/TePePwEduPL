@@ -1,6 +1,12 @@
-import { Routes } from '@angular/router';
+import { Routes, UrlMatcher, UrlSegment } from '@angular/router';
 import { authGuard, roleGuard } from './core/guards';
 import { APPROVER_ROLES, HR_ROLES } from './core/roles';
+
+/** Matches `/agent` and `/agent/<id>` (exactly one segment after `agent`), so one route entry (and component) serves both. */
+const agentMatcher: UrlMatcher = (segments: UrlSegment[]) =>
+  segments[0]?.path === 'agent' && segments.length <= 2
+    ? { consumed: segments, posParams: segments.length === 2 ? { id: segments[1] } : undefined }
+    : null;
 
 export const routes: Routes = [
   {
@@ -39,6 +45,10 @@ export const routes: Routes = [
       {
         path: 'naliczenia',
         loadComponent: () => import('./features/payroll/payroll').then((m) => m.Payroll),
+      },
+      {
+        matcher: agentMatcher,
+        loadComponent: () => import('./features/agent/agent').then((m) => m.Agent),
       },
       {
         path: 'zmiany-platowe',

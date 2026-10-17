@@ -2,6 +2,18 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { messageOf, problemOf } from './api-problem';
 
 describe('problemOf', () => {
+  it('problemOf_body_with_conversationId_returns_it', () => {
+    const error = new HttpErrorResponse({ status: 503, error: { title: 'Agent', detail: 'd', conversationId: 'c1' } });
+
+    expect(problemOf(error)).toEqual({ status: 503, title: 'Agent', detail: 'd', conversationId: 'c1' });
+  });
+
+  it.each([[undefined], [5], [''], [null]])('problemOf_conversationId_%s_is_omitted', (value) => {
+    const error = new HttpErrorResponse({ status: 503, error: { title: 'Agent', conversationId: value } });
+
+    expect('conversationId' in problemOf(error)).toBe(false);
+  });
+
   it('problemOf_422_with_body_returns_all_fields', () => {
     const error = new HttpErrorResponse({
       status: 422,

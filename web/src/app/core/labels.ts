@@ -26,6 +26,13 @@ export const auditEventLabel = lookup({
   ConversationRead: 'Odczyt rozmowy',
 });
 
+export const messageRoleLabel = lookup({
+  User: 'Ty',
+  Assistant: 'Agent',
+  ToolCall: 'Wywołanie narzędzia',
+  ToolResult: 'Wynik narzędzia',
+});
+
 const AUDIT_ENTITIES: Readonly<Record<string, string>> = {
   Employee: 'Pracownik',
   Team: 'Zespół',

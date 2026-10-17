@@ -2,11 +2,13 @@ import { provideHttpClient, withXsrfConfiguration } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { By } from '@angular/platform-browser';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideApiConfiguration } from './api/api-configuration';
 import { CurrentUserDto } from './api/models/current-user-dto';
 import { routes } from './app.routes';
+import { Agent } from './features/agent/agent';
 import { Notifier } from './core/notifier';
 import { SessionService } from './core/session';
 
@@ -15,6 +17,9 @@ function userWith(...roles: string[]): CurrentUserDto {
 }
 
 describe('routes', () => {
+  const agentOf = (harness: RouterTestingHarness): Agent | undefined =>
+    harness.fixture.debugElement.query(By.directive(Agent))?.componentInstance;
+
   const info = vi.fn();
 
   // Mirrors the app initializer: the session is resolved before the first navigation.
@@ -106,5 +111,36 @@ describe('routes', () => {
     await harness.navigateByUrl('/nie-ma-takiej');
 
     expect(TestBed.inject(Router).url).toBe('/');
+  });
+
+  it.each([['Employee'], ['Manager'], ['HR']])('%s_opens_agent_with_and_without_id', async (role) => {
+    const harness = await start(userWith(role));
+
+    for (const url of ['/agent', '/agent/abc']) {
+      await harness.navigateByUrl(url);
+      expect(agentOf(harness)).toBeInstanceOf(Agent);
+      expect(TestBed.inject(Router).url).toBe(url);
+    }
+    expect(info).not.toHaveBeenCalled();
+  });
+
+  it('agent_with_two_segments_redirects_to_root', async () => {
+    const harness = await start(userWith('Employee'));
+
+    await harness.navigateByUrl('/agent/a/b');
+
+    expect(TestBed.inject(Router).url).toBe('/');
+  });
+
+  it('navigating_from_agent_to_agent_id_keeps_the_same_component_instance', async () => {
+    const harness = await start(userWith('Employee'));
+
+    await harness.navigateByUrl('/agent');
+    const before = agentOf(harness);
+    await harness.navigateByUrl('/agent/abc');
+    const after = agentOf(harness);
+
+    expect(before).toBeInstanceOf(Agent);
+    expect(after).toBe(before);
   });
 });

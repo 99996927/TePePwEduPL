@@ -49,10 +49,10 @@ describe('Shell', () => {
   });
 
   it.each([
-    ['Employee', ['Pulpit', 'Urlopy', 'Czas pracy', 'Naliczenia']],
-    ['Manager', ['Pulpit', 'Urlopy', 'Czas pracy', 'Naliczenia', 'Zatwierdzanie urlopów', 'Przegląd zespołu']],
-    ['HR', ['Pulpit', 'Urlopy', 'Czas pracy', 'Naliczenia', 'Zatwierdzanie urlopów', 'Przegląd zespołu', 'Zmiany płacowe', 'Szkice korekt', 'Audyt']],
-    ['HRApprover', ['Pulpit', 'Urlopy', 'Czas pracy', 'Naliczenia', 'Zatwierdzanie urlopów', 'Przegląd zespołu', 'Zmiany płacowe', 'Szkice korekt', 'Audyt']],
+    ['Employee', ['Pulpit', 'Urlopy', 'Czas pracy', 'Naliczenia', 'Agent']],
+    ['Manager', ['Pulpit', 'Urlopy', 'Czas pracy', 'Naliczenia', 'Agent', 'Zatwierdzanie urlopów', 'Przegląd zespołu']],
+    ['HR', ['Pulpit', 'Urlopy', 'Czas pracy', 'Naliczenia', 'Agent', 'Zatwierdzanie urlopów', 'Przegląd zespołu', 'Zmiany płacowe', 'Szkice korekt', 'Audyt']],
+    ['HRApprover', ['Pulpit', 'Urlopy', 'Czas pracy', 'Naliczenia', 'Agent', 'Zatwierdzanie urlopów', 'Przegląd zespołu', 'Zmiany płacowe', 'Szkice korekt', 'Audyt']],
   ])('%s_sees_expected_menu_items', async (role, expected) => {
     const { el } = await open(role);
 
