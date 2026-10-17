@@ -1,6 +1,7 @@
 import { provideHttpClient, withXsrfConfiguration } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideApiConfiguration } from './api/api-configuration';
@@ -24,6 +25,7 @@ describe('routes', () => {
         provideHttpClient(withXsrfConfiguration({ cookieName: 'XSRF-TOKEN', headerName: 'X-XSRF-TOKEN' })),
         provideHttpClientTesting(),
         provideApiConfiguration(''),
+        provideNativeDateAdapter(),
         { provide: Notifier, useValue: { info, error: vi.fn() } },
       ],
     });

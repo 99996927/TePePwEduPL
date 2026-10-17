@@ -1,0 +1,38 @@
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0 16px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+table {
+  width: 100%;
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  padding: 8px 0;
+
+  h2 {
+    font: var(--mat-sys-title-small);
+    margin: 0 0 4px;
+  }
+
+  pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
+.error {
+  color: var(--mat-sys-error);
+}
