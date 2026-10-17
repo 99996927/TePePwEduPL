@@ -173,7 +173,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi().AllowAnonymous();
 }
 
-app.MapFallbackToFile("/{**path:regex(^(?!api/|test/|openapi/).*$)}", "index.html").AllowAnonymous();
+// nonfile: ścieżki z rozszerzeniem (np. main.js, chunk-*.js) nie trafiają do fallbacku, więc obsługuje je UseStaticFiles;
+// bez tego fallback jako wybrany endpoint wyłącza UseStaticFiles i każdy zasób dostaje index.html (text/html).
+app.MapFallbackToFile("/{**path:nonfile:regex(^(?!api/|test/|openapi/).*$)}", "index.html").AllowAnonymous();
 
 app.Run();
 
