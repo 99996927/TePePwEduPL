@@ -7,6 +7,7 @@ namespace Hr.Core.Seeding.Demo;
 public static class DemoTimesheets
 {
     private const int OvertimeEveryNthDay = 20;
+    private const int HolidayWeekdaysForLongerShift = 3;
     private static readonly TimeSpan HalfHour = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan[] Starts =
     {
@@ -43,7 +44,7 @@ public static class DemoTimesheets
                 }
 
                 workedDays++;
-                var shift = ShiftFor(o, p, d, start, withOvertime && workedDays % OvertimeEveryNthDay == 0);
+                var shift = ShiftFor(o, calendar, p, d, start, withOvertime && workedDays % OvertimeEveryNthDay == 0);
                 result.Add(Entry(o, p, d, shift.Start, shift.End, shift.Break));
             }
 
@@ -61,7 +62,7 @@ public static class DemoTimesheets
     }
 
     private static (TimeSpan Start, TimeSpan End, TimeSpan Break) ShiftFor(
-        DemoOptions o, DemoPerson p, DateOnly d, TimeSpan start, bool overtimeDay)
+        DemoOptions o, WorkCalendar calendar, DemoPerson p, DateOnly d, TimeSpan start, bool overtimeDay)
     {
         if (p.Login == "anna.nowak")
         {
@@ -82,12 +83,31 @@ public static class DemoTimesheets
             var period = DemoScenarios.JanOvertimePeriod(o.AnchorDate);
             if (d >= period.From && d <= period.To)
             {
-                return (new TimeSpan(8, 0, 0), new TimeSpan(18, 30, 0), HalfHour);
+                // Okres z wieloma świętami (np. Boże Narodzenie) ma mniej dni roboczych, więc dzień jest o godzinę dłuższy,
+                // żeby średnia tygodniowa nadal przekraczała 48 h. Dla domyślnej kotwicy zmiana to 8:00-18:30.
+                var end = HolidayWeekdays(calendar, period.From, period.To) >= HolidayWeekdaysForLongerShift
+                    ? new TimeSpan(19, 30, 0)
+                    : new TimeSpan(18, 30, 0);
+                return (new TimeSpan(8, 0, 0), end, HalfHour);
             }
         }
 
         var hours = overtimeDay ? 9 : 8;
         return (start, start + TimeSpan.FromHours(hours) + HalfHour, HalfHour);
+    }
+
+    private static int HolidayWeekdays(WorkCalendar calendar, DateOnly from, DateOnly to)
+    {
+        var count = 0;
+        for (var d = from; d <= to; d = d.AddDays(1))
+        {
+            if (d.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) && !calendar.IsWorkingDay(d))
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     private static WorkEntryRecord Entry(

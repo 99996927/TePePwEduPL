@@ -142,6 +142,14 @@ public static class DemoSeeder
                 continue;
             }
 
+            var monthStart = new DateTime(year, month, 1);
+            if (!await db.WorkEntries.AnyAsync(w => w.Start >= monthStart && w.Start < monthStart.AddMonths(1), ct))
+            {
+                // Np. przesunięta kotwica na istniejącej bazie: bez ewidencji naliczenie byłoby samą pensją zasadniczą.
+                logger.LogWarning("Seed danych demo: brak ewidencji czasu pracy za {Year}-{Month:00}, pomijam naliczenia.", year, month);
+                continue;
+            }
+
             var result = await payroll.RunMonthAsync(year, month, ct);
             if (!result.IsSuccess)
             {

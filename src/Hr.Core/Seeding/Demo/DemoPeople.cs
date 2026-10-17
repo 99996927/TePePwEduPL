@@ -1,5 +1,6 @@
 using System.Text;
 using Hr.Core.Abstractions;
+using Hr.Rules.Leave;
 
 namespace Hr.Core.Seeding.Demo;
 
@@ -126,7 +127,7 @@ public static class DemoPeople
             var first = female ? females[f++] : males[m++];
             var last = female ? lastNames[i].Female : lastNames[i].Male;
             var hired = EarliestHire.AddDays(rnd.Next(hireDays));
-            var years = YearsOfService(hired, o.AnchorDate);
+            var years = LeaveEntitlement.YearsOfService(hired, o.AnchorDate);
             var (min, max) = SalaryRange(years, role);
             var factor = 0.95m + (decimal)rnd.NextDouble() * 0.10m;
             var raw = (BaseSalary + PerYearSalary * Math.Min(years, 10))
@@ -142,12 +143,6 @@ public static class DemoPeople
         var login = $"{Ascii(first)}.{Ascii(last)}";
         return new DemoPerson(first, last, login, role, team, hired, salary,
             DemoIds.For(o.Seed, "employee:" + login), DemoIds.For(o.Seed, "user:" + login), isNamed);
-    }
-
-    private static int YearsOfService(DateOnly hired, DateOnly asOf)
-    {
-        var years = asOf.Year - hired.Year;
-        return asOf < hired.AddYears(years) ? years - 1 : years;
     }
 
     private static T[] Shuffle<T>(Random rnd, T[] source)

@@ -195,6 +195,41 @@ public class DemoDataInvariantsTests
 
     [Theory]
     [MemberData(nameof(Cases))]
+    public void Created_timestamps_never_fall_after_the_anchor(string anchor, int seed)
+    {
+        var o = Options(anchor, seed);
+        var set = Build(anchor, seed);
+        var created = set.LeaveRequests.Select(l => l.CreatedAtUtc)
+            .Concat(set.PayrollChanges.Select(c => c.CreatedAtUtc))
+            .Concat(set.Conversations.SelectMany(c => c.Messages).Select(m => m.CreatedAtUtc))
+            .ToList();
+
+        Assert.True(created.Count > 10);
+        Assert.All(created, t => Assert.True(DateOnly.FromDateTime(PolishTime.ToLocal(t)) <= o.AnchorDate, $"{t:o} po kotwicy {o.AnchorDate}"));
+    }
+
+    [Theory]
+    [MemberData(nameof(Cases))]
+    public void Scenarios_produce_the_expected_violations_for_every_anchor(string anchor, int seed)
+    {
+        var o = Options(anchor, seed);
+        var set = Build(anchor, seed);
+        List<Hr.Rules.Time.WorkEntry> Of(string login)
+        {
+            var id = set.People.Single(p => p.Login == login).EmployeeId;
+            return set.WorkEntries.Where(e => e.EmployeeId == id).OrderBy(e => e.Start).Select(e => e.ToRulesEntry()).ToList();
+        }
+
+        var violations = RestRules.Check(Of("anna.nowak"));
+        Assert.Single(violations, v => v.RuleId == "KP-132-1");
+        Assert.Single(violations, v => v.RuleId == "KP-133-1");
+        var period = DemoScenarios.JanOvertimePeriod(o.AnchorDate);
+        var average = WeeklyAverageRules.Check(Of("jan.kowalski"), period.From, period.To);
+        Assert.True(average.AverageWeeklyHours > 48m, $"{average.AverageWeeklyHours}");
+    }
+
+    [Theory]
+    [MemberData(nameof(Cases))]
     public void Accounts_profile_returns_six_people_without_data(string anchor, int seed)
     {
         var set = DemoDataGenerator.Build(Options(anchor, seed) with { Profile = DemoProfile.Accounts }, Calendar);

@@ -10,12 +10,6 @@ public class DemoPeopleTests
     private static readonly DemoOptions Full = DemoOptions.Default;
     private static readonly DemoOptions Accounts = DemoOptions.Default with { Profile = DemoProfile.Accounts };
 
-    private static int Years(DateOnly hire, DateOnly anchor)
-    {
-        var years = anchor.Year - hire.Year;
-        return anchor < hire.AddYears(years) ? years - 1 : years;
-    }
-
     [Fact]
     public void Full_has_31_people_in_5_teams_with_sizes_7_7_7_7_3()
     {
@@ -114,7 +108,7 @@ public class DemoPeopleTests
         Assert.Equal(25, people.Count);
         foreach (var p in people)
         {
-            var (min, max) = DemoPeople.SalaryRange(Years(p.HireDate, Full.AnchorDate), p.Role);
+            var (min, max) = DemoPeople.SalaryRange(Hr.Rules.Leave.LeaveEntitlement.YearsOfService(p.HireDate, Full.AnchorDate), p.Role);
             Assert.InRange(p.MonthlySalary, min, max);
             Assert.Equal(0m, p.MonthlySalary % 50m);
             Assert.InRange(p.HireDate, new DateOnly(2008, 1, 1), Full.WindowStart.AddDays(-1));

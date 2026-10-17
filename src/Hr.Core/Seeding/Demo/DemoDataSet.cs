@@ -11,7 +11,7 @@ public sealed record DemoPerson(
 
 public sealed record DemoTeam(Guid Id, string Name, Guid? ManagerEmployeeId);
 
-/// <summary>Wynik generatora danych demo. Kolejne zadania dodają kolejne listy (domyślnie puste).</summary>
+/// <summary>Wynik generatora danych demo. Zawiera osoby i zespoły oraz wnioski urlopowe, ewidencję czasu pracy, zmiany płacowe i rozmowy; listy są domyślnie puste (profil Accounts).</summary>
 public sealed record DemoDataSet
 {
     public IReadOnlyList<DemoTeam> Teams { get; init; } = new List<DemoTeam>();

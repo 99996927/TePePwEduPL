@@ -56,7 +56,14 @@ public static class DemoLeave
         DemoOptions o, WorkCalendar calendar, DemoPerson p, int n, DateOnly from, DateOnly to,
         LeaveStatus status, Guid? decidedBy, string? reason)
     {
-        var local = from.AddDays(-14).ToDateTime(new TimeOnly(8, 0), DateTimeKind.Unspecified);
+        // Wniosek powstaje 14 dni przed urlopem, ale nigdy po kotwicy (urlopy przyszłe i oczekujące są złożone w przeszłości).
+        var created = from.AddDays(-14);
+        if (created >= o.AnchorDate)
+        {
+            created = o.AnchorDate.AddDays(-(2 + n));
+        }
+
+        var local = created.ToDateTime(new TimeOnly(8, 0), DateTimeKind.Unspecified);
         return new LeaveRequest
         {
             Id = DemoIds.For(o.Seed, $"leave:{p.Login}:{n}"),

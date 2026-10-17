@@ -155,6 +155,22 @@ public class DemoDataSeedTests(MsSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Moved_anchor_on_existing_database_creates_no_payroll_for_months_without_entries()
+    {
+        await using var provider = await BuildAsync();
+        await DemoSeeder.SeedAsync(provider, Full);
+        var before = await CountAsync(provider);
+
+        await DemoSeeder.SeedAsync(provider, Full with { AnchorDate = new DateOnly(2027, 3, 12) });
+
+        // Dane nie są dosiewane; październik 2026 ma wpisy (kotwica domyślna to 16.10), więc jego naliczenia mogą powstać, listopad 2026 - luty 2027 nie.
+        Assert.Equal(before with { PayrollResults = before.PayrollResults + 31 }, await CountAsync(provider));
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<HrDbContext>();
+        Assert.False(await db.PayrollResults.AnyAsync(r => r.Year == 2026 && r.Month >= 11 || r.Year == 2027));
+    }
+
+    [Fact]
     public async Task Seed_does_not_overwrite_existing_old_six_account_database()
     {
         await using var provider = await BuildAsync();
