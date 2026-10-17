@@ -35,7 +35,7 @@ Konta tworzone seedem przy zakładaniu bazy. Hasło ma postać `imięnazwisko123
 | `anna.nowak` | `annanowak123` | Employee | W zespole Ewy. |
 | `jan.kowalski` | `jankowalski123` | Employee | W zespole Ewy. |
 | `tomasz.lis` | `tomaszlis123` | Employee | Inny zespół, test separacji danych. |
-| `ewa.wisniewska` | `ewawisniewska123` | Manager | Zespół: Anna, Jan. |
+| `ewa.wisniewska` | `ewawisniewska123` | Manager | Kieruje `Zespołem Ewy` (Anna, Jan; w profilu `Full` także 4 wygenerowane osoby). |
 | `piotr.zielinski` | `piotrzielinski123` | HR | Tworzy zmiany płacowe. |
 | `maria.kaminska` | `mariakaminska123` | HRApprover | Zatwierdza zmiany płacowe. |
 
@@ -81,6 +81,7 @@ zatwierdzonych urlopów), wnioski urlopowe, zmiany płacowe, dwie zapisane rozmo
 **Idempotencja i istniejące bazy:** dane są zapisywane w jednej transakcji tylko wtedy, gdy nie ma konta `anna.nowak`; naliczenia tylko dla miesięcy bez wyników.
 Seed nigdy nie nadpisuje ani nie usuwa danych. Jeśli w bazie nie ma pełnego zbioru osób profilu `Full` (np. dawna baza z sześcioma kontami
 albo baza założona profilem `Accounts`), naliczenia są pomijane z wpisem w logu, bo bez ewidencji byłyby puste.
+Zmiana kotwicy lub ziarna działa wyłącznie na pustej bazie: w istniejącej bazie seed danych jest pomijany, a naliczenia powstają tylko dla miesięcy, które mają wpisy czasu pracy (pozostałe są pomijane z ostrzeżeniem w logu).
 Dwie instancje aplikacji uruchomione jednocześnie na pustej bazie mogą się ścigać o znacznik seeda (konto `anna.nowak`), dlatego seed należy uruchamiać z jednej instancji.
 
 **Audyt:** seed zapisuje przez `HrDbContext` z przechwytywaczem audytu i go nie wyłącza, więc jego wiersze (m.in. zespoły, pracownicy, wpisy czasu,

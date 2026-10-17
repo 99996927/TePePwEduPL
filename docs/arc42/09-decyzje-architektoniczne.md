@@ -148,7 +148,7 @@ sześć kont z sekcji 7.2 i służy testom API. Sposób zapisu opisuje ADR-27, a
 
 ## ADR-20 Konta dla wszystkich wygenerowanych pracowników
 **Decyzja:** każdy wygenerowany pracownik ma konto logowania według tego samego wzoru co konta z sekcji 7.2: login `imię.nazwisko`,
-hasło `imięnazwisko123` (małe litery, bez znaków diakrytycznych i separatorów). Role: `Employee`, a w każdym zespole jeden `Manager`.
+hasło `imięnazwisko123` (małe litery, bez znaków diakrytycznych i separatorów). Role: `Employee`, a w każdym zespole biznesowym jeden `Manager`; zespół `Kadry` nie ma kierownika (plan 6).
 Generator gwarantuje unikalność loginów (brak powtórzeń kombinacji imię i nazwisko).
 **Alternatywy:** tylko 6 kont stałych (mniej jawnych haseł), konta dla wybranej części pracowników (reguły wyboru do opisania).
 **Konsekwencje:** można zalogować się jako dowolny pracownik i sprawdzić separację danych na większym zbiorze. Rośnie liczba jawnych, przewidywalnych
@@ -249,4 +249,5 @@ fabryka testów API. Wartości domyślne są w kodzie (`DemoOptions`), a niepopr
 **Alternatywy:** okno liczone od bieżącej daty (dane „świeże”, ale niedeterministyczne i zależne od świąt w danym roku); jeden profil i dostosowanie wszystkich testów API
 do pełnego zbioru (wolniejsze testy i krucha zależność od danych generatora).
 **Konsekwencje:** pełna deterministyczność danych i testów. Z upływem czasu dane demo się „starzeją” (np. urlop „na przyszłość” jest przyszły względem kotwicy, a nie
-faktycznej daty uruchomienia, a zegar aplikacji nie jest przesuwany), co można zmienić, przesuwając kotwicę w konfiguracji. Testy API na profilu `Full` (`DemoDataApiTests`) sprawdzają scenariusze i czas startu.
+faktycznej daty uruchomienia, a zegar aplikacji nie jest przesuwany), co można zmienić, przesuwając kotwicę w konfiguracji, ale tylko na pustej bazie.
+Zmiana kotwicy lub ziarna działa wyłącznie na pustej bazie: w istniejącej bazie seed danych jest pomijany (znacznik `anna.nowak`), a naliczenia powstają tylko dla miesięcy, które mają wpisy czasu pracy. Testy API na profilu `Full` (`DemoDataApiTests`) sprawdzają scenariusze i czas startu.
