@@ -333,8 +333,8 @@ spójnego stylu wzorowanego na „Material Dashboard” (Creative Tim); wybrano 
   `page-card__body`, `page-card--tile` z `page-card__icon`, `data-table`, `status-chip`; style dialogów globalnie. Komponent `app-status-chip` mapuje status API na ton
   (`statusTone`, nieznany status jest neutralny); chip renderuje wyłącznie polską etykietę, więc kolor jest dodatkiem, a nie jedynym nośnikiem informacji.
 - **Szkielet:** jasnoszare menu (260 px) z ikonami i gradientem na aktywnej pozycji, biały pasek z okruszkami „Asystent kadrowo-płacowy / tytuł ekranu”, nazwą i rolą
-  użytkownika oraz przyciskiem „Wyloguj”. Ikony: Material Symbols przez `MAT_ICON_DEFAULT_OPTIONS` (`fontSet: material-symbols-outlined`); wcześniej domyślny zestaw
-  `material-icons` nie był zdefiniowany przez załadowany font.
+  użytkownika oraz przyciskiem „Wyloguj”. Ikony: Material Symbols; `provideIconFont()` (`core/icon-font.ts`) ustawia przez `MatIconRegistry` domyślny zestaw `material-symbols-outlined` z klasą `mat-ligature-font`
+  (bez niej `mat-icon` dodaje nazwę ikony jako klasę CSS i nic nie rysuje); wcześniej domyślny zestaw `material-icons` nie był zdefiniowany przez załadowany font.
 - **Kontrast:** biały tekst tylko na ciemnych odcieniach gradientów (początki gradientów przyciemnione do ≥ 4,5:1: fiolet 6,3, zielony 5,1, pomarańczowy 5,6, czerwony 5,0,
   turkus 4,5), chipy to ciemny tekst na jasnym tle tonu (≥ 5,7:1).
 - **Bez zmian logiki:** teksty, atrybuty `data-*`, role ARIA i kontrakt API pozostają; testy dotychczasowych ekranów przechodzą bez zmian asercji.

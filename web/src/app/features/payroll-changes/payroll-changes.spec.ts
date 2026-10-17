@@ -379,4 +379,9 @@ describe('PayrollChanges', () => {
     expect([tone('c1'), tone('c2'), tone('c3'), tone('c4')]).toEqual(['warning', 'success', 'danger', 'neutral']);
     expect(row('c1')!.querySelector('app-status-chip')!.textContent!.trim()).toBe('Oczekuje na zatwierdzenie');
   });
+
+  it('money_column_is_right_aligned', async () => {
+    const { row } = await setup('ud', ['HR']);
+    expect(row('c1')!.querySelector('td.num')!.textContent).toMatch(/7\s?800,00\s?zł/);
+  });
 });

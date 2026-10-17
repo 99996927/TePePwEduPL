@@ -172,4 +172,12 @@ describe('PayrollSummary', () => {
     expect(el.querySelector('[data-row="e1"]')!.textContent).toContain(formatMoney(7777));
     expect(el.querySelector('[data-row="e2"]')!.textContent).toContain(formatMoney(8888));
   });
+
+  it('uses_data_table_with_right_aligned_gross_column', async () => {
+    await setup(people.slice(0, 1));
+    pending()[0].flush(result('e1'));
+    await settle();
+    expect(el.querySelector('table.data-table')).not.toBeNull();
+    expect(el.querySelector('td.num')).not.toBeNull();
+  });
 });

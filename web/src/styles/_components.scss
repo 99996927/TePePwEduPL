@@ -53,6 +53,7 @@
 
 .page-card__body {
   padding: 16px;
+  overflow-x: auto;
 }
 
 .page-card--tile {
@@ -93,6 +94,11 @@
 
 .data-table {
   width: 100%;
+
+  .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
 
   th {
     font-weight: 700;

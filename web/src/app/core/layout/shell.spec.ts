@@ -1,7 +1,9 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { of } from 'rxjs';
 import { CurrentUserDto } from '../../api/models/current-user-dto';
 import { Notifier } from '../notifier';
 import { SessionService } from '../session';
@@ -182,5 +184,38 @@ describe('Shell look', () => {
     expect(el.querySelector('[data-user-name]')!.textContent!.trim()).toBe('Ewa Wiśniewska');
     expect(el.querySelector('[data-user-role]')!.textContent!.trim()).toBe('Kadry');
   });
-});
 
+describe('Shell narrow', () => {
+  async function openNarrow() {
+    const user = signal<CurrentUserDto | null>({ userId: 'u', employeeId: 'e', userName: 'x', displayName: 'X', roles: ['Employee'] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: '', component: Shell, children: [{ path: '**', component: Blank }] }]),
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: true, breakpoints: {} }) } },
+        { provide: SessionService, useValue: { user: user.asReadonly(), hasRole: () => false, logout: vi.fn() } },
+        { provide: Notifier, useValue: { error: vi.fn() } },
+      ],
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/');
+    harness.detectChanges();
+    return { harness, el: harness.fixture.nativeElement as HTMLElement };
+  }
+
+  it('menu_is_closed_opens_with_menu_button_and_closes_after_choosing_an_item', async () => {
+    const { harness, el } = await openNarrow();
+    const drawer = el.querySelector('mat-sidenav')!;
+
+    expect(drawer.classList).not.toContain('mat-drawer-opened');
+    el.querySelector<HTMLButtonElement>('button[aria-label="Menu"]')!.click();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(drawer.classList).toContain('mat-drawer-opened');
+
+    el.querySelector<HTMLAnchorElement>('nav a')!.click();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(drawer.classList).not.toContain('mat-drawer-opened');
+  });
+});
+});

@@ -52,7 +52,7 @@ Trasa `/agent` (nowa rozmowa) i `/agent/<id>` (otwarta rozmowa), jeden komponent
 - Nowy ekran: `<div class="page-card"><div class="page-card__header"><h1>Tytuł</h1></div><div class="page-card__body">…</div></div>`; filtry i pola formularzy w ciele karty.
 - Status jako chip: `<app-status-chip [status]="r.status" [label]="statusLabel(r.status)" />` (`shared/status-chip.ts`; ton z `statusTone`, nieznany status jest neutralny).
 - Nowa pozycja menu: wpis w stałej `MENU` w `core/layout/shell.ts` z nazwą ikony Material Symbols (`icon`); tytuł ekranu w pasku bierze się z etykiety pozycji.
-- Ikony: `<mat-icon fontIcon="nazwa" />` (zestaw `material-symbols-outlined` ustawia `MAT_ICON_DEFAULT_OPTIONS` w `app.config.ts`); nie wpisuj nazwy ikony jako tekstu.
+- Ikony: `<mat-icon fontIcon="nazwa" />` (zestaw `material-symbols-outlined` z klasą `mat-ligature-font` ustawia `provideIconFont()` z `core/icon-font.ts`); nie wpisuj nazwy ikony jako tekstu.
 
 ## Uwagi
 
