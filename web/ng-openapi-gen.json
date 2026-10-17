@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/ng-openapi-gen/ng-openapi-gen-schema.json",
+  "input": "../docs/openapi/hr-api.json",
+  "output": "src/app/api",
+  "services": true,
+  "skipJsonSuffix": true,
+  "promises": false,
+  "removeStaleFiles": true
+}

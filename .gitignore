@@ -8,3 +8,10 @@ obj/
 tools/labour_code/.venv/
 tools/labour_code/__pycache__/
 tools/labour_code/*.pdf
+
+web/node_modules/
+web/dist/
+web/.angular/
+src/Hr.Api/wwwroot/*
+!src/Hr.Api/wwwroot/.gitkeep
+.run/
