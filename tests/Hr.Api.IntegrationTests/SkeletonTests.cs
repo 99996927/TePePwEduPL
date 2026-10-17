@@ -41,17 +41,7 @@ public class SkeletonTests(MsSqlFixture fixture)
     }
 
     [Fact]
-    public async Task UC29_Static_index_is_served_at_root()
-    {
-        await using var factory = await HrApiFactory.CreateAsync(fixture);
-        var response = await factory.CreateApiClient().GetAsync("/");
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("text/html", response.Content.Headers.ContentType!.MediaType);
-    }
-
-    [Fact]
-    public async Task UC29_Static_assets_are_served_and_only_spa_routes_fall_back_to_index()
+    public async Task UC29_Static_index_and_assets_are_served_and_only_spa_routes_fall_back_to_index()
     {
         string webRoot = Directory.CreateTempSubdirectory("hr-webroot-").FullName;
         try
@@ -61,6 +51,10 @@ public class SkeletonTests(MsSqlFixture fixture)
             await using var baseFactory = await HrApiFactory.CreateAsync(fixture);
             await using var factory = baseFactory.WithWebHostBuilder(builder => builder.UseWebRoot(webRoot));
             var client = factory.CreateClient();
+
+            var root = await client.GetAsync("/");
+            Assert.Equal(HttpStatusCode.OK, root.StatusCode);
+            Assert.Equal("text/html", root.Content.Headers.ContentType!.MediaType);
 
             var script = await client.GetAsync("/main-TEST.js");
             Assert.Equal(HttpStatusCode.OK, script.StatusCode);
