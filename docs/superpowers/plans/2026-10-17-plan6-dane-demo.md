@@ -62,17 +62,17 @@
 **Interfaces:**
 - Produces: `enum DemoProfile { Full, Accounts }`; `sealed record DemoOptions(int Seed, DateOnly AnchorDate, DemoProfile Profile)` z `static DemoOptions Default` (`20261016`, `2026-10-16`, `Full`), `DateOnly WindowStart`, `IReadOnlyList<(int Year, int Month)> PayrollMonths`, `static DemoOptions Parse(string? anchorDate, string? seed, string? profile, WorkCalendar calendar)` (brak wartości → domyślna; błąd → `InvalidOperationException`).
 
-- [ ] **Step 1: Napisz testy (RED)** w `DemoOptionsTests`:
+- [x] **Step 1: Napisz testy (RED)** w `DemoOptionsTests`:
   - `Default_has_anchor_2026_10_16_seed_20261016_profile_full`.
   - `Window_starts_on_first_day_six_months_before_anchor_month` (kotwica 2026-10-16 → `2026-04-01`; kotwica 2027-03-12 → `2026-09-01`).
   - `PayrollMonths_are_full_months_before_anchor_month` (domyślnie 6 pozycji od `(2026,4)` do `(2026,9)`).
   - `Parse_rejects_non_working_day_anchor` (`2026-10-17` sobota, `2026-11-01` niedziela i święto) — wyjątek, komunikat zawiera `dzień roboczy`.
   - `Parse_rejects_bad_format_seed_and_profile` (`"16.10.2026"`, seed `"abc"`, profil `"Mini"`) — wyjątek z nazwą klucza (`Hr:DemoAnchorDate`, `Hr:DemoSeed`, `Hr:DemoProfile`).
   - `Parse_accepts_values_and_defaults_missing` (`null` → wartości domyślne; `"2026-11-13"`, `"7"`, `"Accounts"` → odpowiednie).
-- [ ] **Step 2: Uruchom** `dotnet test tests/Hr.Core.Tests` — oczekiwane: błąd kompilacji (brak typów), potem po dodaniu pustych typów FAIL.
-- [ ] **Step 3: Zaimplementuj** typy z Interfaces w `DemoOptions.cs` (rekord z metodami; `Parse` używa `DateOnly.TryParseExact("yyyy-MM-dd")`, `int.TryParse` niezmiennie kulturowo, `Enum.TryParse` bez rozróżniania wielkości liter i tylko dla zdefiniowanych wartości).
-- [ ] **Step 4: Uruchom** `dotnet test tests/Hr.Core.Tests` — PASS.
-- [ ] **Step 5: Commit** `Dodaj projekt testów Hr.Core.Tests i opcje danych demo`.
+- [x] **Step 2: Uruchom** `dotnet test tests/Hr.Core.Tests` — oczekiwane: błąd kompilacji (brak typów), potem po dodaniu pustych typów FAIL.
+- [x] **Step 3: Zaimplementuj** typy z Interfaces w `DemoOptions.cs` (rekord z metodami; `Parse` używa `DateOnly.TryParseExact("yyyy-MM-dd")`, `int.TryParse` niezmiennie kulturowo, `Enum.TryParse` bez rozróżniania wielkości liter i tylko dla zdefiniowanych wartości).
+- [x] **Step 4: Uruchom** `dotnet test tests/Hr.Core.Tests` — PASS.
+- [x] **Step 5: Commit** `Dodaj projekt testów Hr.Core.Tests i opcje danych demo`.
 
 ### Task 2: Identyfikatory i osoby (`DemoIds`, `DemoPeople`)
 
@@ -84,7 +84,7 @@
 - Consumes: `DemoOptions`, `Roles`, `Team`, `Employee`.
 - Produces: `static class DemoIds { static Guid For(int seed, string key) }` (deterministyczny GUID z hasha `seed:key`); `sealed record DemoPerson(string First, string Last, string Login, string Role, string TeamName, DateOnly HireDate, decimal MonthlySalary, Guid EmployeeId, Guid UserId, bool IsNamed) { string Password }` (hasło jak dotąd: login bez kropki + `123`); `sealed record DemoTeam(Guid Id, string Name, Guid? ManagerEmployeeId)`; `sealed record DemoDataSet` (na razie `IReadOnlyList<DemoTeam> Teams`, `IReadOnlyList<DemoPerson> People`; kolejne pola dodają następne zadania); `static class DemoPeople { static (IReadOnlyList<DemoTeam>, IReadOnlyList<DemoPerson>) Build(DemoOptions o); static (decimal Min, decimal Max) SalaryRange(int yearsOfService, string role); const string TeamEwa, TeamB, TeamC, TeamD, TeamHr; }`. Dla `DemoProfile.Accounts` zwraca tylko 3 zespoły i 6 osób stałych.
 
-- [ ] **Step 1: Napisz testy (RED)** w `DemoPeopleTests`:
+- [x] **Step 1: Napisz testy (RED)** w `DemoPeopleTests`:
   - `Full_has_31_people_in_5_teams_with_sizes_7_7_7_7_3`.
   - `Accounts_profile_has_only_six_named_people_in_three_teams`.
   - `Named_accounts_keep_login_role_team_hire_and_salary` (tabela 6 kont z Global Constraints, w tym `Password == "annanowak123"`).
@@ -93,10 +93,10 @@
   - `Generated_salary_and_hire_date_within_ranges` (`SalaryRange`, zatrudnienie ≤ `WindowStart - 1`).
   - `Same_seed_gives_same_people_and_other_seed_gives_other_generated_names` (JSON dwóch wywołań; inne ziarno zmienia co najmniej jedno wygenerowane nazwisko, ale nie sześć stałych).
   - `DemoIds_are_stable_and_distinct_per_key`.
-- [ ] **Step 2: Uruchom** — FAIL.
-- [ ] **Step 3: Zaimplementuj.** Pula imion i nazwisk w kodzie jako pary rodzajów (`(Male, Female)` dla nazwisk na -ski/-cki/-ak itd.; ≥ 40 nazwisk bez sześciu stałych; ≥ 20 imion żeńskich i męskich, z diakrytykami, np. `Żółkiewski`/`Żółkiewska`); ziarnowany `Random(seed)` tasuje pule; login i hasło przez transliterację ASCII (ą→a, ć→c, ę→e, ł→l, ń→n, ó→o, ś→s, ź→z, ż→z). `Manager` zespołów B, C, D to wygenerowane osoby; zespół Ewy ma Ewę. Kolejność osób stała (stałe konta najpierw).
-- [ ] **Step 4: Uruchom** — PASS.
-- [ ] **Step 5: Commit** `Dodaj deterministyczne identyfikatory i generator osób demo`.
+- [x] **Step 2: Uruchom** — FAIL.
+- [x] **Step 3: Zaimplementuj.** Pula imion i nazwisk w kodzie jako pary rodzajów (`(Male, Female)` dla nazwisk na -ski/-cki/-ak itd.; ≥ 40 nazwisk bez sześciu stałych; ≥ 20 imion żeńskich i męskich, z diakrytykami, np. `Żółkiewski`/`Żółkiewska`); ziarnowany `Random(seed)` tasuje pule; login i hasło przez transliterację ASCII (ą→a, ć→c, ę→e, ł→l, ń→n, ó→o, ś→s, ź→z, ż→z). `Manager` zespołów B, C, D to wygenerowane osoby; zespół Ewy ma Ewę. Kolejność osób stała (stałe konta najpierw).
+- [x] **Step 4: Uruchom** — PASS.
+- [x] **Step 5: Commit** `Dodaj deterministyczne identyfikatory i generator osób demo`.
 
 ### Task 3: Scenariusze i urlopy (`DemoScenarios`, `DemoLeave`)
 
@@ -109,17 +109,17 @@
 - Produces: `static class DemoScenarios` z metodami względem kotwicy `a`: `DateOnly AnnaDailyRestTuesday(DateOnly a)` (ostatni wtorek miesiąca poprzedzającego miesiąc kotwicy; dla domyślnej 2026-09-29), `DateOnly AnnaWeeklyRestSaturday(DateOnly a)` (druga sobota tego miesiąca; 2026-09-12), `(DateOnly From, DateOnly To) JanOvertimePeriod(DateOnly a)` (od 1. dnia miesiąca 4 miesiące przed miesiącem kotwicy do ostatniego dnia miesiąca poprzedniego; 2026-06-01..2026-09-30), `(DateOnly From, DateOnly To) AnnaLeaveRealized/AnnaLeaveFuture/AnnaLeavePending/JanLeaveRejected/JanLeaveCancelled(DateOnly a)` (każdy to poniedziałek–piątek wskazanego tygodnia; reguły względem miesiąca kotwicy M: realized = 2. poniedziałek miesiąca M−3, future = 1. poniedziałek miesiąca M+2, pending = 1. poniedziałek miesiąca M+1, rejected = 1. poniedziałek miesiąca M−2, cancelled = 1. poniedziałek miesiąca M; dla kotwicy 2026-10-16 dają to 13–17.07, 7–11.12, 2–6.11, 3–7.08 i 5–9.10.2026); `const string RejectionReason = "Zbyt wielu pracowników na urlopie w tym tygodniu."`. `static class DemoLeave { static IReadOnlyList<LeaveRequest> Build(DemoOptions o, IReadOnlyList<DemoPerson> people, WorkCalendar calendar) }`.
 - Zasada „względem miesiąca kotwicy” zapisana jest w komentarzu `DemoScenarios`; daty domyślne pilnuje test.
 
-- [ ] **Step 1: Napisz testy (RED)** w `DemoLeaveTests`:
+- [x] **Step 1: Napisz testy (RED)** w `DemoLeaveTests`:
   - `Scenario_dates_for_default_anchor` (wszystkie daty z listy powyżej, wtorek/sobota są właściwymi dniami tygodnia).
   - `Anna_has_exactly_realized_future_and_pending_leave` (statusy `Approved`, `Approved`, `Pending`; `Days == 5`; zatwierdzone mają `DecidedByEmployeeId` = Ewa; saldo 20 − 10 − 5 = 5) oraz `Jan_has_exactly_rejected_with_reason_and_cancelled` (`DecisionReason == RejectionReason`, `Days` zgodne z kalendarzem).
   - `Other_people_have_one_or_two_past_approved_leaves_within_entitlement_and_without_overlap`.
   - `Days_match_working_calendar_for_every_request` (`CountWorkingDays(From, To)`; `Days > 0`).
   - `Active_leaves_stay_within_one_year_and_entitlement` (wszystkie osoby; wymiar z `AnnualDays(YearsOfService(HireDate, anchor))`).
   - `Leave_ids_and_timestamps_are_deterministic` (dwa wywołania, ten sam JSON).
-- [ ] **Step 2: Uruchom** — FAIL.
-- [ ] **Step 3: Zaimplementuj.** Dla Anny i Jana wyłącznie wnioski scenariuszowe (`CreatedAtUtc` = 14 dni przed `From`, 8:00 lokalnie → UTC); dla pozostałych jeden lub dwa zatwierdzone wnioski 3–10 dni roboczych w oknie przed kotwicą, wybierane `Random(seed ^ hash(login))`, bez nakładania; id przez `DemoIds.For(seed, $"leave:{login}:{n}")`.
-- [ ] **Step 4: Uruchom** — PASS.
-- [ ] **Step 5: Commit** `Dodaj scenariusze demo i wnioski urlopowe`.
+- [x] **Step 2: Uruchom** — FAIL.
+- [x] **Step 3: Zaimplementuj.** Dla Anny i Jana wyłącznie wnioski scenariuszowe (`CreatedAtUtc` = 14 dni przed `From`, 8:00 lokalnie → UTC); dla pozostałych jeden lub dwa zatwierdzone wnioski 3–10 dni roboczych w oknie przed kotwicą, wybierane `Random(seed ^ hash(login))`, bez nakładania; id przez `DemoIds.For(seed, $"leave:{login}:{n}")`.
+- [x] **Step 4: Uruchom** — PASS.
+- [x] **Step 5: Commit** `Dodaj scenariusze demo i wnioski urlopowe`.
 
 ### Task 4: Wpisy czasu pracy (`DemoTimesheets`)
 
@@ -131,7 +131,7 @@
 - Consumes: `DemoOptions`, `DemoPerson`, `LeaveRequest`, `DemoScenarios`, `WorkCalendar`, `WorkEntryRecord`.
 - Produces: `static class DemoTimesheets { static IReadOnlyList<WorkEntryRecord> Build(DemoOptions o, IReadOnlyList<DemoPerson> people, IReadOnlyList<LeaveRequest> leave, WorkCalendar calendar) }`.
 
-- [ ] **Step 1: Napisz testy (RED)** w `DemoTimesheetsTests` (każdy wywołuje silnik z `Hr.Rules` na wpisach pracownika, zakres `WindowStart..anchor`):
+- [x] **Step 1: Napisz testy (RED)** w `DemoTimesheetsTests` (każdy wywołuje silnik z `Hr.Rules` na wpisach pracownika, zakres `WindowStart..anchor`):
   - `Entries_fall_only_on_working_days_inside_window_except_annas_saturday` (poza `AnnaWeeklyRestSaturday`: dzień roboczy wg `WorkCalendar`, brak wpisów w dniach zatwierdzonego urlopu, brak wpisów po kotwicy).
   - `Regular_people_have_no_rest_violations_and_no_weekly_excess` (dla wszystkich poza Anną i Janem: `RestRules.Check` puste, `WeeklyAverageRules.Check(...).ExceedsLimit == false` dla okresów kwiecień–lipiec i czerwiec–wrzesień).
   - `Only_four_generated_people_have_overtime_and_Tomasz_has_none` (`OvertimeCalculator.Calculate`: `Total > 0` dokładnie u czterech wygenerowanych; Tomasz, Ewa, Piotr, Maria 0).
@@ -139,10 +139,10 @@
   - `UC13_Anna_has_exactly_one_weekly_rest_violation_in_scenario_week` (`KP-133-1` dokładnie jedno, w tygodniu soboty; sobota 14:00–20:00, przerwa 0) i `Anna_has_no_other_violations`.
   - `UC14_Jan_exceeds_48h_average_over_overtime_period_and_has_overtime_each_month` (`JanOvertimePeriod`: dzień roboczy 8:00–18:30 przerwa 30 min, średnia > 48 h, `ExceedsLimit`; nadgodziny > 0 w czerwcu, lipcu, sierpniu i wrześniu; `Jan` nie ma naruszeń odpoczynku) oraz `Tomasz_has_zero_alerts` (brak naruszeń, nadgodzin i przekroczenia).
   - `Entries_never_overlap_and_ids_are_deterministic`.
-- [ ] **Step 2: Uruchom** — FAIL.
-- [ ] **Step 3: Zaimplementuj.** Dla każdej osoby i dnia roboczego w oknie bez zatwierdzonego urlopu wpis wg zasad z Global Constraints; start wybierany `Random(seed ^ hash(login))` raz na osobę; nadgodziny: cztery wygenerowane osoby (indeksy 3, 9, 14, 20 w kolejności osób generowanych) co 20. dzień roboczy +1 h na końcu; Jan i Anna wg scenariuszy (Jan: zmiana 8:00–18:30 w `JanOvertimePeriod`, w pozostałych dniach standardowa; Anna: zastąp wpisy z wtorku i środy scenariusza, dodaj sobotę); id `DemoIds.For(seed, $"work:{login}:{date:yyyyMMdd}:{n}")`.
-- [ ] **Step 4: Uruchom** — PASS. Jeśli test odpoczynku tygodniowego Anny nie daje dokładnie jednego naruszenia, popraw godziny soboty, tak by najdłuższa przerwa tygodnia była krótsza niż 35 h, i zachowaj test.
-- [ ] **Step 5: Commit** `Dodaj generator wpisów czasu pracy ze scenariuszami`.
+- [x] **Step 2: Uruchom** — FAIL.
+- [x] **Step 3: Zaimplementuj.** Dla każdej osoby i dnia roboczego w oknie bez zatwierdzonego urlopu wpis wg zasad z Global Constraints; start wybierany `Random(seed ^ hash(login))` raz na osobę; nadgodziny: cztery wygenerowane osoby (indeksy 3, 9, 14, 20 w kolejności osób generowanych) co 20. dzień roboczy +1 h na końcu; Jan i Anna wg scenariuszy (Jan: zmiana 8:00–18:30 w `JanOvertimePeriod`, w pozostałych dniach standardowa; Anna: zastąp wpisy z wtorku i środy scenariusza, dodaj sobotę); id `DemoIds.For(seed, $"work:{login}:{date:yyyyMMdd}:{n}")`.
+- [x] **Step 4: Uruchom** — PASS. Jeśli test odpoczynku tygodniowego Anny nie daje dokładnie jednego naruszenia, popraw godziny soboty, tak by najdłuższa przerwa tygodnia była krótsza niż 35 h, i zachowaj test.
+- [x] **Step 5: Commit** `Dodaj generator wpisów czasu pracy ze scenariuszami`.
 
 ### Task 5: Zmiany płacowe i rozmowy
 
@@ -154,7 +154,7 @@
 - Consumes: `DemoPerson`, `DemoOptions`, `LeaveRequest`, `PayrollChange`, `Conversation`, `Message`, `MessageRole`.
 - Produces: `static class DemoPayrollChanges { static IReadOnlyList<PayrollChange> Build(DemoOptions o, IReadOnlyList<DemoPerson> people) }`; `static class DemoConversations { static IReadOnlyList<Conversation> Build(DemoOptions o, IReadOnlyList<DemoPerson> people, IReadOnlyList<LeaveRequest> leave) }`.
 
-- [ ] **Step 1: Napisz testy (RED).** Zmiany płacowe (`CreatedByUserId` to `UserId` Piotra, `DecidedByUserId` to `UserId` Marii):
+- [x] **Step 1: Napisz testy (RED).** Zmiany płacowe (`CreatedByUserId` to `UserId` Piotra, `DecidedByUserId` to `UserId` Marii):
   - `UC18_Approved_historic_change_is_jans_fixed_allowance_400_from_june_first` (`Component = FixedAllowance`, `Value = 400`, `EffectiveFrom = 2026-06-01`, `Status = Approved`, powód niepusty).
   - `UC18_Pending_change_is_annas_base_salary_7800_from_november_first_created_by_piotr_without_decision` (`DecidedByUserId == null`, `DecisionReason == null`).
   - `UC20_Rejected_change_is_tomaszs_fixed_allowance_300_from_september_first_with_reason` (`DecisionReason` niepusty).
@@ -164,10 +164,10 @@
   - `UC21_Annas_tool_result_matches_leave_balance_from_dataset` (JSON z kluczami `entitlementDays`, `approvedDays`, `pendingDays`, `remainingDays`, `year`, `ruleId = "KP-154-1"` o wartościach 20, 10, 5, 5 liczonych z wniosków i `LeaveEntitlement`; odpowiedź asystenta zawiera te liczby cyframi i żadnych innych liczb).
   - `UC24_Tomasz_conversation_asks_about_Annas_leave_and_gets_refusal_without_tool_calls` (user, assistant; odpowiedź odmawia i wskazuje własne dane).
   - `Conversations_are_deterministic_and_owned_by_their_users`.
-- [ ] **Step 2: Uruchom** — FAIL.
-- [ ] **Step 3: Zaimplementuj** jak w testach; kształt JSON narzędzia skopiuj z `AgentToolbox.GetLeaveBalanceAsync` (`employeeId` = Anna, `year` = rok kotwicy), serializacja `camelCase` jak w toolboxie; id wiadomości i rozmów przez `DemoIds`; `CreatedAtUtc` rozmów: kotwica 9:00 lokalnie, kolejne wiadomości co minutę.
-- [ ] **Step 4: Uruchom** — PASS.
-- [ ] **Step 5: Commit** `Dodaj zmiany płacowe i rozmowy z agentem do danych demo`.
+- [x] **Step 2: Uruchom** — FAIL.
+- [x] **Step 3: Zaimplementuj** jak w testach; kształt JSON narzędzia skopiuj z `AgentToolbox.GetLeaveBalanceAsync` (`employeeId` = Anna, `year` = rok kotwicy), serializacja `camelCase` jak w toolboxie; id wiadomości i rozmów przez `DemoIds`; `CreatedAtUtc` rozmów: kotwica 9:00 lokalnie, kolejne wiadomości co minutę.
+- [x] **Step 4: Uruchom** — PASS.
+- [x] **Step 5: Commit** `Dodaj zmiany płacowe i rozmowy z agentem do danych demo`.
 
 ### Task 6: Składanie zbioru i niezmienniki
 
@@ -178,14 +178,14 @@
 - Consumes: wszystkie moduły z Task 2–5, `WorkCalendar`.
 - Produces: `static class DemoDataGenerator { static DemoDataSet Build(DemoOptions options, WorkCalendar calendar) }` (kolejność: osoby → urlopy → wpisy → zmiany płacowe → rozmowy); dla profilu `Accounts` zbiór zawiera tylko zespoły i osoby (pozostałe listy puste).
 
-- [ ] **Step 1: Napisz testy (RED).**
+- [x] **Step 1: Napisz testy (RED).**
   - `Determinism_two_builds_taken_apart_serialize_identically` (dwa wywołania z odstępem ≥ 20 ms; porównanie JSON całego `DemoDataSet`).
   - Niezmienniki przez `[Theory]` dla trzech kotwic (`2026-10-16`, `2026-11-13`, `2027-03-12`) i dwóch ziaren: kalendarz i okno (brak wpisów poza oknem), brak naruszeń odpoczynku dla osób nie scenariuszowych, urlopy w wymiarze, loginy/hasła/menedżerowie, zmiany płacowe bez samozatwierdzenia, brak powtórzonych identyfikatorów w całym zbiorze, `Accounts` zwraca 6 osób bez danych.
   - Architektura (`DemoDataIsolationTests`, w stylu `RulesIsolationTests`): typy z przestrzeni `Hr.Core.Seeding.Demo` nie zależą od `Hr.Core.Persistence`, `Microsoft.EntityFrameworkCore`, `Hr.Core.Abstractions.IClock` ani `Microsoft.AspNetCore.Identity`; z kodu produkcyjnego z `Demo` korzysta tylko `Hr.Core.Seeding.DemoSeeder`.
-- [ ] **Step 2: Uruchom** `dotnet test tests/Hr.Core.Tests` oraz `dotnet test tests/Hr.Architecture.Tests` — FAIL.
-- [ ] **Step 3: Zaimplementuj** `DemoDataGenerator.Build`; popraw ewentualne niezmienniki naruszone przy innych kotwicach w modułach z Task 2–5 (scenariusze względem miesiąca kotwicy).
-- [ ] **Step 4: Uruchom** oba projekty — PASS.
-- [ ] **Step 5: Commit** `Złóż zbiór danych demo i dodaj testy niezmienników`.
+- [x] **Step 2: Uruchom** `dotnet test tests/Hr.Core.Tests` oraz `dotnet test tests/Hr.Architecture.Tests` — FAIL.
+- [x] **Step 3: Zaimplementuj** `DemoDataGenerator.Build`; popraw ewentualne niezmienniki naruszone przy innych kotwicach w modułach z Task 2–5 (scenariusze względem miesiąca kotwicy).
+- [x] **Step 4: Uruchom** oba projekty — PASS.
+- [x] **Step 5: Commit** `Złóż zbiór danych demo i dodaj testy niezmienników`.
 
 ### Task 7: `DemoSeeder` na nowej warstwie danych
 
@@ -198,7 +198,7 @@
 - Consumes: `DemoDataGenerator.Build`, `DemoOptions`, `PayrollService(HrDbContext, ICurrentUser, IClock, WorkCalendar)`, `UserManager<ApplicationUser>`, `RoleManager<IdentityRole<Guid>>`.
 - Produces: `sealed class SeedCurrentUser : ICurrentUser` (`UserId`, `EmployeeId`, rola `HR`); `static Task DemoSeeder.SeedAsync(IServiceProvider services, DemoOptions options, CancellationToken ct = default)` (dotychczasowe `SeedAsync(IServiceProvider, CancellationToken)` znika; `IClock` i `WorkCalendar` z `GetService`, z domyślnymi `SystemClock` i `new WorkCalendar()`, gdy nie zarejestrowano).
 
-- [ ] **Step 1: Napisz testy (RED).** W `DemoSeederTests` przełącz wywołania na `DemoOptions.Default with { Profile = DemoProfile.Accounts }` (wszystkie dotychczasowe asercje o 6/6/3/4 mają nadal przechodzić bez zmian). W `DemoDataSeedTests` (profil `Full`, `[Collection("mssql")]`):
+- [x] **Step 1: Napisz testy (RED).** W `DemoSeederTests` przełącz wywołania na `DemoOptions.Default with { Profile = DemoProfile.Accounts }` (wszystkie dotychczasowe asercje o 6/6/3/4 mają nadal przechodzić bez zmian). W `DemoDataSeedTests` (profil `Full`, `[Collection("mssql")]`):
   - `Full_seed_creates_31_people_accounts_five_teams_and_ends_in_under_60_seconds`.
   - `Seed_is_idempotent_and_never_duplicates_data` (liczby `Employees`, `WorkEntries`, `LeaveRequests`, `PayrollChanges`, `Conversations`, `PayrollResults` po dwóch uruchomieniach równe).
   - `Payroll_exists_for_april_to_september_for_every_employee_and_not_for_october` (31 × 6 wierszy; `CalculatedByUserId` = `UserId` Piotra).
@@ -207,10 +207,10 @@
   - `Seed_does_not_overwrite_existing_old_six_account_database` (najpierw profil `Accounts`, potem `Full`: brak wyjątku, nadal 6 osób, brak wpisów czasu).
   - `Every_generated_account_can_sign_in_with_its_password_pattern` (`CheckPasswordAsync` dla wszystkich 31).
   - `UC03_Tomasz_does_not_see_Annas_entries_through_data_scope` (zapytanie przez `Visible(db, user)` z `TestUser` Tomasza).
-- [ ] **Step 2: Uruchom** `DOCKER_API_VERSION=1.43 dotnet test tests/Hr.Core.IntegrationTests --filter "FullyQualifiedName~DemoSeeder|FullyQualifiedName~DemoDataSeed"` — FAIL.
-- [ ] **Step 3: Zaimplementuj `DemoSeeder.SeedAsync`.** Role (jak dotąd). Gdy konto `anna.nowak` nie istnieje: jedna transakcja `db.Database.BeginTransactionAsync` obejmująca zespoły bez kierowników → `SaveChanges` → pracownicy → `SaveChanges` → kierownicy zespołów → pozostałe encje zbioru → konta Identity z rolami → commit (błąd cofa wszystko). Dla `Accounts` na tym kończy się praca. Dla `Full`: po commicie, dla każdego miesiąca z `PayrollMonths` bez wierszy w `PayrollResults`, `new PayrollService(db, new SeedCurrentUser(piotr), clock, calendar).RunMonthAsync(y, m)`; `IsSuccess == false` → `InvalidOperationException` z komunikatem serwisu. Loguje `ILogger<DemoSeeder>` (jeśli zarejestrowany): początek, koniec, czas, liczby rekordów; nigdy haseł. Dane `Accounts` powstają tą samą ścieżką z `DemoDataGenerator`.
-- [ ] **Step 4: Uruchom** polecenie z Step 2 — PASS.
-- [ ] **Step 5: Commit** `Przebuduj DemoSeeder na warstwę danych z naliczeniami z PayrollService`.
+- [x] **Step 2: Uruchom** `DOCKER_API_VERSION=1.43 dotnet test tests/Hr.Core.IntegrationTests --filter "FullyQualifiedName~DemoSeeder|FullyQualifiedName~DemoDataSeed"` — FAIL.
+- [x] **Step 3: Zaimplementuj `DemoSeeder.SeedAsync`.** Role (jak dotąd). Gdy konto `anna.nowak` nie istnieje: jedna transakcja `db.Database.BeginTransactionAsync` obejmująca zespoły bez kierowników → `SaveChanges` → pracownicy → `SaveChanges` → kierownicy zespołów → pozostałe encje zbioru → konta Identity z rolami → commit (błąd cofa wszystko). Dla `Accounts` na tym kończy się praca. Dla `Full`: po commicie, dla każdego miesiąca z `PayrollMonths` bez wierszy w `PayrollResults`, `new PayrollService(db, new SeedCurrentUser(piotr), clock, calendar).RunMonthAsync(y, m)`; `IsSuccess == false` → `InvalidOperationException` z komunikatem serwisu. Loguje `ILogger<DemoSeeder>` (jeśli zarejestrowany): początek, koniec, czas, liczby rekordów; nigdy haseł. Dane `Accounts` powstają tą samą ścieżką z `DemoDataGenerator`.
+- [x] **Step 4: Uruchom** polecenie z Step 2 — PASS.
+- [x] **Step 5: Commit** `Przebuduj DemoSeeder na warstwę danych z naliczeniami z PayrollService`.
 
 ### Task 8: Podłączenie w API, testy API, dokumentacja
 
@@ -221,13 +221,13 @@
 **Interfaces:**
 - Consumes: `DemoOptions.Parse`, `DemoSeeder.SeedAsync(services, options)`.
 
-- [ ] **Step 1: Napisz testy (RED)** w `DemoDataApiTests` (fabryka z `Hr:DemoProfile=Full`; dodaj do `HrApiFactory` opcjonalny parametr `demoProfile = "Accounts"` ustawiany przez `builder.UseSetting("Hr:DemoProfile", demoProfile)`):
+- [x] **Step 1: Napisz testy (RED)** w `DemoDataApiTests` (fabryka z `Hr:DemoProfile=Full`; dodaj do `HrApiFactory` opcjonalny parametr `demoProfile = "Accounts"` ustawiany przez `builder.UseSetting("Hr:DemoProfile", demoProfile)`):
   - `UC29_Full_profile_serves_logins_for_named_and_generated_accounts` (logowanie `anna.nowak` i jednego wygenerowanego konta).
   - `UC05_Annas_balance_is_20_10_5_5` (przez API salda; zegar fabryki `2026-10-16`).
   - `UC17_Anna_sees_only_her_payroll_for_september_and_none_for_october`.
   - `UC31_HR_can_open_Annas_seeded_conversation_and_read_is_audited`.
   - `Startup_fails_with_polish_message_for_non_working_day_anchor` (`Hr:DemoAnchorDate=2026-10-17` → wyjątek przy tworzeniu hosta z komunikatem po polsku).
-- [ ] **Step 2: Uruchom** `DOCKER_API_VERSION=1.43 dotnet test tests/Hr.Api.IntegrationTests --filter DemoDataApiTests` — FAIL.
-- [ ] **Step 3: Zaimplementuj.** W `Program.cs`: `var options = DemoOptions.Parse(config["Hr:DemoAnchorDate"], config["Hr:DemoSeed"], config["Hr:DemoProfile"], new WorkCalendar())` tylko gdy `Hr:SeedDemoData=true`, potem `DemoSeeder.SeedAsync(app.Services, options)`. `HrApiFactory`: domyślny profil `Accounts`. Dokumentacja: 7.2 (konta wygenerowane i rola `Manager` w zespołach biznesowych), nowa sekcja 7.3 „Dane demo” (jak włączyć: `Hr:SeedDemoData=true`, `Hr:DemoAnchorDate`, `Hr:DemoSeed`, `Hr:DemoProfile`; lista scenariuszy; ostrzeżenie R-03; wiersze audytu seeda), ADR-19 i ADR-21 (okno, kotwica), dwa nowe ADR o kolejnych wolnych numerach (po ostatnim w pliku): „Dane demo: dane wejściowe wprost do bazy, naliczenia z `PayrollService`” oraz „Stała kotwica demo i profile `Full`/`Accounts`”, tabela ADR na górze pliku, README: status „Zrealizowane: … plan 6 (dane demo)”.
-- [ ] **Step 4: Pełny zestaw:** `DOCKER_API_VERSION=1.43 dotnet test Hr.sln` — wszystkie zielone, build bez ostrzeżeń. Jeśli któryś test API zawodzi z powodu danych, ustaw jego fabrykę na profil `Accounts` zamiast zmieniać dane.
-- [ ] **Step 5: Commit** `Podłącz dane demo w API i opisz je w dokumentacji`.
+- [x] **Step 2: Uruchom** `DOCKER_API_VERSION=1.43 dotnet test tests/Hr.Api.IntegrationTests --filter DemoDataApiTests` — FAIL.
+- [x] **Step 3: Zaimplementuj.** W `Program.cs`: `var options = DemoOptions.Parse(config["Hr:DemoAnchorDate"], config["Hr:DemoSeed"], config["Hr:DemoProfile"], new WorkCalendar())` tylko gdy `Hr:SeedDemoData=true`, potem `DemoSeeder.SeedAsync(app.Services, options)`. `HrApiFactory`: domyślny profil `Accounts`. Dokumentacja: 7.2 (konta wygenerowane i rola `Manager` w zespołach biznesowych), nowa sekcja 7.3 „Dane demo” (jak włączyć: `Hr:SeedDemoData=true`, `Hr:DemoAnchorDate`, `Hr:DemoSeed`, `Hr:DemoProfile`; lista scenariuszy; ostrzeżenie R-03; wiersze audytu seeda), ADR-19 i ADR-21 (okno, kotwica), dwa nowe ADR o kolejnych wolnych numerach (po ostatnim w pliku): „Dane demo: dane wejściowe wprost do bazy, naliczenia z `PayrollService`” oraz „Stała kotwica demo i profile `Full`/`Accounts`”, tabela ADR na górze pliku, README: status „Zrealizowane: … plan 6 (dane demo)”.
+- [x] **Step 4: Pełny zestaw:** `DOCKER_API_VERSION=1.43 dotnet test Hr.sln` — wszystkie zielone, build bez ostrzeżeń. Jeśli któryś test API zawodzi z powodu danych, ustaw jego fabrykę na profil `Accounts` zamiast zmieniać dane.
+- [x] **Step 5: Commit** `Podłącz dane demo w API i opisz je w dokumentacji`.
