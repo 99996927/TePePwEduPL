@@ -37,3 +37,9 @@ body {
   height: 100%;
 }
 /* You can add global styles to this file, and also import other style files */
+
+.error-snackbar {
+  --mat-snack-bar-container-color: var(--mat-sys-error-container);
+  --mat-snack-bar-supporting-text-color: var(--mat-sys-on-error-container);
+  --mat-snack-bar-button-color: var(--mat-sys-on-error-container);
+}

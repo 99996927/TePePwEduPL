@@ -47,6 +47,16 @@ describe('unauthorizedInterceptor', () => {
     expect(navigate).toHaveBeenCalledWith(['/logowanie'], { queryParams: { sesja: 'wygasla' } });
   });
 
+  it('401_when_never_authenticated_does_not_navigate_and_keeps_session_cleared', () => {
+    session.clear();
+
+    client.get('/api/leave/requests').subscribe({ error: () => undefined });
+    http.expectOne('/api/leave/requests').flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(session.user()).toBeNull();
+  });
+
   it('401_from_login_does_not_navigate', () => {
     client.post('/api/auth/login', {}).subscribe({ error: () => undefined });
     http.expectOne('/api/auth/login').flush(null, { status: 401, statusText: 'Unauthorized' });

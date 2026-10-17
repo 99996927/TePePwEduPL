@@ -38,4 +38,19 @@ describe('EmployeeDirectory', () => {
     expect(directory.nameOf('e1')).toBe('Anna Nowak');
     expect(directory.nameOf('missing')).toBe('—');
   });
+
+  it('load_after_failure_retries_the_api_call', async () => {
+    const failing = directory.load().then(
+      () => null,
+      (e: unknown) => e,
+    );
+    http.expectOne('/api/employees').flush(null, { status: 500, statusText: 'Server Error' });
+    expect(await failing).not.toBeNull();
+
+    const retry = directory.load();
+    http.expectOne('/api/employees').flush([employee]);
+    await retry;
+
+    expect(directory.nameOf('e1')).toBe('Anna Nowak');
+  });
 });

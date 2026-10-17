@@ -41,6 +41,7 @@ export class SessionService {
     }
   }
 
+  // Rethrows when the request fails (the session is cleared anyway); callers must catch.
   async logout(): Promise<void> {
     try {
       await firstValueFrom(this.auth.authLogout());

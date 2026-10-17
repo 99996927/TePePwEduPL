@@ -52,6 +52,7 @@ describe('SessionService', () => {
 
   it('login_calls_antiforgery_then_login_with_xsrf_header', async () => {
     const logging = session.login('anna', 'pw');
+    http.expectNone({ method: 'POST', url: '/api/auth/login' });
     http.expectOne({ method: 'GET', url: '/api/auth/antiforgery' }).flush(null, { status: 204, statusText: 'No Content' });
     await vi.waitFor(() => http.expectOne({ method: 'POST', url: '/api/auth/login' }).flush(user));
     await logging;
