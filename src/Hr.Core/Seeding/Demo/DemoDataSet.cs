@@ -18,4 +18,6 @@ public sealed record DemoDataSet
     public IReadOnlyList<DemoPerson> People { get; init; } = new List<DemoPerson>();
     public IReadOnlyList<LeaveRequest> LeaveRequests { get; init; } = new List<LeaveRequest>();
     public IReadOnlyList<WorkEntryRecord> WorkEntries { get; init; } = new List<WorkEntryRecord>();
+    public IReadOnlyList<PayrollChange> PayrollChanges { get; init; } = new List<PayrollChange>();
+    public IReadOnlyList<Conversation> Conversations { get; init; } = new List<Conversation>();
 }
