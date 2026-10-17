@@ -24,7 +24,7 @@ die() {
 
 # 1. Wymagane programy
 step "Sprawdzam wymagane programy"
-for tool in docker dotnet node npm curl ss setsid; do
+for tool in docker dotnet node npm curl ss setsid python3; do
   command -v "$tool" >/dev/null 2>&1 || die "brak programu '$tool'. Zainstaluj go i uruchom skrypt ponownie."
 done
 docker info >/dev/null 2>&1 || die "Docker nie odpowiada (czy usługa działa i czy masz uprawnienia do docker?)."
@@ -55,6 +55,19 @@ echo "OK"
 # Klucz Anthropic (opcjonalny, dopisywany ręcznie do .env jako ANTHROPIC_API_KEY=...). Wartość nigdy nie jest wypisywana ani
 # przekazywana w argumentach polecenia: trafia tylko do środowiska procesu Hr.Api (eksport w podpowłoce w kroku 5).
 ANTHROPIC_KEY_FROM_ENV="$(grep '^ANTHROPIC_API_KEY=' "$ENV_FILE" | tail -n 1 | cut -d= -f2- || true)"
+# Tolerancja zapisu: końcowe CR (plik z Windows), spacje wokół wartości i jedna para cudzysłowów ("..." albo '...').
+ANTHROPIC_KEY_FROM_ENV="${ANTHROPIC_KEY_FROM_ENV%$'\r'}"
+trim_spaces() {
+  local v="$1"
+  v="${v#"${v%%[![:space:]]*}"}"
+  printf '%s' "${v%"${v##*[![:space:]]}"}"
+}
+ANTHROPIC_KEY_FROM_ENV="$(trim_spaces "$ANTHROPIC_KEY_FROM_ENV")"
+if [[ ${#ANTHROPIC_KEY_FROM_ENV} -ge 2 ]]; then
+  case "$ANTHROPIC_KEY_FROM_ENV" in
+    \"*\" | \'*\') ANTHROPIC_KEY_FROM_ENV="$(trim_spaces "${ANTHROPIC_KEY_FROM_ENV:1:${#ANTHROPIC_KEY_FROM_ENV}-2}")" ;;
+  esac
+fi
 if [[ -n "$ANTHROPIC_KEY_FROM_ENV" ]]; then
   echo "Klucz Anthropic wczytany z .env (czat korzysta z prawdziwego modelu)."
 else

@@ -95,7 +95,7 @@ wnioski urlopowe, zmiany płacowe i naliczenia) mają w `AuditLog` wpisy z pusty
 Do testów ręcznych całe rozwiązanie uruchamia się bez Docker Compose (docelowe wdrożenie z sekcji 7.1 powstanie w planie Docker): baza w kontenerze,
 Angular zbudowany do `wwwroot`, `Hr.Api` jako proces w tle. Skrypty są w `tools/dev/` i działają z dowolnego katalogu.
 
-**Wymagania:** Docker (dostęp bez `sudo`), .NET SDK 9, Node `^24.15.0` z npm, `curl`, `ss` (iproute2) i `setsid` (util-linux); obraz `mcr.microsoft.com/mssql/server:2022-latest` (pobierany przy pierwszym starcie).
+**Wymagania:** Docker (dostęp bez `sudo`), .NET SDK 9, Node `^24.15.0` z npm, `curl`, `ss` (iproute2), `setsid` (util-linux) i `python3` (test dymny); obraz `mcr.microsoft.com/mssql/server:2022-latest` (pobierany przy pierwszym starcie).
 
 | Polecenie | Działanie |
 |---|---|

@@ -58,6 +58,7 @@ describe('Agent', () => {
     });
     http = TestBed.inject(HttpTestingController);
     const error = vi.spyOn(TestBed.inject(Notifier), 'error').mockImplementation(() => undefined);
+    const info = vi.spyOn(TestBed.inject(Notifier), 'info').mockImplementation(() => undefined);
     const router = TestBed.inject(Router);
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(url);
@@ -94,7 +95,7 @@ describe('Agent', () => {
       sendButton()!.click();
       await settle();
     };
-    return { harness, el, settle, row, agent, go, error, router, textarea, sendButton, type, key, click };
+    return { harness, el, settle, row, agent, go, error, info, router, textarea, sendButton, type, key, click };
   }
 
   afterEach(() => {
@@ -289,12 +290,15 @@ describe('Agent', () => {
       expect(request.request.body).toEqual({ conversationId: 'c1', text: 'Dopytanie' });
       request.flush(answer('c1', [msg(3, 'User', 'Dopytanie'), msg(4, 'Assistant', 'Odpowiedź 2')]));
       await settle();
-      http.expectNone('/api/conversations');
+      // The list is refreshed after every answer, so the row's message count stays current.
+      http.expectOne('/api/conversations').flush([{ ...summary('c1', 'ume'), messageCount: 4 }, summary('c2', 'uo')]);
+      await settle();
       http.expectNone('/api/conversations/c1');
       expect(router.url).toBe('/agent/c1');
       expect(el.querySelectorAll('[data-message]').length).toBe(4);
       expect(userBubbles(el)).toEqual(['Treść c1', 'Dopytanie']);
       expect(el.textContent).toContain('Odpowiedź 2');
+      expect(el.querySelector('[data-conversation="c1"]')!.textContent).toContain('Wiadomości: 4');
     });
 
     it('enter_sends_and_shift_enter_does_not', async () => {
@@ -305,6 +309,7 @@ describe('Agent', () => {
       await key();
       http.expectOne(ask).flush(answer('c1', [msg(3, 'User', 'Pytanie'), msg(4, 'Assistant', 'Ok')]));
       await settle();
+      http.expectOne('/api/conversations').flush(list);
     });
 
     it('empty_or_whitespace_text_does_not_send', async () => {
@@ -336,6 +341,7 @@ describe('Agent', () => {
       expect((request.request.body as { text: string }).text.length).toBe(4000);
       request.flush(answer('c1', [msg(3, 'User', 'a'.repeat(4000)), msg(4, 'Assistant', 'Ok')]));
       await settle();
+      http.expectOne('/api/conversations').flush(list);
     });
 
     it('ungrounded_numbers_warning_shows_after_answer_and_disappears_on_next_send', async () => {
@@ -344,13 +350,42 @@ describe('Agent', () => {
       await click();
       http.expectOne(ask).flush(answer('c1', [msg(3, 'User', 'Ile?'), msg(4, 'Assistant', 'Masz 12 dni.')], ['12']));
       await settle();
+      http.expectOne('/api/conversations').flush(list);
+      await settle();
       expect(el.textContent).toContain('Liczby nie pochodzą z danych systemu: 12.');
       await type('A teraz?');
       await click();
       expect(el.textContent).not.toContain('Liczby nie pochodzą z danych systemu');
       http.expectOne(ask).flush(answer('c1', [msg(5, 'User', 'A teraz?'), msg(6, 'Assistant', 'Dobrze.')]));
       await settle();
+      http.expectOne('/api/conversations').flush(list);
+      await settle();
       expect(el.textContent).not.toContain('Liczby nie pochodzą z danych systemu');
+    });
+
+    it('ungrounded_numbers_warning_and_send_error_clear_when_the_conversation_changes', async () => {
+      const { el, settle, row, type, click } = await openOwn();
+      await type('Ile?');
+      await click();
+      http.expectOne(ask).flush(answer('c1', [msg(3, 'User', 'Ile?'), msg(4, 'Assistant', 'Masz 12 dni.')], ['12']));
+      await settle();
+      http.expectOne('/api/conversations').flush(list);
+      await settle();
+      expect(el.textContent).toContain('Liczby nie pochodzą z danych systemu: 12.');
+      row('c2')!.click();
+      await settle();
+      http.expectOne('/api/conversations/c2').flush(detail('c2', 'ume'));
+      await settle();
+      expect(el.textContent).not.toContain('Liczby nie pochodzą z danych systemu');
+      await type('Pytanie');
+      await click();
+      http.expectOne(ask).flush({ title: 'Błąd walidacji', detail: 'Pytanie jest nieprawidłowe.', status: 422 }, { status: 422, statusText: 'x' });
+      await settle();
+      expect(sendError(el)!.textContent).toContain('Pytanie jest nieprawidłowe.');
+      const create = [...el.querySelectorAll('button')].find((b) => b.textContent!.trim() === 'Nowa rozmowa')!;
+      create.click();
+      await settle();
+      expect(sendError(el)).toBeNull();
     });
 
     it('validation_error_keeps_text_and_removes_local_bubble', async () => {
@@ -404,6 +439,8 @@ describe('Agent', () => {
       expect(retry.request.body).toEqual({ conversationId: 'n2', text: 'Pytanie' });
       retry.flush(answer('n2', [msg(2, 'User', 'Pytanie'), msg(3, 'Assistant', 'Odpowiedź')]));
       await settle();
+      http.expectOne('/api/conversations').flush([summary('n2', 'ume'), ...list]);
+      await settle();
       expect(sendError(el)).toBeNull();
       expect(textarea()!.value).toBe('');
       expect(el.textContent).toContain('Odpowiedź');
@@ -432,7 +469,7 @@ describe('Agent', () => {
     });
 
     it('switching_conversation_while_sending_ignores_the_late_answer', async () => {
-      const { el, settle, router, row, textarea, type, click } = await setup();
+      const { el, settle, router, row, info, textarea, type, click } = await setup();
       await type('Pytanie');
       await click();
       const request = http.expectOne(ask);
@@ -441,6 +478,9 @@ describe('Agent', () => {
       http.expectOne('/api/conversations/c1').flush(detail('c1', 'ume'));
       await settle();
       expect(textarea()!.disabled).toBe(false);
+      // The question was already saved in the previous conversation: Enter must not re-post it here.
+      expect(textarea()!.value).toBe('');
+      expect(info).toHaveBeenCalledWith('Pytanie zostało wysłane w poprzedniej rozmowie.');
       expect(el.textContent).not.toContain('Agent pisze…');
       request.flush(answer('n1', [msg(1, 'User', 'Pytanie'), msg(2, 'Assistant', 'Spóźniona odpowiedź')]));
       await settle();
@@ -463,7 +503,7 @@ describe('Agent', () => {
     });
 
     it('new_conversation_while_sending_ignores_the_late_error', async () => {
-      const { el, settle, router, textarea, type, click } = await openOwn();
+      const { el, settle, router, info, textarea, type, click } = await openOwn();
       await type('Pytanie');
       await click();
       const request = http.expectOne(ask);
@@ -472,6 +512,8 @@ describe('Agent', () => {
       await settle();
       expect(router.url).toBe('/agent');
       expect(textarea()!.disabled).toBe(false);
+      expect(textarea()!.value).toBe('');
+      expect(info).toHaveBeenCalledWith('Pytanie zostało wysłane w poprzedniej rozmowie.');
       expect(el.textContent).not.toContain('Agent pisze…');
       expect(userBubbles(el)).toEqual([]);
       request.flush({ title: 'Agent jest chwilowo niedostępny.', status: 503, conversationId: 'c1' }, { status: 503, statusText: 'x' });

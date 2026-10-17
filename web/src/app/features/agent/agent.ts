@@ -164,10 +164,9 @@ export class Agent {
       this.text.set('');
       this.ungroundedNumbers.set(response.ungroundedNumbers);
       this.openLocal(response.conversationId, [...saved, ...response.messages], userId);
-      if (conversationId === null) {
-        void this.router.navigate(['/agent', response.conversationId], { replaceUrl: true });
-        void this.loadList();
-      }
+      if (conversationId === null) void this.router.navigate(['/agent', response.conversationId], { replaceUrl: true });
+      // Refreshed after every answer so the list shows the current message count.
+      void this.loadList();
     } catch (e) {
       if (seq !== this.conversationSeq) return;
       this.endSending();
@@ -213,6 +212,11 @@ export class Agent {
 
   private open(id: string | null): void {
     // Any in-flight send belongs to the previous conversation; its response is ignored via the sequence number.
+    if (this.sending()) {
+      // The backend already saved the question there; keeping it in the field would let Enter re-post it here.
+      this.text.set('');
+      this.notifier.info('Pytanie zostało wysłane w poprzedniej rozmowie.');
+    }
     this.endSending();
     if (this.current()?.id !== id) {
       this.sendError.set(null);
