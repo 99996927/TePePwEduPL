@@ -76,10 +76,11 @@ zatwierdzonych urlopów), wnioski urlopowe, zmiany płacowe, dwie zapisane rozmo
 | Jan (urlopy) | Wniosek odrzucony z uzasadnieniem i anulowany. | 8, 9 |
 | `piotr.zielinski`, `maria.kaminska` | Zmiana płacowa oczekująca (do zatwierdzenia przez Marię), zatwierdzona historycznie i odrzucona; oczekująca nie jest tworzona i zatwierdzana przez tę samą osobę. | 18, 19, 20 |
 | wszyscy | Naliczenia za kwiecień–wrzesień; października brak. | 16, 17 |
+| `anna.nowak`, `piotr.zielinski` | Szkic korekty ewidencji (UC-26): oczekujący szkic Piotra dla wpisu Anny z dnia naruszenia odpoczynku dobowego (wtorek września), przesuwający zmianę 14:00–22:30 na 12:00–20:30, co daje 11 h odpoczynku. Szkic zatwierdzają kadry; jest dokładnie jeden. | 26 |
 | agent | Zapisana rozmowa Anny (do odczytu przez kadry z audytem) i rozmowa Tomasza. | 30, 31 |
 
 **Idempotencja i istniejące bazy:** dane są zapisywane w jednej transakcji tylko wtedy, gdy nie ma konta `anna.nowak`; naliczenia tylko dla miesięcy bez wyników.
-Seed nigdy nie nadpisuje ani nie usuwa danych. Jeśli w bazie nie ma pełnego zbioru osób profilu `Full` (np. dawna baza z sześcioma kontami
+Seed nigdy nie nadpisuje ani nie usuwa danych. Szkic korekty (tabela `CorrectionDrafts`) zakłada się razem z resztą danych demo, więc baza założona przed planem 7b go nie ma i nie dostaje go przy kolejnym starcie (znacznik seeda `anna.nowak` już istnieje); pełny zbiór ze szkicem daje `tools/dev/stop.sh --reset` i ponowne `run.sh` (zob. 7.4). Jeśli w bazie nie ma pełnego zbioru osób profilu `Full` (np. dawna baza z sześcioma kontami
 albo baza założona profilem `Accounts`), naliczenia są pomijane z wpisem w logu, bo bez ewidencji byłyby puste.
 Zmiana kotwicy lub ziarna działa wyłącznie na pustej bazie: w istniejącej bazie seed danych jest pomijany, a naliczenia powstają tylko dla miesięcy, które mają wpisy czasu pracy (pozostałe są pomijane z ostrzeżeniem w logu).
 Dwie instancje aplikacji uruchomione jednocześnie na pustej bazie mogą się ścigać o znacznik seeda (konto `anna.nowak`), dlatego seed należy uruchamiać z jednej instancji.
@@ -102,11 +103,11 @@ Angular zbudowany do `wwwroot`, `Hr.Api` jako proces w tle. Skrypty są w `tools
 | `tools/dev/stop.sh` | Kończy `Hr.Api` (PID z `.run/api.pid`, a gdy plik jest nieaktualny: proces `Hr.Api` na porcie 5080), zamyka SQL Server poleceniem `SHUTDOWN` i zatrzymuje kontener; dane zostają w wolumenie. |
 | `tools/dev/stop.sh --api-only` | Kończy tylko `Hr.Api` (kontener bazy zostaje); używane przez `run.sh` przed ponownym startem. |
 | `tools/dev/stop.sh --reset` | Dodatkowo usuwa kontener `hr-dev-db` i wolumen `hr-dev-db-data`; następne `run.sh` zakłada bazę i dane demo od nowa. |
-| `tools/dev/smoke.sh [adres]` | Test dymny (domyślnie `http://127.0.0.1:5080`): `/` zawiera `<app-root`, skrypt `main*.js` z `index.html` jest serwowany jako skrypt (kod 200, typ zawartości `javascript`), `GET /api/auth/antiforgery` daje 204, logowanie Anny złym hasłem 401, poprawnym 200 (z nagłówkiem `X-XSRF-TOKEN`), saldo urlopu z wymiarem 20 dni i lista wniosków 200. Każdy krok wypisuje `OK` albo `BŁĄD` z przyczyną; pierwszy błąd kończy skrypt kodem ≠ 0. |
+| `tools/dev/smoke.sh [adres]` | Test dymny (domyślnie `http://127.0.0.1:5080`): `/` zawiera `<app-root`, skrypt `main*.js` z `index.html` jest serwowany jako skrypt (kod 200, typ zawartości `javascript`), `GET /api/auth/antiforgery` daje 204, logowanie Anny złym hasłem 401, poprawnym 200 (z nagłówkiem `X-XSRF-TOKEN`), saldo urlopu z wymiarem 20 dni i lista wniosków 200; jako Anna wyniki naliczenia za wrzesień 2026 (`GET /api/payroll/results?year=2026&month=9`) z polem `gross`; po zalogowaniu `piotr.zielinski` (osobny plik ciasteczek) `GET /api/employees` z polem `userId` (ADR-30) i `GET /api/correction-drafts` ze szkicem `"status":"Pending"`. Każdy krok wypisuje `OK` albo `BŁĄD` z przyczyną; pierwszy błąd kończy skrypt kodem ≠ 0. |
 
 **Dostęp z innego komputera:** API nasłuchuje wyłącznie na `127.0.0.1`, więc przeglądarka łączy się przez tunel SSH, np. `ssh -N -L 5080:127.0.0.1:5080 azureuser@tepecompute`
 (skrypt wypisuje komendę z bieżącym użytkownikiem i hostem), a potem `http://localhost:5080`. Konta demo są w sekcji 7.2, a lista kroków testu ręcznego w
-[`docs/testy-reczne/plan-7a.md`](../testy-reczne/plan-7a.md). Build `development` pokazuje na ekranie logowania panel „Konta demo” (ADR-29).
+[`docs/testy-reczne/plan-7a.md`](../testy-reczne/plan-7a.md) i [`docs/testy-reczne/plan-7b.md`](../testy-reczne/plan-7b.md). Build `development` pokazuje na ekranie logowania panel „Konta demo” (ADR-29).
 
 **Pliki robocze (poza repozytorium, `.gitignore`):** `.env` (hasło SA), `.run/api.log` (log `Hr.Api`), `.run/api.pid`, zawartość `src/Hr.Api/wwwroot/` poza `.gitkeep`.
 
@@ -115,5 +116,6 @@ Angular zbudowany do `wwwroot`, `Hr.Api` jako proces w tle. Skrypty są w `tools
 - Port bazy (`14330`) i aplikacji (`5080`) są dostępne tylko na `127.0.0.1`.
 - Hasło SA jest ustalane przy pierwszym założeniu wolumenu. Jeśli `.env` zginie lub się zmieni, a wolumen zostanie, `run.sh` wykrywa nieudane logowanie `sa` i każe przywrócić `.env` albo wykonać `tools/dev/stop.sh --reset`.
 - Bez zbudowanego Angulara `/` nie działa (skrypt zawsze buduje przed startem). Fallback SPA obsługuje tylko ścieżki bez rozszerzenia, a pliki statyczne serwuje `UseStaticFiles`.
+- Po aktualizacji do planu 7b (szkic korekty w danych demo) istniejąca baza nie dostanie nowego szkicu: seed pomija dane, gdy istnieje konto `anna.nowak`. Wykonaj `tools/dev/stop.sh --reset` i `tools/dev/run.sh`, aby zasiać dane ponownie.
 - Dane demo są idempotentne: ponowne uruchomienie na tym samym wolumenie nie dubluje danych (31 pracowników). Zmiany wprowadzone podczas testów ręcznych zostają w bazie; czysty stan daje `stop.sh --reset`.
 - Agent (klucz Anthropic) nie jest potrzebny w planie 7a; bez klucza endpointy agenta zwracają `503`, reszta działa.

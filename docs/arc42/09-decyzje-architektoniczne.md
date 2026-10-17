@@ -31,6 +31,7 @@
 | ADR-27 | Dane demo: dane wejściowe wprost do bazy, naliczenia z `PayrollService` | Przyjęta, zrealizowana w planie 6 |
 | ADR-28 | Stała kotwica demo i profile `Full`/`Accounts` | Przyjęta, zrealizowana w planie 6 |
 | ADR-29 | Frontend: Angular 22, Angular Material, `ng-openapi-gen`, standalone i signals | Przyjęta, zrealizowana w planie 7a |
+| ADR-30 | `userId` w `EmployeeDto`: UI buduje mapę nazwisk dla zmian płacowych, szkiców i audytu | Przyjęta, zrealizowana w planie 7b |
 
 ## ADR-01 Trzy warstwy, dwa kontenery
 **Kontekst:** wymóg trójwarstwowości i uruchomienia na jednej maszynie.
@@ -279,3 +280,16 @@ warstwy stanu i bez ręcznego pisania wywołań API, a interfejs ma być spójny
 - Panel „Konta demo” na ekranie logowania jest tylko w buildzie `development` (`isDevMode()`); `tools/dev/run.sh` używa `npm run build:dev`, a build produkcyjny go nie zawiera.
 - Budżet `initial` w `angular.json` podniesiony do 900 kB (ostrzeżenie) i 1,5 MB (błąd) z powodu Angular Material.
 - Ekrany agenta, naliczeń, zmian płacowych i audytu powstaną w planach 7b i 7c na tym samym stosie.
+
+## ADR-30 `userId` w `EmployeeDto`: UI buduje mapę nazwisk
+**Kontekst:** ekrany planu 7b (zmiany płacowe, szkice korekt, dziennik audytu) pokazują identyfikatory użytkowników (autor zmiany, zatwierdzający, autor szkicu, aktor zdarzenia).
+Interfejs ma wyświetlać imię i nazwisko, a API zwracało dotąd tylko `userId`, którego nie dało się powiązać z osobą.
+**Decyzja:** `EmployeeDto` zawiera pole `userId` (identyfikator konta pracownika). Interfejs pobiera `GET /api/employees` i buduje po stronie klienta mapę `userId` na imię i nazwisko
+(`EmployeeDirectory`); dla nieznanego identyfikatora pokazuje etykietę zastępczą, a puste (aktor systemowy, np. seed) jako „System (seed)”.
+**Alternatywy:**
+- Osobny endpoint `GET /api/users` zwracający nazwy użytkowników: odrzucone, bo to nowa powierzchnia API i nowa reguła uprawnień, a dane o osobach już są w `/api/employees` z filtrowaniem według roli.
+- Bez zmian (pokazywanie samych identyfikatorów): odrzucone, bo ekrany kadr i audytu byłyby nieczytelne.
+**Konsekwencje:**
+- Zmiana kontraktu: pole `userId` jest widoczne dla każdego, kto widzi daną osobę w `/api/employees` (np. kierownik dla swojego zespołu). Nie jest tajne, ale rozszerza kontrakt, więc jest opisane tutaj.
+- Klient TypeScript jest odświeżony (`npm run api:gen`, `api:check` w `verify`), a `docs/openapi/hr-api.json` zaktualizowany.
+- Zakres danych bez zmian: lista pracowników nadal zależy od roli (pracownik widzi siebie, kierownik zespół, kadry wszystkich), więc osoba spoza zakresu pozostaje bez nazwiska w mapie.
