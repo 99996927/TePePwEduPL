@@ -30,9 +30,18 @@ Skrypty w `tools/dev/` (z katalogu głównego repozytorium lub dowolnego innego;
 | `tools/dev/run.sh` | SQL Server w Dockerze (`hr-dev-db`, `127.0.0.1:14330`), `npm ci`, `npm run build:dev`, `npm run build:wwwroot`, `Hr.Api` w tle na `http://127.0.0.1:5080` z danymi demo, test dymny i komenda tunelu SSH. Można uruchamiać wielokrotnie. |
 | `tools/dev/stop.sh` | Kończy `Hr.Api` i zatrzymuje bazę (dane zostają w wolumenie). |
 | `tools/dev/stop.sh --reset` | Jak wyżej oraz usuwa kontener i wolumen bazy. |
-| `tools/dev/smoke.sh [adres]` | Test dymny działającej aplikacji (`OK`/`BŁĄD` dla każdego kroku); obejmuje też naliczenia, `userId` w pracownikach i szkic korekty (konta `anna.nowak` i `piotr.zielinski`). |
+| `tools/dev/smoke.sh [adres]` | Test dymny działającej aplikacji (`OK`/`BŁĄD` dla każdego kroku); obejmuje też naliczenia, `userId` w pracownikach, szkic korekty i rozmowy demo z agentem (konta `anna.nowak`, `piotr.zielinski` i `tomasz.lis`; bez pytań do modelu). |
 
-Log API: `.run/api.log`. Listy kroków testów ręcznych: `docs/testy-reczne/plan-7a.md` (logowanie, urlopy, czas pracy, zespół) i `docs/testy-reczne/plan-7b.md` (naliczenia, zmiany płacowe, szkice korekt, audyt). Do pracy nad samym frontendem można zamiast tego użyć `npm start` (proxy `/api` na działające `Hr.Api`).
+Log API: `.run/api.log`. Listy kroków testów ręcznych: `docs/testy-reczne/plan-7a.md` (logowanie, urlopy, czas pracy, zespół), `docs/testy-reczne/plan-7b.md` (naliczenia, zmiany płacowe, szkice korekt, audyt) i `docs/testy-reczne/plan-7c.md` (agent). Do pracy nad samym frontendem można zamiast tego użyć `npm start` (proxy `/api` na działające `Hr.Api`).
+
+## Ekran agenta (`src/app/features/agent/`)
+
+Trasa `/agent` (nowa rozmowa) i `/agent/<id>` (otwarta rozmowa), jeden komponent `Agent` dla obu adresów (`UrlMatcher`, ADR-31):
+
+- `ConversationList`: rozmowy po lewej (podgląd pytania, data, liczba wiadomości) i „Nowa rozmowa”; kadry (`HR`, `HRApprover`) widzą rozmowy wszystkich z autorem i przełącznik „Tylko moje”.
+- `ConversationThread`: pytania i odpowiedzi jako tekst, zwinięte wiersze wywołań i wyników narzędzi, dymek „Agent pisze…”, ostrzeżenie o liczbach spoza wyników narzędzi (`ungroundedNumbers`).
+- Pole pytania (limit 4000 znaków, Enter wysyła, Shift+Enter nowy wiersz) tylko we własnej lub nowej rozmowie; cudza rozmowa jest tylko do odczytu z banerem o audycie.
+- Pytania wymagają klucza Anthropic: wiersz `ANTHROPIC_API_KEY=...` w `.env` w katalogu głównym repozytorium (poza gitem) i ponowne `tools/dev/run.sh`. Bez klucza API zwraca `503`, ekran pokazuje komunikat, a pytanie zostaje w polu.
 
 ## Uwagi
 

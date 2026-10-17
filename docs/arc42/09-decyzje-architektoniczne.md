@@ -32,6 +32,7 @@
 | ADR-28 | Stała kotwica demo i profile `Full`/`Accounts` | Przyjęta, zrealizowana w planie 6 |
 | ADR-29 | Frontend: Angular 22, Angular Material, `ng-openapi-gen`, standalone i signals | Przyjęta, zrealizowana w planie 7a |
 | ADR-30 | `userId` w `EmployeeDto`: UI buduje mapę nazwisk dla zmian płacowych, szkiców i audytu | Przyjęta, zrealizowana w planie 7b |
+| ADR-31 | Ekran agenta: jedna trasa z `UrlMatcher`, odpowiedź w całości, ostrzeżenie o liczbach, cudze rozmowy tylko do odczytu, bez zmian kontraktu | Przyjęta, zrealizowana w planie 7c |
 
 ## ADR-01 Trzy warstwy, dwa kontenery
 **Kontekst:** wymóg trójwarstwowości i uruchomienia na jednej maszynie.
@@ -293,3 +294,30 @@ Interfejs ma wyświetlać imię i nazwisko, a API zwracało dotąd tylko `userId
 - Zmiana kontraktu: pole `userId` jest widoczne dla każdego, kto widzi daną osobę w `/api/employees` (np. kierownik dla swojego zespołu). Nie jest tajne, ale rozszerza kontrakt, więc jest opisane tutaj.
 - Klient TypeScript jest odświeżony (`npm run api:gen`, `api:check` w `verify`), a `docs/openapi/hr-api.json` zaktualizowany.
 - Zakres danych bez zmian: lista pracowników nadal zależy od roli (pracownik widzi siebie, kierownik zespół, kadry wszystkich), więc osoba spoza zakresu pozostaje bez nazwiska w mapie.
+
+## ADR-31 Ekran agenta: jedna trasa, odpowiedź w całości, ostrzeżenie o liczbach, cudze rozmowy tylko do odczytu
+**Kontekst:** plan 7c dodaje ekran czatu z agentem (UC-21–UC-25, UC-27, UC-30, UC-31): historia rozmów po lewej, rozmowa i pole pytania po prawej, odczyt cudzych rozmów
+przez kadry. Backend agenta (ADR-26) i jego kontrakt są gotowe od planów 4–5: `POST /api/conversations/messages` zwraca całą odpowiedź (z nowymi wiadomościami
+i listą `ungroundedNumbers`), `GET /api/conversations` i `GET /api/conversations/{id}` stosują zakres widoczności (kadry wszystkie, pozostali własne), a odczyt cudzej
+rozmowy zapisuje `ConversationRead` w audycie.
+**Decyzja:**
+- **Jedna trasa:** `agent` i `agent/:id` obsługuje jeden wpis z `UrlMatcher` (najwyżej jeden segment po `agent`), więc po pierwszej odpowiedzi nowej rozmowy adres zmienia się
+  na `/agent/:id` (`replaceUrl`) bez tworzenia komponentu na nowo i bez drugiego pobrania rozmowy; lista rozmów jest odświeżana.
+- **Odpowiedź w całości, bez strumieniowania:** w trakcie oczekiwania pole jest zablokowane, a w rozmowie widać dymek „Agent pisze…”. Przy `503` (model niedostępny lub brak klucza)
+  i `409` (rozmowa zmieniona równolegle) tekst pytania zostaje w polu, a rozmowa jest przeładowana z serwera (backend zapisał pytanie); `404` daje komunikat
+  „Nie znaleziono rozmowy.” i powrót do `/agent`.
+- **Ostrzeżenie `ungroundedNumbers`:** gdy API zwraca liczby spoza wyników narzędzi (ADR-26), pod ostatnią odpowiedzią jest ostrzeżenie „Liczby nie pochodzą z danych systemu: …”.
+  Ostrzeżenie dotyczy bieżącej odpowiedzi i nie jest zapisywane w historii (API go nie przechowuje).
+- **Cudze rozmowy tylko do odczytu:** rozmowa, której `userId` różni się od zalogowanego użytkownika, jest pokazywana z banerem „Czytasz rozmowę: <autor>. Odczyt jest zapisany
+  w audycie.” i bez pola pytania. Zakres widoczności i zapis audytu egzekwuje wyłącznie backend; UI niczego dodatkowo nie zapisuje. Kadry widzą autorów (mapa nazwisk
+  z ADR-30) i przełącznik „Tylko moje”.
+- **Treść jako tekst:** pytania, odpowiedzi, parametry i wyniki narzędzi są wyświetlane interpolacją tekstu (bez `innerHTML`); wywołania i wyniki narzędzi są zwiniętymi wierszami.
+- **Bez zmian kontraktu i backendu:** `docs/openapi/hr-api.json` i klient generowany zostają bez zmian (`npm run api:check` czysty); rozmowy demo są w seedzie od planu 6.
+**Alternatywy:**
+- Strumieniowanie odpowiedzi (SSE): odrzucone, bo wymaga nowego endpointu i zmiany kontraktu, a osłona liczb (ADR-26) ocenia całą odpowiedź dopiero po jej zakończeniu.
+- Dwie osobne trasy (`agent` i `agent/:id`): odrzucone, bo przejście po pierwszej odpowiedzi tworzyłoby komponent na nowo (utrata stanu, ostrzeżenia i drugie pobranie rozmowy).
+- Osobny ekran kadr do przeglądania rozmów: odrzucone; ten sam ekran w trybie tylko do odczytu wystarcza, a mniej kodu to mniej miejsc na błąd w zakresie danych.
+**Konsekwencje:**
+- Długie oczekiwanie na model nie pokazuje odpowiedzi częściowej; użytkownik widzi tylko wskaźnik „Agent pisze…”.
+- Ostrzeżenie o liczbach znika po przeładowaniu rozmowy (nie jest w historii); trwały ślad jest w audycie (ADR-26).
+- Do testów ręcznych z prawdziwym modelem klucz trafia do `.env` (`ANTHROPIC_API_KEY=...`), a `tools/dev/run.sh` przekazuje go tylko procesowi `Hr.Api` (sekcja 7.4).

@@ -32,12 +32,20 @@ flowchart TB
 
 | Blok | Odpowiedzialność |
 |---|---|
-| Angular | Panel pracownika (wnioski, czas, agent, naliczenia) i panel kadr (naliczenia, zmiany płacowe, audyt). Zbudowany do plików statycznych (ADR-29). Stan po planie 7b: logowanie, pulpit, urlopy, zatwierdzanie urlopów, czas pracy z analizą, przegląd zespołu, naliczenia, zmiany płacowe, szkice korekt i dziennik audytu; ekran agenta w planie 7c. |
+| Angular | Panel pracownika (wnioski, czas, agent, naliczenia) i panel kadr (naliczenia, zmiany płacowe, audyt). Zbudowany do plików statycznych (ADR-29). Stan po planie 7c: logowanie, pulpit, urlopy, zatwierdzanie urlopów, czas pracy z analizą, przegląd zespołu, naliczenia, zmiany płacowe, szkice korekt, dziennik audytu i ekran agenta (czat z historią rozmów, odczyt rozmów przez kadry). |
 | Kontrolery REST API | Uwierzytelnianie, autoryzacja po rolach, walidacja żądań, mapowanie DTO. |
 | Serwisy aplikacyjne | Przypadki użycia (wnioski, ewidencja, naliczenia, zmiany płacowe), sprawdzanie zakresu danych (własne, zespół, wszystkie). |
 | Silnik reguł płacowych | Czyste, deterministyczne reguły: dni robocze, saldo urlopu, nadgodziny, normy czasu pracy, dodatki, naliczenie. Bez I/O. |
 | Moduł agenta | Pętla tool use z Anthropic API, definicje narzędzi, ograniczenie do uprawnień użytkownika, zapis wywołań w audycie. |
 | Warstwa danych | Encje, EF Core, migracje, seed kont i danych demo. |
+
+**Ekran agenta w Angularze (`web/src/app/features/agent/`, plan 7c, ADR-31):**
+
+| Komponent | Odpowiedzialność |
+|---|---|
+| `Agent` (`agent.ts`) | Kontener trasy `agent` i `agent/:id` (jeden `UrlMatcher`, więc komponent nie jest tworzony na nowo po pierwszej odpowiedzi). Stan w sygnałach: lista rozmów (`GET /api/conversations`), otwarta rozmowa (`GET /api/conversations/{id}`), pole pytania z limitem 4000 znaków, wysyłanie (`POST /api/conversations/messages`), obsługa `404` (komunikat „Nie znaleziono rozmowy.” i powrót do `/agent`), `409` i `503` (pytanie zostaje w polu, rozmowa przeładowana z serwera). Tryb tylko do odczytu, gdy `userId` rozmowy różni się od zalogowanego użytkownika: baner z autorem i informacją o audycie, bez pola pytania. |
+| `ConversationList` (`conversation-list.ts`) | Lista rozmów po lewej (podgląd pierwszego pytania, data, liczba wiadomości), przycisk „Nowa rozmowa”; dla kadr (`HR`, `HRApprover`) autor z `EmployeeDirectory` (ADR-30) i przełącznik „Tylko moje”. |
+| `ConversationThread` (`conversation-thread.ts`) | Wiadomości rozmowy jako tekst (bez `innerHTML`): dymki pytań i odpowiedzi, zwinięte wiersze wywołań i wyników narzędzi (parametry i JSON wyniku), dymek „Agent pisze…” w trakcie wysyłania, ostrzeżenie o liczbach spoza wyników narzędzi (`ungroundedNumbers`, ADR-26) pod ostatnią odpowiedzią. |
 
 ## 5.2 Poziom 2 — backend: cztery projekty .NET
 ```mermaid
