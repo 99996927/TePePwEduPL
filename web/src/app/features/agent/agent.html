@@ -1,0 +1,42 @@
+<h1>Agent</h1>
+
+<div class="layout">
+  <app-conversation-list
+    class="list"
+    [conversations]="conversations()"
+    [selectedId]="selectedId()"
+    [showAuthor]="showAuthor"
+    [loading]="loadingList()"
+    [error]="listError()"
+    [(onlyMine)]="onlyMine"
+    (select)="select($event)"
+    (create)="create()"
+    (retry)="retryList()"
+  />
+
+  <section class="conversation" aria-label="Rozmowa">
+    @if (mode() === 'readonly') {
+      <p class="banner" role="status" data-readonly-banner>
+        Czytasz rozmowę: {{ authorName() }}. Odczyt jest zapisany w audycie.
+      </p>
+    }
+
+    @if (conversationError(); as message) {
+      <div class="error" role="alert" data-conversation-error>
+        <p>{{ message }}</p>
+        <button matButton="outlined" type="button" (click)="retryConversation()">Spróbuj ponownie</button>
+      </div>
+    } @else {
+      <app-conversation-thread
+        [messages]="messages()"
+        [loading]="loadingConversation()"
+        [emptyHint]="emptyHint()"
+      />
+    }
+
+    @if (mode() === 'new' || mode() === 'own') {
+      <p class="note" data-privacy-note>Kadry mogą czytać rozmowy z agentem.</p>
+      <div class="composer" data-composer-slot></div>
+    }
+  </section>
+</div>
