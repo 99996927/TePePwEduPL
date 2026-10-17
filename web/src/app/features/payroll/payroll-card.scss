@@ -1,0 +1,22 @@
+dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 24px;
+  margin: 0 0 16px;
+}
+
+dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.gross {
+  font-weight: 600;
+  font-size: 1.1em;
+}
+
+.meta {
+  margin: 4px 0;
+  color: var(--mat-sys-on-surface-variant);
+}

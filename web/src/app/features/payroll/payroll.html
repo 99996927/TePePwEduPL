@@ -1,0 +1,19 @@
+<h1>Naliczenia</h1>
+
+<div class="toolbar">
+  <app-month-switcher [month]="month()" (monthChange)="setMonth($event)" />
+  @if (isHr) {
+    <app-employee-picker [employees]="directory.employees()" [selectedId]="selectedId()" (selectedIdChange)="select($event)" />
+  }
+</div>
+
+@if (error(); as message) {
+  <p class="error" role="alert">{{ message }}</p>
+  <button matButton type="button" data-retry (click)="retry()">Spróbuj ponownie</button>
+} @else if (notFound()) {
+  <p>Brak naliczenia za ten miesiąc.</p>
+} @else if (result(); as r) {
+  <app-payroll-card [result]="r" [name]="name()" />
+}
+
+<p class="disclaimer">Naliczenie ma charakter wstępny i demonstracyjny.</p>

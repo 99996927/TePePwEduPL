@@ -1,0 +1,17 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.error {
+  color: var(--mat-sys-error);
+}
+
+.disclaimer {
+  margin-top: 16px;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.9em;
+}
