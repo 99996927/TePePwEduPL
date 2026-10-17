@@ -126,9 +126,10 @@ public static class DemoPeople
             var first = female ? females[f++] : males[m++];
             var last = female ? lastNames[i].Female : lastNames[i].Male;
             var hired = EarliestHire.AddDays(rnd.Next(hireDays));
-            var (min, max) = SalaryRange(YearsOfService(hired, o.AnchorDate), role);
+            var years = YearsOfService(hired, o.AnchorDate);
+            var (min, max) = SalaryRange(years, role);
             var factor = 0.95m + (decimal)rnd.NextDouble() * 0.10m;
-            var raw = (BaseSalary + PerYearSalary * Math.Min(YearsOfService(hired, o.AnchorDate), 10))
+            var raw = (BaseSalary + PerYearSalary * Math.Min(years, 10))
                 * (role == Roles.Manager ? ManagerFactor : 1m) * factor;
             var salary = Math.Clamp(Math.Round(raw / Step, MidpointRounding.AwayFromZero) * Step, min, max);
             yield return Person(o, first, last, role, team, hired, salary, isNamed: false);

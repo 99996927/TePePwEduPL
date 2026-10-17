@@ -128,7 +128,10 @@ public class DemoPeopleTests
         var b = DemoPeople.Build(Full);
         var c = DemoPeople.Build(Full with { Seed = Full.Seed + 1 });
 
-        Assert.Equal(JsonSerializer.Serialize(a), JsonSerializer.Serialize(b));
+        var json = Json(a);
+        Assert.Contains("anna.nowak", json);
+        Assert.Equal(json, Json(b));
+        Assert.NotEqual(json, Json(c));
         Assert.NotEqual(
             a.Item2.Where(p => !p.IsNamed).Select(p => p.Last),
             c.Item2.Where(p => !p.IsNamed).Select(p => p.Last));
@@ -136,6 +139,10 @@ public class DemoPeopleTests
             a.Item2.Where(p => p.IsNamed).Select(p => p.Login),
             c.Item2.Where(p => p.IsNamed).Select(p => p.Login));
     }
+
+    // ValueTuple trzyma pola (Item1/Item2), które System.Text.Json domyślnie pomija.
+    private static string Json((IReadOnlyList<DemoTeam>, IReadOnlyList<DemoPerson>) built) =>
+        JsonSerializer.Serialize(built, new JsonSerializerOptions { IncludeFields = true });
 
     [Fact]
     public void DemoIds_are_stable_and_distinct_per_key()
