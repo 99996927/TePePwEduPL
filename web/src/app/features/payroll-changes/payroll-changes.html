@@ -1,0 +1,86 @@
+<h1>Zmiany płacowe</h1>
+
+<div class="toolbar">
+  <mat-form-field>
+    <mat-label>Status</mat-label>
+    <mat-select [value]="status() ?? ''" (selectionChange)="status.set($event.value || null)">
+      <mat-option value="">Wszystkie</mat-option>
+      @for (s of statuses; track s) {
+        <mat-option [value]="s">{{ s === 'Pending' ? 'Oczekuje' : statusLabel(s) }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <app-employee-picker
+    allLabel="Wszyscy"
+    [employees]="directory.employees()"
+    [selectedId]="employeeId()"
+    (selectedIdChange)="selectEmployee($event)"
+  />
+</div>
+
+@if (error(); as message) {
+  <p class="error" role="alert">{{ message }}</p>
+} @else if (!loading() && rows().length === 0) {
+  <p>Brak zmian płacowych</p>
+} @else {
+  <table mat-table [dataSource]="rows()">
+    <ng-container matColumnDef="employee">
+      <th mat-header-cell *matHeaderCellDef>Pracownik</th>
+      <td mat-cell *matCellDef="let c">{{ nameOf(c.employeeId) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="component">
+      <th mat-header-cell *matHeaderCellDef>Składnik</th>
+      <td mat-cell *matCellDef="let c">{{ componentLabel(c.component) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="value">
+      <th mat-header-cell *matHeaderCellDef>Wartość</th>
+      <td mat-cell *matCellDef="let c">{{ formatMoney(c.value) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="from">
+      <th mat-header-cell *matHeaderCellDef>Obowiązuje od</th>
+      <td mat-cell *matCellDef="let c">{{ formatDate(c.effectiveFrom) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let c">{{ statusLabel(c.status) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="author">
+      <th mat-header-cell *matHeaderCellDef>Autor</th>
+      <td mat-cell *matCellDef="let c">{{ userLabel(c.createdByUserId) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="decider">
+      <th mat-header-cell *matHeaderCellDef>Decydent</th>
+      <td mat-cell *matCellDef="let c">{{ c.decidedByUserId ? userLabel(c.decidedByUserId) : '—' }}</td>
+    </ng-container>
+    <ng-container matColumnDef="reason">
+      <th mat-header-cell *matHeaderCellDef>Uzasadnienie i decyzja</th>
+      <td mat-cell *matCellDef="let c">
+        <div>{{ c.reason }}</div>
+        @if (c.decisionReason) {
+          <div class="decision">{{ c.decisionReason }}</div>
+        }
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let c">
+        @if (canSubmit(c)) {
+          <button matButton="filled" type="button" data-submit [disabled]="busyId() === c.id" (click)="submit(c)">
+            Wyślij do zatwierdzenia
+          </button>
+        }
+        @if (canDecide(c)) {
+          <button matButton="filled" type="button" data-approve [disabled]="busyId() === c.id" (click)="approve(c)">
+            Zatwierdź
+          </button>
+          <button matButton type="button" data-reject [disabled]="busyId() === c.id" (click)="reject(c)">Odrzuć</button>
+        }
+        @if (ownPending(c)) {
+          <span class="hint">Autor nie może zatwierdzić własnej zmiany.</span>
+        }
+      </td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let c; columns: columns" [attr.data-row]="c.id"></tr>
+  </table>
+}

@@ -1,0 +1,18 @@
+<h2 mat-dialog-title>Odrzucenie zmiany płacowej</h2>
+<mat-dialog-content>
+  <p>
+    {{ componentLabel(data.change.component) }}: {{ formatMoney(data.change.value) }}, od
+    {{ formatDate(data.change.effectiveFrom) }}
+  </p>
+  <mat-form-field>
+    <mat-label>Uzasadnienie</mat-label>
+    <textarea matInput rows="3" [formControl]="reason"></textarea>
+  </mat-form-field>
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button matButton type="button" mat-dialog-close [disabled]="sending()">Anuluj</button>
+  <button matButton="filled" type="button" data-save [disabled]="sending()" (click)="save()">Odrzuć</button>
+</mat-dialog-actions>
