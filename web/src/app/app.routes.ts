@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, roleGuard } from './core/guards';
-import { APPROVER_ROLES } from './core/roles';
+import { APPROVER_ROLES, HR_ROLES } from './core/roles';
 
 export const routes: Routes = [
   {
@@ -35,6 +35,25 @@ export const routes: Routes = [
         path: 'zespol',
         canActivate: [roleGuard(...APPROVER_ROLES)],
         loadComponent: () => import('./features/team/team-overview').then((m) => m.TeamOverview),
+      },
+      {
+        path: 'naliczenia',
+        loadComponent: () => import('./features/payroll/payroll').then((m) => m.Payroll),
+      },
+      {
+        path: 'zmiany-platowe',
+        canActivate: [roleGuard(...HR_ROLES)],
+        loadComponent: () => import('./features/payroll-changes/payroll-changes').then((m) => m.PayrollChanges),
+      },
+      {
+        path: 'szkice-korekt',
+        canActivate: [roleGuard(...HR_ROLES)],
+        loadComponent: () => import('./features/correction-drafts/correction-drafts').then((m) => m.CorrectionDrafts),
+      },
+      {
+        path: 'audyt',
+        canActivate: [roleGuard(...HR_ROLES)],
+        loadComponent: () => import('./features/audit/audit').then((m) => m.Audit),
       },
     ],
   },

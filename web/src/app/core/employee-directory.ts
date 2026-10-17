@@ -41,4 +41,18 @@ export class EmployeeDirectory {
     const found = this.state().find((e) => e.id === id);
     return found ? `${found.firstName} ${found.lastName}` : '—';
   }
+
+  nameOfUser(userId: string | null | undefined): string {
+    const found = userId ? this.state().find((e) => e.userId === userId) : undefined;
+    return found ? `${found.firstName} ${found.lastName}` : '—';
+  }
+
+  userLabel(userId: string | null | undefined): string {
+    if (userId && userId === this.session.user()?.userId) return 'Ty';
+    return this.nameOfUser(userId);
+  }
+
+  userIdOf(employeeId: string): string | null {
+    return this.state().find((e) => e.id === employeeId)?.userId ?? null;
+  }
 }

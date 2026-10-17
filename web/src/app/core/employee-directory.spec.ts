@@ -96,4 +96,33 @@ describe('EmployeeDirectory', () => {
 
     http.expectNone('/api/employees');
   });
+
+  describe('user lookups', () => {
+    const withUser = { ...employee, userId: 'u7' };
+
+    beforeEach(async () => {
+      const loading = directory.load();
+      http.expectOne('/api/employees').flush([withUser, { ...employee, id: 'e2', userId: null }]);
+      await loading;
+    });
+
+    it('nameOfUser_known_returns_name_and_missing_returns_dash', () => {
+      expect(directory.nameOfUser('u7')).toBe('Anna Nowak');
+      expect(directory.nameOfUser(null)).toBe('—');
+      expect(directory.nameOfUser('zzz')).toBe('—');
+      expect(directory.nameOfUser(undefined)).toBe('—');
+    });
+
+    it('userLabel_own_user_is_Ty_otherwise_name', () => {
+      expect(directory.userLabel('u1')).toBe('Ty');
+      expect(directory.userLabel('u7')).toBe('Anna Nowak');
+      expect(directory.userLabel(null)).toBe('—');
+    });
+
+    it('userIdOf_returns_user_id_or_null', () => {
+      expect(directory.userIdOf('e1')).toBe('u7');
+      expect(directory.userIdOf('e2')).toBeNull();
+      expect(directory.userIdOf('missing')).toBeNull();
+    });
+  });
 });
