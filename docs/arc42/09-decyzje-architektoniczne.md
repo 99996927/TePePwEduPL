@@ -28,6 +28,8 @@
 | ADR-24 | Serwisy aplikacyjne i reguły ich działania | Przyjęta |
 | ADR-25 | Konwencje API REST i uwierzytelnianie cookie | Przyjęta |
 | ADR-26 | Agent: SDK Anthropic dla C#, narzędzia, historia i osłona liczb | Do przeglądu |
+| ADR-27 | Dane demo: dane wejściowe wprost do bazy, naliczenia z `PayrollService` | Przyjęta, zrealizowana w planie 6 |
+| ADR-28 | Stała kotwica demo i profile `Full`/`Accounts` | Przyjęta, zrealizowana w planie 6 |
 
 ## ADR-01 Trzy warstwy, dwa kontenery
 **Kontekst:** wymóg trójwarstwowości i uruchomienia na jednej maszynie.
@@ -139,6 +141,10 @@ i kilka miesięcy ewidencji, wniosków urlopowych i naliczeń. Konta logowania z
 niezależnie od losowej części stały zestaw scenariuszowy przypisany do kont demo (np. naruszenie odpoczynku dobowego u `anna.nowak`,
 nadgodziny ponad normę u `jan.kowalski`, wniosek urlopowy oczekujący, zmiana płacowa do zatwierdzenia). Ziarno jest zapisane w konfiguracji, a testy
 nie polegają na wartościach z części losowej.
+**Doprecyzowanie (plan 6):** dane obejmują okno od pierwszego dnia miesiąca sprzed 6 miesięcy względem stałej kotwicy do kotwicy włącznie
+(dla kotwicy `2026-10-16`: od 1.04.2026), a naliczenia pełne miesiące okna bez miesiąca kotwicy (kwiecień–wrzesień). Ziarno (`Hr:DemoSeed`, domyślnie `20261016`)
+i kotwica (`Hr:DemoAnchorDate`) mają wartości domyślne w kodzie (ADR-28). Profil `Accounts` zastępuje „mały, ręczny zestaw” z alternatyw: zakłada tylko
+sześć kont z sekcji 7.2 i służy testom API. Sposób zapisu opisuje ADR-27, a konfigurację i scenariusze sekcja 7.3.
 
 ## ADR-20 Konta dla wszystkich wygenerowanych pracowników
 **Decyzja:** każdy wygenerowany pracownik ma konto logowania według tego samego wzoru co konta z sekcji 7.2: login `imię.nazwisko`,
@@ -154,6 +160,9 @@ Sześć kont z sekcji 7.2 pozostaje stałych i nazwanych, bo na nich opierają s
 **Alternatywy:** ok. 100 pracowników i 12 miesięcy (realistyczniejsze, wolniejszy start), kilkaset pracowników (test wydajności, poza celem projektu).
 **Konsekwencje:** seed kończy się w kilka sekund, a 6 miesięcy pokrywa okres rozliczeniowy 4 miesięcy (ADR-18) z zapasem. Okres rozliczeniowy do 12 miesięcy
 (art. 129 § 2) nie jest pokryty danymi demo i wymaga testów jednostkowych silnika na danych syntetycznych poza seedem.
+**Doprecyzowanie (plan 6):** profil `Full` ma 31 osób w pięciu zespołach (cztery zespoły biznesowe po 7 osób i `Kadry` z 3 osobami; `Kadry` nie mają `Manager`, ADR-20).
+„6 miesięcy” to okno od 1.04.2026 do kotwicy `2026-10-16`: sześć pełnych miesięcy ewidencji z naliczeniami (kwiecień–wrzesień) i bieżący, otwarty miesiąc
+kotwicy bez naliczeń. Pełny start z seedem trwa kilka do kilkunastu sekund; test integracyjny pilnuje limitu 60 s (także przez API, z przechwytywaczem audytu).
 
 ## ADR-22 Uproszczenia silnika reguł (plan 1)
 **Kontekst:** Kodeks pracy nie wyznacza jednoznacznie algorytmu, który silnik musi stosować w kilku miejscach. Potrzebne są jawne, testowalne uproszczenia.
@@ -217,3 +226,27 @@ Sześć kont z sekcji 7.2 pozostaje stałych i nazwanych, bo na nich opierają s
 **Alternatywy:** Claude Agent SDK — oficjalnie tylko Python i TypeScript, uruchamia binarkę Claude Code i jest projektowany pod agentów kodujących, więc w stosie .NET wymagałby drugiego środowiska uruchomieniowego (Node) i mostu narzędzi; ręczny klient HTTP z własną pętlą — odrzucony, bo nie jest agentem na SDK; Microsoft Agent Framework — możliwe rozszerzenie nad tym samym `IChatClient`; blokowanie odpowiedzi z nieznaną liczbą — odrzucone na rzecz ostrzeżenia.
 **Kryterium ponownej oceny:** wymóg dosłownego użycia Claude Agent SDK (wtedy osobna decyzja: proces Node z narzędziami wywoływanymi przez MCP).
 **Konsekwencje:** pętla narzędzi i serializacja żądań są utrzymywane przez SDK, a testy używają skryptowanego `IChatClient` z prawdziwą pętlą. Błąd narzędzia trafia do modelu jako JSON z właściwością `error` (adapter `AIFunction` nie ustawia flagi `is_error`). Tekst Kodeksu pochodzi z ekstrakcji PDF, więc zdarzają się drobne artefakty (R-06); gdy zmiana wejdzie w życie później, import zachowuje brzmienie obowiązujące w dniu publikacji tekstu jednolitego.
+
+## ADR-27 Dane demo: dane wejściowe wprost do bazy, naliczenia z `PayrollService`
+**Kontekst:** dane demo muszą być spójne z silnikiem reguł (UC-29, ADR-19), a seed działa przy starcie, bez zalogowanego użytkownika i z „dziś” innym niż zegar systemu.
+**Decyzja:** seed ma dwie warstwy w `Hr.Core/Seeding`. Czysta warstwa danych (`Seeding/Demo`, bez `DbContext`, zegara i losowości bez ziarna) buduje w pamięci
+zespoły, osoby, wpisy czasu, wnioski urlopowe, zmiany płacowe i rozmowy; liczby (dni urlopu, wymiar urlopu, widełki) liczy `Hr.Rules`. `DemoSeeder` zapisuje te
+**dane wejściowe wprost do bazy** przez `HrDbContext` w jednej transakcji i zakłada konta Identity, a **naliczenia** (wynik, nie dane wejściowe) tworzy prawdziwy
+`PayrollService.RunMonthAsync` w imieniu `piotr.zielinski` (`SeedCurrentUser`), dla każdego miesiąca bez wyników. Test architektury pilnuje, że warstwy danych
+używa tylko `DemoSeeder`, a `Program` zna jedynie `DemoOptions` i `DemoProfile`.
+**Alternatywy:** zapis danych przez serwisy aplikacyjne (odrzucone: wymagałby podszywania się pod wielu użytkowników i sterowania zegarem serwisów, żeby „dziś” było kotwicą,
+a nie bieżącą datą); naliczenia liczone w seedzie (odrzucone: duplikacja logiki silnika płac).
+**Konsekwencje:** dane wejściowe nie przechodzą walidacji serwisów, więc ich spójność z regułami zapewniają testy niezmienników warstwy danych (bez bazy)
+i test integracyjny zapisu. Wiersze seeda trafiają do `AuditLog` z pustym aktorem, bo seed nie wyłącza audytu (sekcja 7.3). Gdy w bazie brak pełnego zbioru osób
+(dawna baza z sześcioma kontami), naliczenia są pomijane z wpisem w logu. Dwie instancje startujące jednocześnie mogą się ścigać o znacznik seeda.
+
+## ADR-28 Stała kotwica demo i profile `Full`/`Accounts`
+**Kontekst:** dane demo i oparte na nich testy UC oraz E2E muszą dawać ten sam wynik niezależnie od dnia uruchomienia, a istniejące testy API zakładają minimalny zbiór sześciu kont.
+**Decyzja:** „dziś” danych demo to **stała kotwica** `Hr:DemoAnchorDate` (domyślnie `2026-10-16`, piątek, musi być dniem roboczym), a nie zegar systemowy.
+Wszystkie identyfikatory i znaczniki czasu wynikają z pary (ziarno, kotwica), a scenariusze są definiowane względem kotwicy, więc działają także przy innej kotwicy.
+Klucz `Hr:DemoProfile` wybiera profil: `Full` (domyślnie; pełny zbiór z sekcji 7.3) albo `Accounts` (3 zespoły i 6 kont, bez danych i naliczeń), którego używa
+fabryka testów API. Wartości domyślne są w kodzie (`DemoOptions`), a niepoprawna konfiguracja zatrzymuje start z komunikatem po polsku.
+**Alternatywy:** okno liczone od bieżącej daty (dane „świeże”, ale niedeterministyczne i zależne od świąt w danym roku); jeden profil i dostosowanie wszystkich testów API
+do pełnego zbioru (wolniejsze testy i krucha zależność od danych generatora).
+**Konsekwencje:** pełna deterministyczność danych i testów. Z upływem czasu dane demo się „starzeją” (np. urlop „na przyszłość” jest przyszły względem kotwicy, a nie
+faktycznej daty uruchomienia, a zegar aplikacji nie jest przesuwany), co można zmienić, przesuwając kotwicę w konfiguracji. Testy API na profilu `Full` (`DemoDataApiTests`) sprawdzają scenariusze i czas startu.
