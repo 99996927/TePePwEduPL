@@ -9,7 +9,7 @@ import { Observable, firstValueFrom } from 'rxjs';
 import { PayrollChangeDto } from '../../api/models/payroll-change-dto';
 import { PayrollChangesService } from '../../api/services/payroll-changes.service';
 import { messageOf, problemOf } from '../../core/api-problem';
-import { formatDate, formatInstantDate } from '../../core/date-format';
+import { formatDate } from '../../core/date-format';
 import { EmployeeDirectory } from '../../core/employee-directory';
 import { formatMoney } from '../../core/format';
 import { payrollChangeStatusLabel, payrollComponentLabel } from '../../core/labels';
@@ -20,6 +20,9 @@ import { ConfirmDialog, ConfirmDialogData } from '../../shared/confirm-dialog';
 import { EmployeePicker } from '../../shared/employee-picker';
 import { NewChangeDialog } from './new-change-dialog';
 import { RejectDialog, RejectDialogData, RejectDialogResult } from './reject-dialog';
+
+/** The change was decided, removed or is no longer permitted meanwhile, so the list is out of date. */
+const isStale = (status: number | undefined): boolean => status === 404 || status === 403 || status === 409;
 
 const STATUSES = ['Draft', 'Pending', 'Approved', 'Rejected'] as const;
 
@@ -43,7 +46,6 @@ export class PayrollChanges {
   protected readonly componentLabel = payrollComponentLabel;
   protected readonly formatMoney = formatMoney;
   protected readonly formatDate = formatDate;
-  protected readonly formatInstantDate = formatInstantDate;
   protected readonly nameOf = (id: string): string => this.directory.nameOf(id);
   protected readonly userLabel = (id: string | null): string => this.directory.userLabel(id);
 
@@ -70,6 +72,10 @@ export class PayrollChanges {
 
   constructor() {
     this.directory.load().catch((e: unknown) => this.notifier.error(problemOf(e)));
+    void this.refresh();
+  }
+
+  protected retry(): void {
     void this.refresh();
   }
 
@@ -130,7 +136,7 @@ export class PayrollChanges {
         }
         if ('failure' in result) {
           this.notifier.error(result.failure);
-          if (result.failure.status === 409) void this.refresh();
+          if (isStale(result.failure.status)) void this.refresh();
         } else {
           this.notifier.info('Zmiana odrzucona.');
           void this.refresh();
@@ -165,7 +171,7 @@ export class PayrollChanges {
     } catch (e) {
       const problem = problemOf(e);
       this.notifier.error(problem);
-      if (problem.status === 409) await this.refresh();
+      if (isStale(problem.status)) await this.refresh();
     } finally {
       this.busyId.set(null);
     }

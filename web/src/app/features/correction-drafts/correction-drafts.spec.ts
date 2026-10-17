@@ -41,8 +41,7 @@ async function flush(fixture: ComponentFixture<unknown>): Promise<void> {
 describe('CorrectionDrafts', () => {
   let http: HttpTestingController;
 
-  async function setup(list: CorrectionDraftDto[] = drafts.slice(0, 2)) {
-    const roles = ['HRApprover'];
+  async function setup(list: CorrectionDraftDto[] = drafts.slice(0, 2), roles: string[] = ['HRApprover']) {
     const user = signal<CurrentUserDto | null>({ userId: 'ud', employeeId: 'e9', userName: 'x', displayName: 'X', roles });
     TestBed.configureTestingModule({
       providers: [
@@ -125,6 +124,31 @@ describe('CorrectionDrafts', () => {
     expect(row('d3')!.textContent).toContain('Zatwierdzony');
     expect(row('d3')!.querySelector('[data-approve]')).toBeNull();
     expect(el.textContent).not.toContain('Brak szkiców korekt');
+  });
+
+  it('hr_role_sees_decision_buttons_on_pending_draft', async () => {
+    const { btn, flushMonths } = await setup(drafts.slice(0, 2), ['HR']);
+    await flushMonths();
+    expect(btn('d1', 'approve')).not.toBeNull();
+    expect(btn('d1', 'reject')).not.toBeNull();
+  });
+
+  it('load_error_shows_retry_that_reloads', async () => {
+    const { el, settle, flushMonths } = await setup();
+    await flushMonths();
+    (el.querySelector('mat-select') as HTMLElement).click();
+    await settle();
+    const option = Array.from(document.querySelectorAll('mat-option')).find((o) => o.textContent!.trim() === 'Odrzucone') as HTMLElement;
+    option.click();
+    await settle();
+    http.expectOne('/api/correction-drafts?status=Rejected').flush({ title: 'Awaria', status: 500 }, { status: 500, statusText: 'x' });
+    await settle();
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+    (el.querySelector('[data-retry]') as HTMLButtonElement).click();
+    http.expectOne('/api/correction-drafts?status=Rejected').flush([]);
+    await settle();
+    expect(el.querySelector('[role="alert"]')).toBeNull();
+    expect(el.textContent).toContain('Brak szkiców korekt');
   });
 
   it('empty_list_shows_empty_state', async () => {

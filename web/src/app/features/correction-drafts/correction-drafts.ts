@@ -15,7 +15,7 @@ import { formatDate, formatTime, localDay, monthRange } from '../../core/date-fo
 import { EmployeeDirectory } from '../../core/employee-directory';
 import { draftStatusLabel } from '../../core/labels';
 import { Notifier } from '../../core/notifier';
-import { Roles } from '../../core/roles';
+import { HR_ROLES } from '../../core/roles';
 import { SessionService } from '../../core/session';
 import { DraftDecisionDialog, DraftDecisionDialogData, DraftDecisionDialogResult } from './draft-decision-dialog';
 
@@ -45,11 +45,10 @@ export class CorrectionDrafts {
   protected readonly filters = FILTERS;
   protected readonly statusLabel = draftStatusLabel;
   protected readonly formatDate = formatDate;
-  protected readonly formatTime = formatTime;
   protected readonly nameOf = (id: string): string => this.directory.nameOf(id);
   protected readonly userLabel = (id: string | null): string => this.directory.userLabel(id);
 
-  protected readonly canDecide = this.session.hasRole(Roles.HRApprover);
+  protected readonly canDecide = this.session.hasRole(...HR_ROLES);
 
   protected readonly drafts = signal<CorrectionDraftDto[]>([]);
   protected readonly status = signal<string | null>('Pending');
@@ -67,6 +66,10 @@ export class CorrectionDrafts {
 
   constructor() {
     this.directory.load().catch((e: unknown) => this.notifier.error(problemOf(e)));
+    void this.refresh();
+  }
+
+  protected retry(): void {
     void this.refresh();
   }
 

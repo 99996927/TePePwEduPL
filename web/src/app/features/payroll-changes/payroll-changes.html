@@ -23,6 +23,7 @@
 
 @if (error(); as message) {
   <p class="error" role="alert">{{ message }}</p>
+  <button matButton type="button" data-retry (click)="retry()">Spróbuj ponownie</button>
 } @else if (!loading() && rows().length === 0) {
   <p>Brak zmian płacowych</p>
 } @else {

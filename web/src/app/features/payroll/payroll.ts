@@ -36,7 +36,6 @@ export class Payroll {
   protected readonly month = signal(this.currentMonth());
   protected readonly selectedId = signal<string | null>(this.ownId);
   protected readonly result = signal<PayrollResultDto | null>(null);
-  protected readonly loading = signal(true);
   protected readonly notFound = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly runResult = signal<PayrollResultDto[] | null>(null);
@@ -123,7 +122,6 @@ export class Payroll {
     const seq = ++this.requestSeq;
     const month = this.month();
     const id = this.selectedId();
-    this.loading.set(true);
     this.error.set(null);
     this.notFound.set(false);
     this.result.set(null);
@@ -144,8 +142,6 @@ export class Payroll {
       } else {
         this.error.set(messageOf(problemOf(e)));
       }
-    } finally {
-      if (seq === this.requestSeq) this.loading.set(false);
     }
   }
 }

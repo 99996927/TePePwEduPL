@@ -212,6 +212,81 @@ describe('PayrollChanges', () => {
     expect(rowIds()).toEqual(['c1']);
   });
 
+  it('approve_404_refreshes_list', async () => {
+    const { btn, confirm, settle, error, rowIds } = await setup('ud', ['HRApprover']);
+    btn('c1', 'approve')!.click();
+    await confirm();
+    http.expectOne('/api/payroll-changes/c1/approve').flush(
+      { title: 'Nie znaleziono', status: 404 },
+      { status: 404, statusText: 'Not Found' },
+    );
+    await settle();
+    expect(error).toHaveBeenCalledTimes(1);
+    http.expectOne('/api/payroll-changes').flush([changes[3]]);
+    await settle();
+    expect(rowIds()).toEqual(['c4']);
+  });
+
+  it('reject_404_refreshes_list', async () => {
+    const { btn, settle, save, type, error, rowIds } = await setup('ud', ['HRApprover']);
+    btn('c1', 'reject')!.click();
+    await settle();
+    type('x');
+    save().click();
+    http.expectOne('/api/payroll-changes/c1/reject').flush(
+      { title: 'Nie znaleziono', status: 404 },
+      { status: 404, statusText: 'Not Found' },
+    );
+    await settle();
+    expect(error).toHaveBeenCalledTimes(1);
+    http.expectOne('/api/payroll-changes').flush([changes[3]]);
+    await settle();
+    expect(rowIds()).toEqual(['c4']);
+  });
+
+  it('submit_404_refreshes_list', async () => {
+    const { btn, confirm, settle, error, rowIds } = await setup('ud', ['HR']);
+    btn('c4', 'submit')!.click();
+    await confirm();
+    http.expectOne('/api/payroll-changes/c4/submit').flush(
+      { title: 'Nie znaleziono', status: 404 },
+      { status: 404, statusText: 'Not Found' },
+    );
+    await settle();
+    expect(error).toHaveBeenCalledTimes(1);
+    http.expectOne('/api/payroll-changes').flush([changes[0]]);
+    await settle();
+    expect(rowIds()).toEqual(['c1']);
+  });
+
+  it('approve_403_refreshes_list', async () => {
+    const { btn, confirm, settle, error, rowIds } = await setup('ud', ['HRApprover']);
+    btn('c1', 'approve')!.click();
+    await confirm();
+    http.expectOne('/api/payroll-changes/c1/approve').flush(
+      { title: 'Brak uprawnień', status: 403 },
+      { status: 403, statusText: 'Forbidden' },
+    );
+    await settle();
+    expect(error).toHaveBeenCalledTimes(1);
+    http.expectOne('/api/payroll-changes').flush([changes[3]]);
+    await settle();
+    expect(rowIds()).toEqual(['c4']);
+  });
+
+  it('load_error_shows_retry_that_reloads', async () => {
+    const { el, settle, fixture } = await setup('ud', ['HR']);
+    fixture.componentInstance['selectEmployee']('e1');
+    http.expectOne('/api/payroll-changes?employeeId=e1').flush({ title: 'Awaria', status: 500 }, { status: 500, statusText: 'x' });
+    await settle();
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+    (el.querySelector('[data-retry]') as HTMLButtonElement).click();
+    http.expectOne('/api/payroll-changes?employeeId=e1').flush([changes[0]]);
+    await settle();
+    expect(el.querySelector('[role="alert"]')).toBeNull();
+    expect(el.querySelector('tr[data-row="c1"]')).not.toBeNull();
+  });
+
   it('reject_without_reason_sends_nothing', async () => {
     const { btn, settle, save, type, dialogEl } = await setup('ud', ['HRApprover']);
     btn('c1', 'reject')!.click();

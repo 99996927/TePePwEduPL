@@ -1,4 +1,5 @@
-const lookup = (map: Readonly<Record<string, string>>) => (key: string): string => map[key] ?? key;
+const lookup = (map: Readonly<Record<string, string>>) => (key: string): string =>
+  (Object.hasOwn(map, key) ? map[key] : key);
 
 export const payrollChangeStatusLabel = lookup({
   Draft: 'Szkic',
