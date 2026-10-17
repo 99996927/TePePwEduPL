@@ -17,7 +17,7 @@
 - Zachowujemy: wszystkie atrybuty `data-*`, role ARIA, `aria-label`, polskie teksty, tagi `h1` z tytułami ekranów, klasę `logout` i tekst „Wyloguj”, liczby pozycji menu 5/7/10.
 - Statusy: kolor to dodatek, tekst etykiety zostaje jedynym nośnikiem informacji; chip renderuje wyłącznie tekst etykiety (bez dodatkowego tekstu w DOM).
 - Kontrast tekstu co najmniej WCAG AA (4,5:1; 3:1 dla tekstu ≥ 18,66 px pogrubionego). Tekst biały tylko na ciemnych odcieniach gradientu; chipy to ciemny tekst na jasnym tle tonu.
-- Tokeny kolorów: tło strony `#eee`; menu `#f4f5f7`; cień karty `0 2px 8px rgba(0,0,0,.12)`; promień karty 8 px; akcent gradient 60°: fiolet `#9c27b0 → #7b1fa2`, zielony `#43a047 → #2e7d32`, pomarańczowy `#fb8c00 → #e65100`, czerwony `#e53935 → #b71c1c`, turkus `#00acc1 → #00838f`.
+- Tokeny kolorów: tło strony `#eee`; menu `#f4f5f7`; cień karty `0 2px 8px rgba(0,0,0,.12)`; promień karty 8 px; akcent gradient 60°: fiolet `#9c27b0 → #7b1fa2`, zielony `#2e7d32 → #1b5e20`, pomarańczowy `#bf360c → #a52d08`, czerwony `#d32f2f → #b71c1c`, turkus `#00838f → #006064` (odcienie przyciemnione w Task 1: jaśniejsze początki gradientów dawały z białym tekstem 2,4–4,2:1).
 - Fonty i ikony bez zmian (Roboto, Material Symbols z Google Fonts). Bez trybu ciemnego.
 - Weryfikacja końcowa: `cd web && npm run verify` (baza: 350 testów, bez ostrzeżeń).
 
