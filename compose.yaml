@@ -35,6 +35,8 @@ services:
       ConnectionStrings__Hr: Server=hr-db,1433;Database=hr;User Id=sa;Password=${HR_DB_PASSWORD};TrustServerCertificate=True
       Hr__SeedDemoData: "true"
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - hr-app-keys:/home/app/.aspnet/DataProtection-Keys
     ports:
       - "127.0.0.1:5080:8080"
     healthcheck:
@@ -48,3 +50,5 @@ services:
 volumes:
   hr-db-data:
     name: hr-db-data
+  hr-app-keys:
+    name: hr-app-keys

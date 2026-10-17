@@ -30,13 +30,13 @@ Do uruchomienia wystarczy Docker Engine. Dotnet, node i npm na hoście **nie są
 | Wymaganie | Wartość |
 |---|---|
 | System | Linux x86_64 (sprawdzone: Ubuntu 22.04) |
-| Docker Engine | 24 lub nowszy (sprawdzone: 24.0.9) z wtyczką **Compose v2**, polecenie `docker compose` (sprawdzone: 2.40.3) |
+| Docker Engine | 24 lub nowszy (sprawdzone: 24.0.9) z wtyczką **Compose v2**, polecenie `docker compose` (sprawdzone: 2.40.3; wymagane `up --wait`, czyli Compose v2 ≥ 2.20) |
 | Uprawnienia | Dostęp do demona Dockera bez `sudo` (użytkownik w grupie `docker`); sprawdź: `docker info` |
 | Programy pomocnicze | `bash`, `curl`, `ss` (iproute2), `python3` (używają ich skrypty i test dymny), `git` |
 | Pamięć | Wolne ok. 2 GB RAM dla SQL Server (minimum wymagane przez Microsoft), zalecane 4 GB; w spoczynku `hr-db` zajmuje ok. 0,9 GB, `hr-app` ok. 0,1 GB |
 | Dysk | Ok. 6 GB: obrazy (SQL Server 1,7 GB, obraz aplikacji ok. 0,3 GB, obrazy budujące `node:24` i `dotnet/sdk:9.0` oraz cache budowania) i wolumen bazy (ok. 0,3 GB) |
 | Port | Wolny port **5080** na adresie `127.0.0.1` hosta |
-| Internet hosta | Tylko przy pierwszym budowaniu (pobranie obrazów i pakietów npm/NuGet); potem system działa offline, z wyjątkiem czatu agenta, który wymaga HTTPS do Anthropic API |
+| Internet hosta | Tylko przy pierwszym budowaniu (pobranie obrazów i pakietów npm/NuGet); potem uruchamianie systemu działa offline (przebudowanie po zmianie zależności, np. `package.json` lub `*.csproj`, znów wymaga internetu), z wyjątkiem czatu agenta, który wymaga HTTPS do Anthropic API |
 | Przeglądarka | Dowolna nowoczesna; **nie potrzebuje internetu** (fonty i ikony są hostowane razem z aplikacją) |
 
 ## Szybki start
@@ -86,6 +86,8 @@ Dockera (`.dockerignore`), ma uprawnienia `600`, a skrypty nigdy nie wypisują j
 
 - **Bez klucza** wszystko działa, a czat agenta zwraca komunikat „Agent jest chwilowo niedostępny” (HTTP 503).
 - **Dodanie lub zmiana klucza:** edytuj `.env` i uruchom `tools/docker/up.sh` ponownie. Odtworzony zostanie tylko kontener aplikacji, baza i dane zostają.
+- `.env` jest **jedynym źródłem** tych wartości: zmienne `HR_DB_PASSWORD` i `ANTHROPIC_API_KEY` wyeksportowane w powłoce są przez `up.sh` ignorowane.
+- Kopię zapasową `.env` trzymaj poza repozytorium (np. `~/.hr.env`); wzorce `.env*` są w `.gitignore` i `.dockerignore`, ale to ostatnia linia obrony.
 - Wzór pliku: `.env.example` (bez wartości).
 
 ## Konta demo
@@ -112,19 +114,19 @@ pierwszym starcie. Pełny opis: [`docs/arc42/07-widok-wdrozenia.md`](docs/arc42/
 | Uruchomić lub zaktualizować system (po zmianie kodu, `.env`) | `tools/docker/up.sh` (można wielokrotnie; nie dubluje danych) |
 | Zatrzymać (dane zostają) | `tools/docker/down.sh` |
 | Zatrzymać i usunąć bazę (czysty stan, dane demo od nowa) | `tools/docker/down.sh --reset` |
-| Stan kontenerów | `docker compose ps` |
-| Logi aplikacji / bazy | `docker compose logs -f hr-app` / `docker compose logs -f hr-db` |
+| Stan kontenerów | `docker ps --filter name=hr-` |
+| Logi aplikacji / bazy | `docker logs -f hr-app` / `docker logs -f hr-db` |
 | Powtórzyć kontrole konfiguracji | `tools/docker/verify.sh` |
 | Powtórzyć test dymny | `tools/dev/smoke.sh http://127.0.0.1:5080` |
 
 Kontenery mają `restart: unless-stopped`, więc po restarcie maszyny (i usłudze Docker) wstają same. Dane bazy są w wolumenie `hr-db-data` (`docker volume inspect hr-db-data`);
-przeżywają `down.sh` i przebudowanie obrazu, a znikają tylko po `down.sh --reset`.
+przeżywają `down.sh` i przebudowanie obrazu, a znikają tylko po `down.sh --reset`. Klucze sesji aplikacji są w wolumenie `hr-app-keys`, więc zalogowani użytkownicy nie są wylogowywani po `up.sh`, który odtwarza kontener aplikacji (po `--reset` trzeba zalogować się ponownie).
 Zmiany wprowadzone podczas testów ręcznych zostają w bazie.
 
 ## Warunki działania i ograniczenia
 
 - To instancja **demonstracyjna** (środowisko `Production` z włączonym zasiewem danych demo, `Hr__SeedDemoData=true`), nie wdrożenie produkcyjne.
-- Komunikacja jest po zwykłym HTTP na loopbacku, bez TLS; ochroną jest ograniczenie do `127.0.0.1` i tunel SSH. Nie publikuj portu na inne adresy.
+- Komunikacja jest po zwykłym HTTP na loopbacku, bez TLS, i nie ma żadnej dodatkowej warstwy uwierzytelniania przed aplikacją (poza logowaniem do niej); ochroną jest ograniczenie do `127.0.0.1` i tunel SSH. Nie publikuj portu na inne adresy.
 - Jedna instancja aplikacji (zasiew danych zakłada, że startuje jedna).
 - Hasło `sa` jest ustalane przy zakładaniu wolumenu. Utrata lub zmiana `.env` przy istniejącym wolumenie powoduje błąd logowania do bazy (patrz niżej).
 - Port 5080 jest wspólny z deweloperskim `tools/dev/run.sh`: nie uruchamiaj ich jednocześnie (`up.sh` odmówi startu, jeśli port jest zajęty).

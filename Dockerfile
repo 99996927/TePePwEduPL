@@ -27,5 +27,8 @@ WORKDIR /app
 COPY --from=publish /out ./
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
+# Klucze Data Protection (ciasteczka sesji i tokeny antyforgery) w wolumenie: sesje przeżywają odtworzenie kontenera.
+# Katalog musi istnieć w obrazie z właścicielem app, inaczej Docker założy punkt montowania jako root.
+RUN mkdir -p /home/app/.aspnet/DataProtection-Keys && chown -R app:app /home/app/.aspnet
 USER app
 ENTRYPOINT ["dotnet", "Hr.Api.dll"]

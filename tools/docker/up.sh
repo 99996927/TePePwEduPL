@@ -17,6 +17,10 @@ die() {
   exit 1
 }
 
+# Źródłem sekretów jest wyłącznie .env: Compose dałby pierwszeństwo zmiennym z powłoki, więc je usuwamy
+# (tak samo jak tools/dev/run.sh dla klucza Anthropic).
+unset HR_DB_PASSWORD ANTHROPIC_API_KEY
+
 # 1. Wymagane programy
 step "Sprawdzam wymagane programy"
 for tool in docker curl ss python3; do

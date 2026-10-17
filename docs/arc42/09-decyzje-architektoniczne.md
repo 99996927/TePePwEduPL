@@ -354,6 +354,7 @@ dostępnego tunelem SSH, bez dotnet i node na hoście oraz bez zależności prze
 **Decyzja:**
 - **Obraz `hr-app`:** `Dockerfile` w katalogu głównym, trzy etapy (`node:24` → `dotnet/sdk:9.0` → `dotnet/aspnet:9.0`), użytkownik `app` (nie root); `.dockerignore` wyklucza `.env`, `.git`, `tests`, `docs` i artefakty budowania.
 - **`compose.yaml`** (projekt `hr`): `hr-db` bez publikowanego portu, wolumen `hr-db-data`; `hr-app` na `127.0.0.1:5080`; `depends_on` ze `service_healthy`; sekrety z `.env` przez interpolację (`HR_DB_PASSWORD` wymagane, `ANTHROPIC_API_KEY` opcjonalny).
+- **Wolumen `hr-app-keys` na klucze Data Protection:** bez niego każde odtworzenie kontenera aplikacji wylogowywałoby użytkowników.
 - **Środowisko `Production` z `Hr__SeedDemoData=true`:** instancja demonstracyjna z danymi syntetycznymi (R-03); w `Production` nie ma `/openapi`.
 - **Healthcheck aplikacji bashem** (`/dev/tcp`), bo obraz ASP.NET nie ma `curl`; bez doinstalowywania pakietów do obrazu.
 - **Fonty z npm:** `@fontsource/roboto` (wagi 300/400/500, `latin` i `latin-ext`) i `@fontsource/material-symbols-outlined` (statyczny wariant 400, 323 kB zamiast 4 MB pełnego `material-symbols`); `npm run fonts:check` w `verify` pilnuje braku odwołań do zasobów zewnętrznych.
