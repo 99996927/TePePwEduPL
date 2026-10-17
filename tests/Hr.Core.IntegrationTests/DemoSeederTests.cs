@@ -2,6 +2,7 @@ using Hr.Core.Abstractions;
 using Hr.Core.Domain;
 using Hr.Core.Persistence;
 using Hr.Core.Seeding;
+using Hr.Core.Seeding.Demo;
 using Hr.Rules.Leave;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,8 @@ namespace Hr.Core.IntegrationTests;
 [Collection("mssql")]
 public class DemoSeederTests(MsSqlFixture fixture)
 {
+    private static readonly DemoOptions AccountsProfile = DemoOptions.Default with { Profile = DemoProfile.Accounts };
+
     private static readonly (string Login, string Password, string Role)[] Accounts =
     {
         ("anna.nowak", "annanowak123", Roles.Employee),
@@ -38,7 +41,7 @@ public class DemoSeederTests(MsSqlFixture fixture)
     public async Task UC29_Seed_creates_six_accounts_with_roles()
     {
         await using var provider = await BuildAsync();
-        await DemoSeeder.SeedAsync(provider);
+        await DemoSeeder.SeedAsync(provider, AccountsProfile);
 
         using var scope = provider.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
@@ -56,7 +59,7 @@ public class DemoSeederTests(MsSqlFixture fixture)
     public async Task UC01_All_demo_passwords_are_valid()
     {
         await using var provider = await BuildAsync();
-        await DemoSeeder.SeedAsync(provider);
+        await DemoSeeder.SeedAsync(provider, AccountsProfile);
 
         using var scope = provider.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
@@ -72,8 +75,8 @@ public class DemoSeederTests(MsSqlFixture fixture)
     public async Task UC29_Seed_is_idempotent()
     {
         await using var provider = await BuildAsync();
-        await DemoSeeder.SeedAsync(provider);
-        await DemoSeeder.SeedAsync(provider);
+        await DemoSeeder.SeedAsync(provider, AccountsProfile);
+        await DemoSeeder.SeedAsync(provider, AccountsProfile);
 
         using var scope = provider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<HrDbContext>();
@@ -87,7 +90,7 @@ public class DemoSeederTests(MsSqlFixture fixture)
     public async Task UC03_Seed_places_tomasz_in_other_team_than_anna()
     {
         await using var provider = await BuildAsync();
-        await DemoSeeder.SeedAsync(provider);
+        await DemoSeeder.SeedAsync(provider, AccountsProfile);
 
         using var scope = provider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<HrDbContext>();
@@ -104,7 +107,7 @@ public class DemoSeederTests(MsSqlFixture fixture)
     public async Task UC05_Jan_has_26_days_and_Anna_20()
     {
         await using var provider = await BuildAsync();
-        await DemoSeeder.SeedAsync(provider);
+        await DemoSeeder.SeedAsync(provider, AccountsProfile);
 
         using var scope = provider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<HrDbContext>();
@@ -119,7 +122,7 @@ public class DemoSeederTests(MsSqlFixture fixture)
     public async Task UC02_Account_locks_after_five_failed_attempts()
     {
         await using var provider = await BuildAsync();
-        await DemoSeeder.SeedAsync(provider);
+        await DemoSeeder.SeedAsync(provider, AccountsProfile);
 
         using var scope = provider.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();

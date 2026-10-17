@@ -110,8 +110,12 @@ Sekcja `Hr:` (nadpisywalna zmiennymi środowiskowymi, np. `Hr__DemoAnchorDate`):
 | `Hr:SeedDemoData` | `false` | Włącza cały seed (już istnieje). |
 | `Hr:DemoAnchorDate` | `2026-10-16` | Kotwica okna; musi być dniem roboczym. |
 | `Hr:DemoSeed` | `20261016` | Ziarno generatora (liczba całkowita). |
+| `Hr:DemoProfile` | `Full` | `Full` (domyślnie): pełny zbiór danych demo; `Accounts`: dokładnie 3 zespoły i 6 kont nazwanych, bez danych i bez naliczeń (używany przez `HrApiFactory` w testach API). |
 
 Wartości domyślne są w kodzie (`DemoOptions`), nie w `appsettings.json`. Walidacja przy odczycie w `Program.cs`.
+
+Uwaga (doprecyzowanie ADR-20): w profilu `Full` każdy zespół biznesowy ma dokładnie jednego `Manager`, a zespół `Kadry` (Piotr `HR`, Maria `HRApprover`,
+jedna osoba `Employee`) nie ma `Manager`; wnioski urlopowe kierowników i członków `Kadr` rozpatruje Piotr Zieliński.
 
 ## 7. Obsługa błędów
 

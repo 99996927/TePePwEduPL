@@ -7,4 +7,8 @@ public static class PolishTime
 
     public static DateTime ToLocal(DateTime utc) =>
         TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), Zone);
+
+    /// <summary>Czas lokalny na UTC. Czas z luki wiosennej zmiany czasu rzuca <see cref="ArgumentException"/>; czas niejednoznaczny jesienią jest rozstrzygany jako czas standardowy.</summary>
+    public static DateTime ToUtc(DateTime local) =>
+        TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(local, DateTimeKind.Unspecified), Zone);
 }

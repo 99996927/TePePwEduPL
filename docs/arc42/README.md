@@ -6,7 +6,7 @@ Dokumentacja systemu według szablonu [arc42](https://arc42.org/overview/). Jęz
 ewidencję czasu pracy i wstępne naliczanie wynagrodzeń na danych syntetycznych. Agent AI odpowiada na pytania
 pracowników, wykrywa naruszenia norm czasu pracy i przygotowuje korekty dla działu kadr.
 
-**Status dokumentu:** wersja robocza do przeglądu. Zrealizowane: silnik reguł (plan 1), warstwa danych (plan 2), serwisy aplikacyjne (plan 3), API REST (plan 4). W toku: agent, Angular, dane demo, Docker i testy E2E. ADR-24 i ADR-25 czekają na akceptację.
+**Status dokumentu:** wersja robocza do przeglądu. Zrealizowane: silnik reguł (plan 1), warstwa danych (plan 2), serwisy aplikacyjne (plan 3), API REST (plan 4), agent (plan 5), plan 6 (dane demo). Pozostałe: Angular, Docker i testy E2E. ADR-26 czeka na akceptację.
 
 | Sekcja | Plik |
 |---|---|

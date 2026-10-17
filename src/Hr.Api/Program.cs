@@ -8,6 +8,7 @@ using Hr.Core.Domain;
 using Hr.Core.Persistence;
 using Hr.Core.Security;
 using Hr.Core.Seeding;
+using Hr.Core.Seeding.Demo;
 using Hr.Core.Services;
 using Hr.Rules.Calendar;
 using Microsoft.AspNetCore.Authorization;
@@ -151,7 +152,10 @@ await LabourCodeSeeder.SeedAsync(app.Services);
 
 if (app.Configuration.GetValue<bool>("Hr:SeedDemoData"))
 {
-    await DemoSeeder.SeedAsync(app.Services);
+    // Wartości domyślne są w DemoOptions; zła konfiguracja kończy start wyjątkiem z komunikatem po polsku.
+    var demoOptions = DemoOptions.Parse(
+        app.Configuration["Hr:DemoAnchorDate"], app.Configuration["Hr:DemoSeed"], app.Configuration["Hr:DemoProfile"], new WorkCalendar());
+    await DemoSeeder.SeedAsync(app.Services, demoOptions);
 }
 
 app.UseExceptionHandler(errors => errors.Run(context =>

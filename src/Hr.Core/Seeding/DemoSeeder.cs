@@ -1,88 +1,163 @@
+using System.Diagnostics;
 using Hr.Core.Abstractions;
 using Hr.Core.Domain;
 using Hr.Core.Persistence;
+using Hr.Core.Seeding.Demo;
+using Hr.Core.Services;
+using Hr.Rules.Calendar;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Hr.Core.Seeding;
 
-/// <summary>Role, zespoły, pracownicy i 6 kont demo z docs/arc42/07-widok-wdrozenia.md. Idempotentny (po nazwach i loginach).</summary>
+/// <summary>
+/// Zapisuje zbiór z <see cref="DemoDataGenerator"/>: role, zespoły, pracownicy, dane i konta w jednej transakcji, gdy brak
+/// konta <c>anna.nowak</c>; dla profilu <see cref="DemoProfile.Full"/> potem naliczenia przez <see cref="PayrollService"/>
+/// dla każdego miesiąca z <see cref="DemoOptions.PayrollMonths"/> bez wyników. Nigdy nie nadpisuje ani nie usuwa danych.
+/// </summary>
 public static class DemoSeeder
 {
-    private const string TeamEwa = "Zespół Ewy";
-    private const string TeamB = "Zespół B";
-    private const string TeamHr = "Kadry";
+    private const string MarkerLogin = "anna.nowak";
+    private const string PayrollLogin = "piotr.zielinski";
 
-    private sealed record Person(string First, string Last, string Login, string Role, string Team, DateOnly Hired, decimal Salary)
+    public static async Task SeedAsync(IServiceProvider services, DemoOptions options, CancellationToken ct = default)
     {
-        public string Password => Login.Replace(".", string.Empty) + "123";
-    }
+        var clock = services.GetService<IClock>() ?? new SystemClock();
+        var calendar = services.GetService<WorkCalendar>() ?? new WorkCalendar();
+        var logger = services.GetService<ILoggerFactory>()?.CreateLogger(typeof(DemoSeeder).FullName!) ?? NullLogger.Instance;
 
-    private static readonly Person[] People =
-    {
-        new("Anna", "Nowak", "anna.nowak", Roles.Employee, TeamEwa, new DateOnly(2019, 3, 1), 7200m),
-        new("Jan", "Kowalski", "jan.kowalski", Roles.Employee, TeamEwa, new DateOnly(2014, 5, 1), 8000m),
-        new("Tomasz", "Lis", "tomasz.lis", Roles.Employee, TeamB, new DateOnly(2022, 9, 1), 6800m),
-        new("Ewa", "Wiśniewska", "ewa.wisniewska", Roles.Manager, TeamEwa, new DateOnly(2012, 1, 2), 11000m),
-        new("Piotr", "Zieliński", "piotr.zielinski", Roles.HR, TeamHr, new DateOnly(2018, 6, 1), 9000m),
-        new("Maria", "Kamińska", "maria.kaminska", Roles.HRApprover, TeamHr, new DateOnly(2015, 2, 1), 12000m),
-    };
+        var stopwatch = Stopwatch.StartNew();
+        logger.LogInformation(
+            "Seed danych demo: start (profil {Profile}, kotwica {Anchor:yyyy-MM-dd}, ziarno {Seed}).",
+            options.Profile, options.AnchorDate, options.Seed);
 
-    public static async Task SeedAsync(IServiceProvider services, CancellationToken ct = default)
-    {
+        var data = DemoDataGenerator.Build(options, calendar);
+
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<HrDbContext>();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
 
-        foreach (var role in Roles.All)
+        await using (var transaction = await db.Database.BeginTransactionAsync(ct))
         {
-            if (!await roles.RoleExistsAsync(role))
+            foreach (var role in Roles.All)
             {
-                Check(await roles.CreateAsync(new IdentityRole<Guid>(role) { Id = Guid.NewGuid() }), role);
-            }
-        }
-
-        var teams = new Dictionary<string, Team>();
-        foreach (var name in new[] { TeamEwa, TeamB, TeamHr })
-        {
-            teams[name] = await db.Teams.FirstOrDefaultAsync(t => t.Name == name, ct) ?? db.Teams.Add(new Team { Id = Guid.NewGuid(), Name = name }).Entity;
-        }
-
-        await db.SaveChangesAsync(ct);
-
-        var employees = new Dictionary<string, Employee>();
-        foreach (var p in People)
-        {
-            var employee = await db.Employees.FirstOrDefaultAsync(e => e.FirstName == p.First && e.LastName == p.Last, ct)
-                ?? db.Employees.Add(new Employee
+                if (!await roles.RoleExistsAsync(role))
                 {
-                    Id = Guid.NewGuid(), FirstName = p.First, LastName = p.Last,
-                    HireDate = p.Hired, TeamId = teams[p.Team].Id, MonthlySalary = p.Salary,
-                }).Entity;
-            employees[p.Login] = employee;
+                    Check(await roles.CreateAsync(new IdentityRole<Guid>(role) { Id = Guid.NewGuid() }), role);
+                }
+            }
+
+            if (await users.FindByNameAsync(MarkerLogin) is null)
+            {
+                await SeedDataAsync(db, users, data, ct);
+                logger.LogInformation(
+                    "Seed danych demo: zapisano {Teams} zespołów, {People} osób i kont, {Leave} wniosków urlopowych, "
+                    + "{Entries} wpisów czasu, {Changes} zmian płacowych, {Conversations} rozmów.",
+                    data.Teams.Count, data.People.Count, data.LeaveRequests.Count, data.WorkEntries.Count,
+                    data.PayrollChanges.Count, data.Conversations.Count);
+            }
+            else
+            {
+                logger.LogInformation("Seed danych demo: konto {Login} istnieje, pomijam zapis danych.", MarkerLogin);
+            }
+
+            await transaction.CommitAsync(ct);
         }
 
-        await db.SaveChangesAsync(ct);
-
-        teams[TeamEwa].ManagerEmployeeId = employees["ewa.wisniewska"].Id;
-        await db.SaveChangesAsync(ct);
-
-        foreach (var p in People)
+        if (options.Profile == DemoProfile.Full)
         {
-            if (await users.FindByNameAsync(p.Login) is not null)
+            await SeedPayrollAsync(db, data, options, clock, calendar, logger, ct);
+        }
+
+        logger.LogInformation("Seed danych demo: koniec po {Elapsed} ms.", stopwatch.ElapsedMilliseconds);
+    }
+
+    private static async Task SeedDataAsync(
+        HrDbContext db, UserManager<ApplicationUser> users, DemoDataSet data, CancellationToken ct)
+    {
+        // Team.ManagerEmployeeId wskazuje na Employee, a Employee.TeamId na Team: kierowników ustawiamy w drugim kroku.
+        var teams = data.Teams.Select(t => new Team { Id = t.Id, Name = t.Name }).ToList();
+        db.Teams.AddRange(teams);
+        await db.SaveChangesAsync(ct);
+
+        var teamIds = data.Teams.ToDictionary(t => t.Name, t => t.Id);
+        db.Employees.AddRange(data.People.Select(p => new Employee
+        {
+            Id = p.EmployeeId, FirstName = p.First, LastName = p.Last,
+            HireDate = p.HireDate, TeamId = teamIds[p.TeamName], MonthlySalary = p.MonthlySalary,
+        }));
+        await db.SaveChangesAsync(ct);
+
+        foreach (var team in teams)
+        {
+            team.ManagerEmployeeId = data.Teams.Single(t => t.Id == team.Id).ManagerEmployeeId;
+        }
+
+        db.LeaveRequests.AddRange(data.LeaveRequests);
+        db.WorkEntries.AddRange(data.WorkEntries);
+        db.PayrollChanges.AddRange(data.PayrollChanges);
+        db.Conversations.AddRange(data.Conversations);
+        await db.SaveChangesAsync(ct);
+
+        // Konta zapisuje UserManager na tym samym kontekście (ta sama transakcja); tysiące śledzonych wpisów tylko by go spowalniały.
+        db.ChangeTracker.Clear();
+        foreach (var p in data.People)
+        {
+            var user = new ApplicationUser
+            {
+                Id = p.UserId, UserName = p.Login, Email = $"{p.Login}@firma.example", EmailConfirmed = true,
+                EmployeeId = p.EmployeeId,
+            };
+            Check(await users.CreateAsync(user, p.Password), p.Login);
+            Check(await users.AddToRoleAsync(user, p.Role), p.Login);
+        }
+    }
+
+    private static async Task SeedPayrollAsync(
+        HrDbContext db, DemoDataSet data, DemoOptions options, IClock clock, WorkCalendar calendar, ILogger logger,
+        CancellationToken ct)
+    {
+        db.ChangeTracker.Clear();
+        var piotr = data.People.Single(p => p.Login == PayrollLogin);
+        var employeeIds = data.People.Select(p => p.EmployeeId).ToList();
+        var present = await db.Employees.CountAsync(e => employeeIds.Contains(e.Id), ct);
+        if (present != employeeIds.Count || !await db.Users.AnyAsync(u => u.Id == piotr.UserId, ct))
+        {
+            // Np. dawna baza z sześcioma kontami: bez ewidencji naliczenia byłyby puste, więc ich nie tworzymy.
+            logger.LogInformation(
+                "Seed danych demo: w bazie brak pełnego zbioru osób profilu Full ({Present}/{Expected}), pomijam naliczenia.",
+                present, employeeIds.Count);
+            return;
+        }
+
+        var payroll = new PayrollService(db, new SeedCurrentUser(piotr.UserId, piotr.EmployeeId), clock, calendar);
+        foreach (var (year, month) in options.PayrollMonths)
+        {
+            if (await db.PayrollResults.AnyAsync(r => r.Year == year && r.Month == month, ct))
             {
                 continue;
             }
 
-            var user = new ApplicationUser
+            var monthStart = new DateTime(year, month, 1);
+            if (!await db.WorkEntries.AnyAsync(w => w.Start >= monthStart && w.Start < monthStart.AddMonths(1), ct))
             {
-                Id = Guid.NewGuid(), UserName = p.Login, Email = $"{p.Login}@firma.example", EmailConfirmed = true,
-                EmployeeId = employees[p.Login].Id,
-            };
-            Check(await users.CreateAsync(user, p.Password), p.Login);
-            Check(await users.AddToRoleAsync(user, p.Role), p.Login);
+                // Np. przesunięta kotwica na istniejącej bazie: bez ewidencji naliczenie byłoby samą pensją zasadniczą.
+                logger.LogWarning("Seed danych demo: brak ewidencji czasu pracy za {Year}-{Month:00}, pomijam naliczenia.", year, month);
+                continue;
+            }
+
+            var result = await payroll.RunMonthAsync(year, month, ct);
+            if (!result.IsSuccess)
+            {
+                throw new InvalidOperationException($"Seed naliczeń za {year}-{month:00} nie powiódł się: {result.Error!.Message}");
+            }
+
+            logger.LogInformation(
+                "Seed danych demo: naliczenia za {Year}-{Month:00} dla {Count} pracowników.", year, month, result.Value!.Count);
         }
     }
 
