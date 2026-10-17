@@ -1,0 +1,67 @@
+:host {
+  display: block;
+}
+
+.hint {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bubble {
+  max-width: min(80%, 640px);
+  padding: 8px 12px;
+  border-radius: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+
+  &.user {
+    align-self: flex-end;
+    background: var(--mat-sys-primary-container);
+    color: var(--mat-sys-on-primary-container);
+  }
+
+  &.assistant {
+    align-self: flex-start;
+    background: var(--mat-sys-surface-container-high);
+    color: var(--mat-sys-on-surface);
+  }
+
+  &.pending {
+    font-style: italic;
+  }
+}
+
+.tool {
+  align-self: stretch;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 13px;
+
+  summary {
+    cursor: pointer;
+  }
+
+  pre {
+    margin: 8px 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 320px;
+    overflow: auto;
+  }
+}
+
+.warning {
+  align-self: flex-start;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  overflow-wrap: anywhere;
+}

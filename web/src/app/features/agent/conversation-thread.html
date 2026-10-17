@@ -1,0 +1,41 @@
+@if (loading()) {
+  <mat-progress-bar mode="indeterminate" aria-label="Ładowanie rozmowy" />
+}
+@if (!loading() && messages().length === 0 && !pending()) {
+  <p class="hint">{{ emptyHint() }}</p>
+}
+<div class="thread">
+  @for (m of messages(); track m.seq) {
+    @switch (m.role) {
+      @case ('ToolCall') {
+        <details class="tool" [attr.data-message]="m.seq" [attr.data-role]="m.role">
+          <summary>Wywołanie narzędzia: {{ m.toolName }}</summary>
+          <pre>{{ m.toolParams ?? '{}' }}</pre>
+        </details>
+      }
+      @case ('ToolResult') {
+        <details class="tool" [attr.data-message]="m.seq" [attr.data-role]="m.role">
+          <summary>Wynik narzędzia: {{ m.toolName }}</summary>
+          <pre>{{ m.content }}</pre>
+        </details>
+      }
+      @default {
+        <div
+          class="bubble"
+          [class.user]="m.role === 'User'"
+          [class.assistant]="m.role === 'Assistant'"
+          [attr.data-message]="m.seq"
+          [attr.data-role]="m.role"
+        >{{ m.content }}</div>
+      }
+    }
+    @if (warning(); as text) {
+      @if (m.seq === lastAssistantSeq()) {
+        <div class="warning" role="alert">{{ text }}</div>
+      }
+    }
+  }
+  @if (pending()) {
+    <div class="bubble assistant pending" aria-live="polite">Agent pisze…</div>
+  }
+</div>
