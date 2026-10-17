@@ -142,3 +142,15 @@
   --mat-button-filled-container-color: #fff;
   --mat-button-filled-label-text-color: #7b1fa2;
 }
+
+// Dialogi: zaokrąglenie, cień i tytuł z akcentem.
+.mat-mdc-dialog-container {
+  --mat-dialog-container-shape: 12px;
+  --mat-dialog-container-elevation-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+
+  .mat-mdc-dialog-title {
+    border-left: 4px solid #7b1fa2;
+    margin-left: 24px;
+    padding-left: 12px;
+  }
+}
