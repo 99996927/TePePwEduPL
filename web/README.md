@@ -25,5 +25,5 @@ Frontend systemu kadrowego: Angular 22 (standalone, zoneless, SCSS) i Angular Ma
 
 - `src/app/api` jest generowany; nie edytuj go ręcznie. Po zmianie kontraktu OpenAPI uruchom `npm run api:gen` i zatwierdź zmiany.
 - Zawartość `src/Hr.Api/wwwroot/` (poza `.gitkeep`) nie jest w repozytorium; powstaje przez `npm run build` i `npm run build:wwwroot`.
-- Budżet rozmiaru `initial` jest domyślny z `angular.json`. Jeśli build zacznie ostrzegać, podnieś `maximumWarning` do `900kB` i `maximumError` do `1.5MB` oraz opisz zmianę tutaj.
+- Budżet rozmiaru `initial` w `angular.json` podniesiony do `maximumWarning` 900kB i `maximumError` 1.5MB (Angular Material przekroczył domyślne 500kB: 504 kB po dodaniu ekranu urlopów).
 - Ostrzeżenia npm 11 `allow-scripts` są nieszkodliwe dla budowania i testów.
