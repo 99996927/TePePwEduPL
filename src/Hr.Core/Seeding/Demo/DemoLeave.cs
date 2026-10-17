@@ -21,13 +21,13 @@ public static class DemoLeave
             switch (p.Login)
             {
                 case "anna.nowak":
-                    result.Add(Scenario(o, calendar, p, 1, DemoScenarios.AnnaLeaveRealized(o.AnchorDate), LeaveStatus.Approved, decider, null));
-                    result.Add(Scenario(o, calendar, p, 2, DemoScenarios.AnnaLeaveFuture(o.AnchorDate), LeaveStatus.Approved, decider, null));
-                    result.Add(Scenario(o, calendar, p, 3, DemoScenarios.AnnaLeavePending(o.AnchorDate), LeaveStatus.Pending, null, null));
+                    result.Add(Create(o, calendar, p, 1, DemoScenarios.AnnaLeaveRealized(o.AnchorDate).From, DemoScenarios.AnnaLeaveRealized(o.AnchorDate).To, LeaveStatus.Approved, decider, null));
+                    result.Add(Create(o, calendar, p, 2, DemoScenarios.AnnaLeaveFuture(o.AnchorDate).From, DemoScenarios.AnnaLeaveFuture(o.AnchorDate).To, LeaveStatus.Approved, decider, null));
+                    result.Add(Create(o, calendar, p, 3, DemoScenarios.AnnaLeavePending(o.AnchorDate).From, DemoScenarios.AnnaLeavePending(o.AnchorDate).To, LeaveStatus.Pending, null, null));
                     break;
                 case "jan.kowalski":
-                    result.Add(Scenario(o, calendar, p, 1, DemoScenarios.JanLeaveRejected(o.AnchorDate), LeaveStatus.Rejected, decider, DemoScenarios.RejectionReason));
-                    result.Add(Scenario(o, calendar, p, 2, DemoScenarios.JanLeaveCancelled(o.AnchorDate), LeaveStatus.Cancelled, null, null));
+                    result.Add(Create(o, calendar, p, 1, DemoScenarios.JanLeaveRejected(o.AnchorDate).From, DemoScenarios.JanLeaveRejected(o.AnchorDate).To, LeaveStatus.Rejected, decider, DemoScenarios.RejectionReason));
+                    result.Add(Create(o, calendar, p, 2, DemoScenarios.JanLeaveCancelled(o.AnchorDate).From, DemoScenarios.JanLeaveCancelled(o.AnchorDate).To, LeaveStatus.Cancelled, null, null));
                     break;
                 default:
                     result.AddRange(PastLeaves(o, calendar, p, decider));
@@ -52,11 +52,6 @@ public static class DemoLeave
         return hr.EmployeeId;
     }
 
-    private static LeaveRequest Scenario(
-        DemoOptions o, WorkCalendar calendar, DemoPerson p, int n, (DateOnly From, DateOnly To) range,
-        LeaveStatus status, Guid? decidedBy, string? reason) =>
-        Create(o, calendar, p, n, range.From, range.To, status, decidedBy, reason);
-
     private static LeaveRequest Create(
         DemoOptions o, WorkCalendar calendar, DemoPerson p, int n, DateOnly from, DateOnly to,
         LeaveStatus status, Guid? decidedBy, string? reason)
@@ -78,7 +73,7 @@ public static class DemoLeave
 
     private static IEnumerable<LeaveRequest> PastLeaves(DemoOptions o, WorkCalendar calendar, DemoPerson p, Guid decider)
     {
-        var rng = new Random(o.Seed ^ StableHash(p.Login));
+        var rng = new Random(DemoIds.SeedFor(o.Seed, p.Login));
         var count = rng.Next(1, 3);
         var windowStart = o.AnchorDate.AddDays(-WindowDays);
         var taken = new List<(DateOnly From, DateOnly To)>();
@@ -115,17 +110,5 @@ public static class DemoLeave
                 break;
             }
         }
-    }
-
-    // string.GetHashCode jest losowy między uruchomieniami, więc używamy własnego skrótu.
-    private static int StableHash(string s)
-    {
-        var h = 17;
-        foreach (var c in s)
-        {
-            h = unchecked(h * 31 + c);
-        }
-
-        return h;
     }
 }

@@ -84,6 +84,10 @@ public class DemoLeaveTests
         {
             var leaves = all.Where(l => l.EmployeeId == p.EmployeeId).OrderBy(l => l.From).ToList();
             Assert.InRange(leaves.Count, 1, 2);
+            var expectedDecider = p.Role == "Employee" && p.TeamName != DemoPeople.TeamHr
+                ? People.Single(x => x.Role == "Manager" && x.TeamName == p.TeamName).EmployeeId
+                : Person("piotr.zielinski").EmployeeId;
+            Assert.All(leaves, l => Assert.Equal(expectedDecider, l.DecidedByEmployeeId));
             Assert.All(leaves, l =>
             {
                 Assert.Equal(LeaveStatus.Approved, l.Status);

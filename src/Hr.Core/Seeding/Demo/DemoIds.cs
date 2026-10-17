@@ -11,4 +11,8 @@ public static class DemoIds
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes($"{seed}:{key}"));
         return new Guid(hash.AsSpan(0, 16));
     }
+
+    /// <summary>Stabilne ziarno <see cref="Random"/> dla osoby: zależy od (ziarno, login), nie od uruchomienia procesu.</summary>
+    public static int SeedFor(int seed, string login) =>
+        BitConverter.ToInt32(SHA256.HashData(Encoding.UTF8.GetBytes($"{seed}:seed:{login}")), 0);
 }
