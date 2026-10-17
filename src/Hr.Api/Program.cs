@@ -152,7 +152,10 @@ await LabourCodeSeeder.SeedAsync(app.Services);
 
 if (app.Configuration.GetValue<bool>("Hr:SeedDemoData"))
 {
-    await DemoSeeder.SeedAsync(app.Services, DemoOptions.Default);
+    // Wartości domyślne są w DemoOptions; zła konfiguracja kończy start wyjątkiem z komunikatem po polsku.
+    var demoOptions = DemoOptions.Parse(
+        app.Configuration["Hr:DemoAnchorDate"], app.Configuration["Hr:DemoSeed"], app.Configuration["Hr:DemoProfile"], new WorkCalendar());
+    await DemoSeeder.SeedAsync(app.Services, demoOptions);
 }
 
 app.UseExceptionHandler(errors => errors.Run(context =>

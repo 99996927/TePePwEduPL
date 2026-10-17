@@ -9,8 +9,12 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Hr.Api.IntegrationTests;
 
-/// <summary>Aplikacja na świeżej bazie SQL Server (migracje i konta demo zakłada start aplikacji), zegar stały: 2026-10-16 12:00 UTC.</summary>
-public sealed class HrApiFactory(string connectionString, string environment = "Development", bool seedDemoData = true, bool scriptedModel = true)
+/// <summary>
+/// Aplikacja na świeżej bazie SQL Server (migracje i konta demo zakłada start aplikacji), zegar stały: 2026-10-16 12:00 UTC.
+/// Domyślny profil danych demo to <c>Accounts</c> (sześć kont, bez danych), więc testy API działają na minimalnym zbiorze.
+/// </summary>
+public sealed class HrApiFactory(
+    string connectionString, string environment = "Development", bool seedDemoData = true, bool scriptedModel = true, string demoProfile = "Accounts")
     : WebApplicationFactory<Program>
 {
     public FakeClock Clock { get; } = new();
@@ -18,8 +22,9 @@ public sealed class HrApiFactory(string connectionString, string environment = "
     /// <summary>Skryptowany model podstawiony pod prawdziwą pętlę narzędzi (<c>UseFunctionInvocation</c>), więc narzędzia wykonują się naprawdę.</summary>
     public ScriptedChatClient Model { get; } = new();
 
-    public static async Task<HrApiFactory> CreateAsync(MsSqlFixture fixture, string environment = "Development", bool seedDemoData = true, bool scriptedModel = true) =>
-        new(await fixture.NewDatabaseAsync(), environment, seedDemoData, scriptedModel);
+    public static async Task<HrApiFactory> CreateAsync(
+        MsSqlFixture fixture, string environment = "Development", bool seedDemoData = true, bool scriptedModel = true, string demoProfile = "Accounts") =>
+        new(await fixture.NewDatabaseAsync(), environment, seedDemoData, scriptedModel, demoProfile);
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -27,6 +32,7 @@ public sealed class HrApiFactory(string connectionString, string environment = "
         // UseSetting działa przed odczytem konfiguracji w Program (ConfigureAppConfiguration byłoby za późno).
         builder.UseSetting("ConnectionStrings:Hr", connectionString);
         builder.UseSetting("Hr:SeedDemoData", seedDemoData ? "true" : "false");
+        builder.UseSetting("Hr:DemoProfile", demoProfile);
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<IClock>();
