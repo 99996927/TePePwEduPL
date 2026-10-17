@@ -32,7 +32,7 @@ flowchart TB
 
 | Blok | Odpowiedzialność |
 |---|---|
-| Angular | Panel pracownika (wnioski, czas, agent, naliczenia) i panel kadr (naliczenia, zmiany płacowe, audyt). Zbudowany do plików statycznych. |
+| Angular | Panel pracownika (wnioski, czas, agent, naliczenia) i panel kadr (naliczenia, zmiany płacowe, audyt). Zbudowany do plików statycznych (ADR-29). Stan po planie 7a: logowanie, pulpit, urlopy, zatwierdzanie urlopów, czas pracy z analizą i przegląd zespołu; agent, naliczenia, zmiany płacowe i audyt w planach 7b i 7c. |
 | Kontrolery REST API | Uwierzytelnianie, autoryzacja po rolach, walidacja żądań, mapowanie DTO. |
 | Serwisy aplikacyjne | Przypadki użycia (wnioski, ewidencja, naliczenia, zmiany płacowe), sprawdzanie zakresu danych (własne, zespół, wszystkie). |
 | Silnik reguł płacowych | Czyste, deterministyczne reguły: dni robocze, saldo urlopu, nadgodziny, normy czasu pracy, dodatki, naliczenie. Bez I/O. |

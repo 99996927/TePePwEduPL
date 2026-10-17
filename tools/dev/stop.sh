@@ -90,7 +90,14 @@ if command -v docker >/dev/null 2>&1; then
     fi
   elif [[ "$(docker container inspect -f '{{.State.Running}}' "$DB_CONTAINER" 2>/dev/null || true)" == "true" ]]; then
     echo "Zatrzymuję kontener $DB_CONTAINER (dane zostają w wolumenie $DB_VOLUME)..."
-    docker stop "$DB_CONTAINER" >/dev/null
+    # Obraz SQL Server nie przekazuje SIGTERM do serwera (docker stop kończy się SIGKILL, kod 137),
+    # dlatego najpierw zamykamy bazę poleceniem SHUTDOWN; przy błędzie i tak zatrzymujemy kontener.
+    if [[ -f "$ROOT_DIR/.env" ]]; then
+      SQLCMDPASSWORD="$(grep '^HR_DEV_SA_PASSWORD=' "$ROOT_DIR/.env" | tail -n 1 | cut -d= -f2- || true)"
+      export SQLCMDPASSWORD
+      docker exec -e SQLCMDPASSWORD "$DB_CONTAINER" /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -Q "SHUTDOWN" -b >/dev/null 2>&1 || true
+    fi
+    docker stop -t 30 "$DB_CONTAINER" >/dev/null
   fi
 else
   echo "Brak programu docker: pomijam zatrzymanie bazy." >&2

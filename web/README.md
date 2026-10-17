@@ -21,6 +21,19 @@ Frontend systemu kadrowego: Angular 22 (standalone, zoneless, SCSS) i Angular Ma
 | `npm run build:wwwroot` | Kopiuje `dist/hr-app/browser/*` do `../src/Hr.Api/wwwroot/` (czyści go poza `.gitkeep`). |
 | `npm run verify` | `api:check`, testy i build produkcyjny. |
 
+## Uruchomienie całego rozwiązania (testy ręczne)
+
+Skrypty w `tools/dev/` (z katalogu głównego repozytorium lub dowolnego innego; szczegóły w `docs/arc42/07-widok-wdrozenia.md`, sekcja 7.4):
+
+| Polecenie | Działanie |
+|---|---|
+| `tools/dev/run.sh` | SQL Server w Dockerze (`hr-dev-db`, `127.0.0.1:14330`), `npm ci`, `npm run build:dev`, `npm run build:wwwroot`, `Hr.Api` w tle na `http://127.0.0.1:5080` z danymi demo, test dymny i komenda tunelu SSH. Można uruchamiać wielokrotnie. |
+| `tools/dev/stop.sh` | Kończy `Hr.Api` i zatrzymuje bazę (dane zostają w wolumenie). |
+| `tools/dev/stop.sh --reset` | Jak wyżej oraz usuwa kontener i wolumen bazy. |
+| `tools/dev/smoke.sh [adres]` | Test dymny działającej aplikacji (`OK`/`BŁĄD` dla każdego kroku). |
+
+Log API: `.run/api.log`. Lista kroków testu ręcznego: `docs/testy-reczne/plan-7a.md`. Do pracy nad samym frontendem można zamiast tego użyć `npm start` (proxy `/api` na działające `Hr.Api`).
+
 ## Uwagi
 
 - `src/app/api` jest generowany; nie edytuj go ręcznie. Po zmianie kontraktu OpenAPI uruchom `npm run api:gen` i zatwierdź zmiany.
