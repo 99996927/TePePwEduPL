@@ -17,4 +17,5 @@ public sealed record DemoDataSet
     public IReadOnlyList<DemoTeam> Teams { get; init; } = new List<DemoTeam>();
     public IReadOnlyList<DemoPerson> People { get; init; } = new List<DemoPerson>();
     public IReadOnlyList<LeaveRequest> LeaveRequests { get; init; } = new List<LeaveRequest>();
+    public IReadOnlyList<WorkEntryRecord> WorkEntries { get; init; } = new List<WorkEntryRecord>();
 }
