@@ -1,4 +1,4 @@
-import { formatDate, formatHours, formatTime, monthRange, toDateOnly, toLocalDateTime } from './date-format';
+import { localDay, workedHours, formatDate, formatHours, formatTime, monthRange, toDateOnly, toLocalDateTime } from './date-format';
 
 describe('date-format', () => {
   it('toLocalDateTime_combines_local_day_and_time_without_zone', () => {
@@ -25,5 +25,16 @@ describe('date-format', () => {
 
   it('formatDate_uses_polish_locale', () => {
     expect(formatDate('2026-10-12')).toBe('12.10.2026');
+  });
+
+  it('localDay_builds_local_midnight_from_date_part', () => {
+    const d = localDay('2026-10-25T23:59:00');
+    expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()]).toEqual([2026, 9, 25, 0]);
+  });
+
+  it('workedHours_uses_wall_clock_difference_minus_break', () => {
+    expect(workedHours('2026-10-25T00:00:00', '2026-10-25T08:00:00', 30)).toBe(7.5);
+    expect(workedHours('2026-03-29T00:00:00', '2026-03-29T08:00:00', 0)).toBe(8);
+    expect(workedHours('2026-10-05T22:00:00', '2026-10-06T06:00:00', 0)).toBe(8);
   });
 });

@@ -6,6 +6,7 @@ import { MATERIAL_ANIMATIONS, provideNativeDateAdapter } from '@angular/material
 import { MatDialogHarness } from '@angular/material/dialog/testing';
 import { MatSelectHarness } from '@angular/material/select/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { provideApiConfiguration } from '../../api/api-configuration';
 import { EmployeeDto } from '../../api/models/employee-dto';
 import { WorkEntryDto } from '../../api/models/work-entry-dto';
@@ -30,7 +31,12 @@ const octoberEntries = [
 describe('Timesheet', () => {
   let http: HttpTestingController;
 
-  async function setup(roles: string[], list: WorkEntryDto[] = octoberEntries) {
+  async function setup(
+    roles: string[],
+    list: WorkEntryDto[] = octoberEntries,
+    query: Record<string, string> = {},
+    from = '2026-10-01',
+  ) {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(2026, 9, 16, 12));
     const user = signal({ userId: 'u1', employeeId: 'e1', userName: 'x', displayName: 'X', roles });
@@ -41,6 +47,7 @@ describe('Timesheet', () => {
         provideApiConfiguration(''),
         provideNativeDateAdapter(),
         { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(query) } } },
         {
           provide: SessionService,
           useValue: { user: user.asReadonly(), hasRole: (...r: string[]) => r.some((x) => roles.includes(x)) },
@@ -52,7 +59,7 @@ describe('Timesheet', () => {
     fixture.detectChanges();
     if (roles.some((r) => r !== 'Employee')) http.expectOne('/api/employees').flush(employees);
     http
-      .expectOne((r) => r.url === '/api/timesheet/entries' && r.params.get('from') === '2026-10-01')
+      .expectOne((r) => r.url === '/api/timesheet/entries' && r.params.get('from') === from)
       .flush(list);
     await settle(fixture);
     const el = fixture.nativeElement as HTMLElement;
@@ -68,6 +75,8 @@ describe('Timesheet', () => {
   }
 
   afterEach(() => {
+    // The embedded analysis panel is covered by its own spec; discard its requests here.
+    http.match((r) => r.url === '/api/timesheet/analysis');
     http.verify();
     vi.useRealTimers();
   });
@@ -89,6 +98,7 @@ describe('Timesheet', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideApiConfiguration(''),
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({}) } } },
         { provide: SessionService, useValue: { user: signal({ employeeId: 'e1', roles: ['Employee'] }), hasRole: () => false } },
       ],
     });
@@ -120,6 +130,11 @@ describe('Timesheet', () => {
     expect(el.querySelector('[data-row="w2"]')!.textContent).not.toContain('+1 dzień');
   });
 
+  it('worked_hours_use_wall_clock_on_the_dst_change_day_regardless_of_browser_timezone', async () => {
+    const { el } = await setup(['Employee'], [entry('d1', 'e1', '2026-10-25T00:00:00', '2026-10-25T08:00:00')]);
+    expect(el.querySelector('[data-row="d1"]')!.textContent).toContain('7,5');
+  });
+
   it('shows_empty_state', async () => {
     const { el } = await setup(['Employee'], []);
     expect(el.textContent).toContain('Brak wpisów w tym miesiącu');
@@ -143,6 +158,48 @@ describe('Timesheet', () => {
     await select.clickOptions({ text: 'Jan Kowalski (Platforma)' });
     await settle(fixture);
     expect(ids(el)).toEqual(['w3']);
+  });
+
+  it('manager_reads_employee_and_month_from_query_params', async () => {
+    const { el } = await setup(
+      ['Manager'],
+      [entry('q1', 'e2', '2026-09-08T09:00:00', '2026-09-08T17:00:00')],
+      { pracownik: 'e2', miesiac: '2026-09' },
+      '2026-09-01',
+    );
+    expect(ids(el)).toEqual(['q1']);
+    expect(el.querySelector('app-month-switcher')!.textContent).toContain('wrzesień 2026');
+    expect(el.querySelector('mat-select')!.textContent).toContain('Jan Kowalski');
+  });
+
+  it('employee_role_ignores_pracownik_query_param', async () => {
+    const { el } = await setup(['Employee'], octoberEntries, { pracownik: 'e2' });
+    expect(ids(el)).toEqual(['w1', 'w2']);
+  });
+
+  it('invalid_or_future_month_query_falls_back_to_current_month', async () => {
+    await setup(['Employee'], octoberEntries, { miesiac: '2027-01' });
+    TestBed.resetTestingModule();
+    const { el } = await setup(['Employee'], octoberEntries, { miesiac: 'abc' });
+    expect(ids(el)).toEqual(['w1', 'w2']);
+  });
+
+  it('embeds_analysis_panel_for_selected_employee', async () => {
+    const { el, loader, fixture } = await setup(['Manager']);
+    const first = http.expectOne((r) => r.url === '/api/timesheet/analysis');
+    expect(first.request.params.get('employeeId')).toBe('e1');
+    expect(first.request.params.get('from')).toBe('2026-10-01');
+    first.flush({
+      normHours: 160, workedHours: 1, overtime: { hours50: 0, hours100: 0, total: 0, ruleIds: [] },
+      restViolations: [], weeklyAverage: { averageWeeklyHours: 0, exceedsLimit: false, ruleId: 'x' },
+      overtimeYearToDate: 0, annualOvertimeLimitExceeded: false,
+    });
+    expect(el.querySelector('app-analysis-panel')).toBeTruthy();
+    const select = await loader.getHarness(MatSelectHarness);
+    await select.open();
+    await select.clickOptions({ text: 'Jan Kowalski (Platforma)' });
+    await settle(fixture);
+    expect(http.expectOne((r) => r.url === '/api/timesheet/analysis').request.params.get('employeeId')).toBe('e2');
   });
 
   it('add_button_only_for_own_time', async () => {
@@ -211,6 +268,7 @@ describe('Timesheet', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideApiConfiguration(''),
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({}) } } },
         { provide: SessionService, useValue: { user: signal({ employeeId: 'e1', roles: ['Employee'] }), hasRole: () => false } },
       ],
     });

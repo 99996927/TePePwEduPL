@@ -1,0 +1,29 @@
+.toolbar {
+  margin-bottom: 16px;
+}
+
+table {
+  width: 100%;
+}
+
+.clickable {
+  cursor: pointer;
+
+  &:hover {
+    background: var(--mat-sys-surface-container-high);
+  }
+}
+
+.badge {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  font-size: 0.85em;
+}
+
+.error {
+  color: var(--mat-sys-error);
+}

@@ -56,3 +56,5 @@
     <tr mat-row *matRowDef="let e; columns: columns" [attr.data-row]="e.id"></tr>
   </table>
 }
+
+<app-analysis-panel [employeeId]="selectedId()" [month]="month()" />

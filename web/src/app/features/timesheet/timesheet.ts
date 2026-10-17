@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatTableModule } from '@angular/material/table';
@@ -6,23 +7,29 @@ import { firstValueFrom } from 'rxjs';
 import { WorkEntryDto } from '../../api/models/work-entry-dto';
 import { TimesheetService } from '../../api/services/timesheet.service';
 import { messageOf, problemOf } from '../../core/api-problem';
-import { formatDate, formatHours, formatTime, monthRange } from '../../core/date-format';
+import { formatDate, formatHours, formatTime, localDay, monthRange, workedHours } from '../../core/date-format';
 import { EmployeeDirectory } from '../../core/employee-directory';
 import { Notifier } from '../../core/notifier';
 import { APPROVER_ROLES, Roles } from '../../core/roles';
 import { SessionService } from '../../core/session';
 import { EmployeePicker } from '../../shared/employee-picker';
 import { MonthSwitcher } from '../../shared/month-switcher';
+import { AnalysisPanel } from './analysis-panel';
 import { EntryDialog, EntryDialogData } from './entry-dialog';
 
-function localDay(iso: string): Date {
-  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
-  return new Date(y, m - 1, d);
+/** Month from a `yyyy-MM` query value; invalid or future values fall back to the current month. */
+function initialMonth(value: string | null): Date {
+  const now = new Date();
+  const current = new Date(now.getFullYear(), now.getMonth(), 1);
+  const match = value ? /^(\d{4})-(0[1-9]|1[0-2])$/.exec(value) : null;
+  if (!match) return current;
+  const requested = new Date(Number(match[1]), Number(match[2]) - 1, 1);
+  return requested > current ? current : requested;
 }
 
 @Component({
   selector: 'app-timesheet',
-  imports: [MatButtonModule, MatTableModule, MonthSwitcher, EmployeePicker],
+  imports: [MatButtonModule, MatTableModule, MonthSwitcher, EmployeePicker, AnalysisPanel],
   templateUrl: './timesheet.html',
   styleUrl: './timesheet.scss',
 })
@@ -40,8 +47,12 @@ export class Timesheet {
   private readonly ownId = this.session.user()?.employeeId ?? null;
   private readonly isHr = this.session.hasRole(Roles.HR, Roles.HRApprover);
 
-  protected readonly month = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-  protected readonly selectedId = signal<string | null>(this.ownId);
+  private readonly query = inject(ActivatedRoute).snapshot.queryParamMap;
+
+  protected readonly month = signal(initialMonth(this.query.get('miesiac')));
+  protected readonly selectedId = signal<string | null>(
+    this.isApprover ? (this.query.get('pracownik') ?? this.ownId) : this.ownId,
+  );
   protected readonly entries = signal<WorkEntryDto[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
@@ -78,8 +89,7 @@ export class Timesheet {
   }
 
   protected workedHours(e: WorkEntryDto): number {
-    const ms = new Date(e.end).getTime() - new Date(e.start).getTime();
-    return ms / 3_600_000 - e.breakMinutes / 60;
+    return workedHours(e.start, e.end, e.breakMinutes);
   }
 
   protected canCorrect(e: WorkEntryDto): boolean {

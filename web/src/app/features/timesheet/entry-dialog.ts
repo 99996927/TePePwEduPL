@@ -10,17 +10,12 @@ import { firstValueFrom } from 'rxjs';
 import { WorkEntryDto } from '../../api/models/work-entry-dto';
 import { TimesheetService } from '../../api/services/timesheet.service';
 import { messageOf, problemOf } from '../../core/api-problem';
-import { toLocalDateTime } from '../../core/date-format';
+import { localDay, toLocalDateTime } from '../../core/date-format';
 import { Notifier } from '../../core/notifier';
 
 export type EntryDialogData = { mode: 'add' } | { mode: 'correct'; entry: WorkEntryDto };
 
 const TIME = /^\d{2}:\d{2}$/;
-
-function localDay(iso: string): Date {
-  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
 
 /** Dialog for adding or correcting a work entry; closes with the saved `WorkEntryDto`. */
 @Component({

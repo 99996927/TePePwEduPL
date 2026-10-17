@@ -28,3 +28,20 @@ export function formatTime(s: string): string {
 export function formatHours(n: number): string {
   return n.toLocaleString('pl-PL', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
+
+/** Local midnight of the date part of an ISO-like string. */
+export function localDay(iso: string): Date {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function wallClockMinutes(s: string): number {
+  const [y, mo, d] = s.slice(0, 10).split('-').map(Number);
+  const [h, mi] = s.slice(11, 16).split(':').map(Number);
+  return Date.UTC(y, mo - 1, d, h, mi) / 60_000;
+}
+
+/** Worked hours as the wall-clock difference minus break (matches the backend, independent of browser timezone). */
+export function workedHours(start: string, end: string, breakMinutes: number): number {
+  return (wallClockMinutes(end) - wallClockMinutes(start) - breakMinutes) / 60;
+}

@@ -1,0 +1,47 @@
+<section class="panel">
+  <h2>Analiza czasu pracy</h2>
+  @let s = state();
+  @if (s.status === 'loading') {
+    <mat-progress-bar mode="indeterminate" />
+  } @else if (s.status === 'error') {
+    <p class="error" role="alert">{{ s.message }}</p>
+    <button matButton type="button" data-retry (click)="load()">Spróbuj ponownie</button>
+  } @else {
+    <dl>
+      <dt>Norma</dt><dd data-value="norm">{{ formatHours(s.data.normHours) }} h</dd>
+      <dt>Przepracowane</dt><dd data-value="worked">{{ formatHours(s.data.workedHours) }} h</dd>
+      <dt>Nadgodziny 50%</dt><dd data-value="overtime50">{{ formatHours(s.data.overtime.hours50) }} h</dd>
+      <dt>Nadgodziny 100%</dt><dd data-value="overtime100">{{ formatHours(s.data.overtime.hours100) }} h</dd>
+      <dt>Średnia tygodniowa</dt>
+      <dd data-value="average" [class.exceeded]="s.data.weeklyAverage.exceedsLimit">
+        {{ formatHours(s.data.weeklyAverage.averageWeeklyHours) }} h (limit {{ weeklyLimit }} h)
+        @if (s.data.weeklyAverage.exceedsLimit) {
+          <strong>ponad limit {{ weeklyLimit }} h</strong>
+        }
+      </dd>
+      <dt>Nadgodziny w roku</dt>
+      <dd data-value="ytd" [class.exceeded]="s.data.annualOvertimeLimitExceeded">
+        {{ formatHours(s.data.overtimeYearToDate) }} h z {{ formatHours(annualLimit) }} h
+      </dd>
+    </dl>
+    @if (s.data.annualOvertimeLimitExceeded) {
+      <p class="exceeded" role="alert" data-annual-warning>Przekroczony roczny limit {{ annualLimit }} h nadgodzin</p>
+    }
+
+    <h3>Naruszenia odpoczynku</h3>
+    @if (s.data.restViolations.length === 0) {
+      <p>Brak naruszeń</p>
+    } @else {
+      <ul class="violations">
+        @for (v of s.data.restViolations; track $index) {
+          <li data-violation>
+            <strong>{{ label(v.ruleId) }}</strong>
+            {{ formatDate(v.from) }} {{ formatTime(v.from) }} – {{ formatDate(v.to) }} {{ formatTime(v.to) }}:
+            {{ formatHours(v.restHours) }} h wobec wymaganych {{ formatHours(v.requiredHours) }} h
+            <span class="rule">({{ v.ruleId }})</span>
+          </li>
+        }
+      </ul>
+    }
+  }
+</section>
