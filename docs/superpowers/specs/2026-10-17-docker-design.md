@@ -16,6 +16,7 @@ Cały system (baza, API i Angular) startuje jedną komendą na tym hoście z Doc
 4. Strona nie ładuje żadnych zasobów spoza własnego hosta (brak `fonts.googleapis.com` i `fonts.gstatic.com`), a ikony i fonty renderują się poprawnie.
 5. Dane przeżywają `docker compose down` (wolumen); `tools/docker/down.sh --reset` usuwa je.
 6. `tools/dev/run.sh` i `tools/dev/stop.sh` działają jak dotąd; testy .NET i `npm run verify` przechodzą bez zmian asercji.
+7. `README.md` w katalogu głównym zawiera szczegółowy opis i instrukcję uruchomienia z założeniem, że dostępny jest tylko Docker Engine (sekcja 8.1); osoba, która ma wyłącznie Docker i repozytorium, uruchamia system wyłącznie według README.
 
 ## 2. Decyzje
 
@@ -67,9 +68,27 @@ Nazwa projektu: `hr`. Sieć domyślna projektu; kontenery `hr-db` i `hr-app`; wo
 
 ## 8. Dokumentacja
 
+### 8.1 `README.md` (katalog główny): opis i instrukcja uruchomienia
+
+Wymaganie właściciela: README opisuje szczegółowo, jak uruchomić system i w jakich warunkach, przy założeniu, że dostępny jest Docker Engine. Sekcje, w tej kolejności:
+1. **Co to jest:** jedno akapitowy opis aplikacji, architektura w jednym diagramie (`hr-app`, `hr-db`, Anthropic API) i stan planów.
+2. **Wymagania:** Linux x86_64; Docker Engine ≥ 24 z wtyczką Compose v2 (≥ 2.20, bo `--wait`); dostęp do demona bez `sudo` (grupa `docker`); `bash`, `curl`, `python3` (skrypty i test dymny); ok. 2 GB wolnego RAM dla SQL Server (zalecane 4 GB), ok. 6 GB miejsca na obrazy i wolumen; dostęp do internetu hosta tylko przy pierwszym budowaniu (pobranie obrazów i pakietów), potem system działa offline poza czatem agenta (wymaga HTTPS do Anthropic API); wolny port 5080 na loopbacku; przeglądarka bez dostępu do internetu wystarcza (fonty hostowane samodzielnie). Dotnet, node i npm na hoście nie są potrzebne.
+3. **Szybki start:** `git clone`, opcjonalny klucz Anthropic w `.env`, `tools/docker/up.sh`, oczekiwany końcowy komunikat, adres `http://localhost:5080`.
+4. **Dostęp z innego komputera:** komenda tunelu SSH (`ssh -N -L 5080:127.0.0.1:5080 <użytkownik>@<host>`) i dlaczego aplikacja nasłuchuje tylko na `127.0.0.1`.
+5. **Klucz Anthropic i `.env`:** gdzie i jak wpisać `ANTHROPIC_API_KEY`, co robi hasło `HR_DB_PASSWORD` (generowane automatycznie), że `.env` nie jest commitowany i że wartości nie są wypisywane; zachowanie bez klucza (czat 503, reszta działa); jak zmienić klucz (`up.sh` ponownie).
+6. **Konta demo i dane:** odnośnik do arc42 7.2 oraz skrócona tabela sześciu kont; ostrzeżenie R-03 (jawne hasła, nie wystawiać do internetu).
+7. **Codzienna obsługa:** `up.sh`, `down.sh`, `down.sh --reset`, logi (`docker compose logs -f hr-app`), status (`docker compose ps`), ponowny start po restarcie maszyny, gdzie leżą dane (wolumen `hr-db-data`).
+8. **Warunki działania i ograniczenia:** instancja demonstracyjna, jedna instancja aplikacji, HTTP bez TLS, brak uwierzytelniania poza aplikacją, środowisko `Production` z seedem demo, hasło SA związane z wolumenem, konflikt portu 5080 z `tools/dev/run.sh`.
+9. **Rozwiązywanie problemów:** tabela objaw → przyczyna → działanie (brak uprawnień do Dockera, zajęty port 5080, niezgodne hasło SA po utracie `.env`, brak pamięci w SQL Server, brak internetu przy pierwszym budowaniu, czat zwraca 503).
+10. **Dla programistów:** `tools/dev/run.sh` (wymaga dotnet i node), testy (`dotnet test`, `npm run verify`), odnośniki do `docs/arc42`, `docs/superpowers` i `docs/testy-reczne`.
+
+Instrukcja jest sprawdzana w planie: osobny krok wykonuje komendy z README od zera (czysty klon bez `.env` i wolumenu) i potwierdza, że wynik zgadza się z opisem.
+
+### 8.2 Pozostałe dokumenty
+
 - arc42 7.1: port `127.0.0.1:5080`, nazwa wolumenu i kontenerów zgodne z `compose.yaml`; 7.4 przemianowane na „Uruchomienie deweloperskie i w Dockerze”, z tabelą `tools/docker/*`, uwagą o wspólnym porcie 5080 i o tym, kiedy użyć którego.
 - Nowe ADR-33: Docker Compose lokalnie, `Production` z seedem demo, samodzielne hostowanie fontów.
-- `README.md` (status i szybki start), `web/README.md` (fonty), `docs/testy-reczne/docker.md` (kroki testu ręcznego z tunelem SSH, w tym wyłączenie internetu w przeglądarce opcjonalnie), `.env.example` rozszerzony o `HR_DB_PASSWORD` (bez wartości) z komentarzem.
+- `web/README.md` (fonty), `docs/testy-reczne/docker.md` (kroki testu ręcznego z tunelem SSH, w tym wyłączenie internetu w przeglądarce opcjonalnie), `.env.example` rozszerzony o `HR_DB_PASSWORD` (bez wartości) z komentarzem.
 - `.gitignore` bez zmian (`.env` już jest); `.dockerignore` nowy.
 
 ## 9. Ryzyka i uwagi
